@@ -1,0 +1,9 @@
+{
+  "format": "ember-deploy/v1",
+  "app_version": "2.1.0-beta.1",
+  "python_series": "3.13",
+  "minimum_launcher": "0.1.0-beta.1",
+  "requirements_file": "requirements-lock.txt",
+  "entrypoint": "server.app:app",
+  "health_path": "/api/health"
+}

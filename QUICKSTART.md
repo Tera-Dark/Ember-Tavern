@@ -1,10 +1,16 @@
-# 给朋友的 5 分钟试玩指南
+# 快速启动与部署指南
 
-这是 **v2.0.0 朋友测试版**。通用轻规则，不是完整 D&D / CoC 或战棋系统。无模型密钥也能体验演示主持、多人房间、地图、移动、台本和回档。
+这是 **2.1.0-beta.1 测试版**。通用轻规则，不是完整 D&D / CoC 或战棋系统。无模型密钥也能体验演示主持、多人房间、地图、移动、台本和回档。
+
+## 一键启动（Windows x64）
+
+双击 `ember-launcher-0.1.0-beta.1-windows-x64.exe`，新建实例，点「创建并启动」。首次自动下载运行环境和依赖；看到「运行中」再进入。实例菜单可检查更新与更新并重启。详见 `launcher/README.md`。
+
+完整 Windows 安装实机验收尚待执行；下面保留手动启动方式用于开发 / 故障排查。
 
 ## 1. 下载
 
-在仓库页面点 **Code → Download ZIP**，或下载 Releases 中的朋友测试包。解压后进入包含 `server/`、`static/`、`requirements-lock.txt` 的目录。
+在仓库页面点 **Code → Download ZIP**，或下载 Releases 中的测试版包。解压后进入包含 `server/`、`static/`、`requirements-lock.txt` 的目录。
 
 只运行不需要 Node / npm；`static/` 已构建。需要 Python 3.13 和联网安装 Python 依赖。
 

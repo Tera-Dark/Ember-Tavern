@@ -1,0 +1,37 @@
+name: Launcher release
+on:
+  push:
+    tags: ['launcher-v*']
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache-dependency-path: launcher/go.sum
+      - shell: pwsh
+        working-directory: launcher
+        run: |
+          go run github.com/tc-hib/go-winres@v0.3.3 make --arch amd64
+          $version = $env:GITHUB_REF_NAME -replace '^launcher-v',''
+          go build -trimpath -ldflags='-H windowsgui -s -w' -o "ember-launcher-$version-windows-x64.exe" .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $file="ember-launcher-$version-windows-x64.exe"
+          $hash=(Get-FileHash $file -Algorithm SHA256).Hash.ToLower()
+          Set-Content "$file.sha256" "$hash  $file"
+      - shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: launcher
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^launcher-v',''
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Output 'Existing version release retained; CI build does not overwrite reviewed assets.'
+            exit 0
+          }
+          gh release create $env:GITHUB_REF_NAME "ember-launcher-$version-windows-x64.exe" "ember-launcher-$version-windows-x64.exe.sha256" --title "$version 测试版" --prerelease --notes "Windows x64 启动器；运行环境自动准备，首次需要网络。验收边界见 docs/LAUNCHER_TEST_REPORT.md。"

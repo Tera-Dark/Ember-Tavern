@@ -8,3 +8,9 @@ data/
 *.log
 backups/
 artifacts/
+# Desktop launcher generated binaries and local instance state
+launcher/*.exe
+launcher/*.syso
+launcher/launcher
+launcher/instances/
+*.part

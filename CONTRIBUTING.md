@@ -1,6 +1,6 @@
 # 社区贡献
 
-欢迎独立插件优先的贡献：新增能力通常放进 plugins／自己的仓库，而不是往宿主 App 堆功能。项目仓库：https://github.com/Tera-Dark/Ember-Tavern。当前为朋友测试版，正式开源前由拥有者确定许可证；第三方 Python 仍需人工审阅。
+欢迎独立插件优先的贡献：新增能力通常放进 plugins／自己的仓库，而不是往宿主 App 堆功能。项目仓库：https://github.com/Tera-Dark/Ember-Tavern。当前为测试版，正式开源前由拥有者确定许可证；第三方 Python 仍需人工审阅。
 
 1. 阅读 `docs/PLUGIN_SDK.md` 与 `SECURITY.md`，从 `templates/session-insights` 起步。
 2. 提案说明资源契约、依赖、能力、付费行为与回档策略。默认不开启社区模块。

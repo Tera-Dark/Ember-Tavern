@@ -212,7 +212,7 @@ async def lifespan(app):
                 append_event(con,room['id'],'error',state['gm_error'],state)
     yield
 
-app = FastAPI(title='余烬酒馆 API',version='2.0.0',lifespan=lifespan)
+app = FastAPI(title='余烬酒馆 API',version='2.1.0-beta.1',lifespan=lifespan)
 app.include_router(extension_router)
 
 
@@ -230,7 +230,7 @@ async def security_headers(request, call_next):
 
 @app.get('/api/health')
 def health():
-    return {'ok':True,'product':'余烬酒馆','version':'2.0.0'}
+    return {'ok':True,'product':'余烬酒馆','version':'2.1.0-beta.1'}
 
 
 @app.get('/api/models')

@@ -1,8 +1,8 @@
 # 余烬酒馆 · 产品需求与模块化架构 PRD v2.0
 
-版本：2.0.0 · 日期：2026-09-30 · 插件 API：1
+版本：2.1.0-beta.1 · 日期：2026-09-30 · 插件 API：1
 
-> 从可运行的 V1 升级，不是重画静态原型。V1 账号、房间、权限、通用轻规则、双模型适配、事件与回档保留；新增小宿主、独立开关模块、方格场景、实时图标、台本、双模式 TTS 和可发布 GitHub 插件 SDK。真实模型／TTS 密钥尚未提供；项目仓库为 https://github.com/Tera-Dark/Ember-Tavern，当前为朋友测试版。
+> 从可运行的 V1 升级，不是重画静态原型。V1 账号、房间、权限、通用轻规则、双模型适配、事件与回档保留；新增小宿主、独立开关模块、方格场景、实时图标、台本、双模式 TTS 和可发布 GitHub 插件 SDK。真实模型／TTS 密钥尚未提供；项目仓库为 https://github.com/Tera-Dark/Ember-Tavern，当前为测试版。
 
 ## 1. 产品方向
 
@@ -150,3 +150,13 @@ LICENSE.example       MIT 模板；发布前由拥有者选择许可证
 - P2：多 worker 共享消息与 Redis／PostgreSQL、公开市场索引、独立权限授权界面与安全审核流程。
 
 V1 详细业务需求存档：`docs/archive/PRD_v1.md`。插件作者入口：`docs/PLUGIN_SDK.md`。发布者入口：`docs/GITHUB_PUBLISH.md`。
+
+## 13. 桌面实例启动器
+
+启动器版本 0.1.0-beta.1。Windows x64，Go + WebView2，管理实例而非耦合跑团业务；按用户提供的集中式启动器设计理念实现深色首页、搜索、实例卡片与任务入口。
+
+首次自动准备 Python / pip 环境、固定 GitHub 源码、依赖与健康检查，正常使用无需手动安装 Git / Node。更新备份、数据副本预检、版本化依赖与原地目录替换；事务 journal 与自动恢复。设置只保存于本机，不回显密钥。
+
+默认管理接口仅本机，游戏端口可选择可信局域网；实例独立数据与进程，不能把不同实例邀请码混用。
+
+本轮已构建 Windows EXE；Linux 集成与浏览器验收通过，不等于 Windows WebView2 / Installer / SmartScreen 已实机通过。见 docs/LAUNCHER_TEST_REPORT.md。

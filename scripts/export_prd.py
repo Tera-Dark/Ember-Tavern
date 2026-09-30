@@ -31,14 +31,14 @@ if 'Code Block' not in styles:
 header=section.header.paragraphs[0]
 header.add_run('余烬酒馆  /  EMBER TAVERN').font.color.rgb=RGBColor.from_string('8F7546')
 header.runs[0].font.size=Pt(8)
-header.add_run('                                       产品需求文档 · V2.0').font.size=Pt(8)
+header.add_run('                                       产品需求文档 · 2.1.0-beta.1 测试版').font.size=Pt(8)
 footer=section.footer.paragraphs[0];footer.alignment=WD_ALIGN_PARAGRAPH.RIGHT
 r=footer.add_run('2026.09.30  ·  余烬酒馆  |  ');r.font.size=Pt(8);r.font.color.rgb=RGBColor.from_string('7A877A')
 r=footer.add_run();fld=OxmlElement('w:fldSimple');fld.set(qn('w:instr'),'PAGE');r._r.addnext(fld)
 
 # Cover
 p=doc.add_paragraph();p.paragraph_format.space_before=Pt(50)
-r=p.add_run('PRODUCT REQUIREMENTS  /  V2.0');r.font.size=Pt(10);r.font.color.rgb=RGBColor.from_string('9E7D40')
+r=p.add_run('PRODUCT REQUIREMENTS  /  2.1.0-beta.1 测试版');r.font.size=Pt(10);r.font.color.rgb=RGBColor.from_string('9E7D40')
 p=doc.add_paragraph();p.paragraph_format.space_after=Pt(9)
 r=p.add_run('余烬酒馆');r.font.name='Calibri';r.font.size=Pt(36);r.font.color.rgb=RGBColor.from_string('253E2D');r._element.rPr.rFonts.set(qn('w:eastAsia'),'Microsoft YaHei')
 p=doc.add_paragraph('小宿主 · 可插拔多人跑团');p.runs[0].font.size=Pt(19);p.runs[0].font.color.rgb=RGBColor.from_string('62735F');p.paragraph_format.space_after=Pt(25)
@@ -114,7 +114,7 @@ while i<len(lines):
   p=doc.add_paragraph();inline(p,line)
  i+=1
 
-doc.core_properties.title='余烬酒馆 · 产品需求文档 PRD v2.0'
+doc.core_properties.title='余烬酒馆 · 产品需求文档 PRD 2.1.0-beta.1'
 doc.core_properties.subject='模块化多人跑团：权限、资源契约、地图、台本、TTS、隔离与回档'
 doc.core_properties.author='余烬酒馆项目'
 doc.core_properties.keywords='PRD,TRPG,AI,多人跑团,MVP'

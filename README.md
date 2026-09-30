@@ -1,8 +1,8 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**宿主 v2.0.0 · Plugin API v1 · 朋友测试版**
+**宿主 2.1.0-beta.1 测试版 · 启动器 0.1.0-beta.1 测试版 · Plugin API v1**
 
-项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [5 分钟试玩指南](QUICKSTART.md)。
+项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
 
 只运行不需要 Node，已包含构建前端。多人同桌需访问**同一个服务器**，不要每人各起一个实例再互发邀请码。
 
@@ -10,7 +10,15 @@
 
 目前可演示／测试：双账号房间、分配角色、AI 演示主持、检定、属性、世界书、检索、分支回档、方格地图生成、多人拖动预览与提交、台本编辑、本地语音 SDK、社区插件安装／隔离。真实供应商联网与音频听感需要你在服务器配置自己的密钥；**不会让你把密钥发聊天。**
 
-## 快速运行（使用发行包已有前端）
+## 桌面启动器（Windows x64）
+
+双击版本号命名的启动器 EXE，点「新建实例 → 创建并启动」。启动器自动准备 Python、下载项目并安装依赖；卡片右上可从固定 GitHub 仓库原地更新，备份并预检后替换，失败恢复旧代码 / 环境 / 数据。
+
+账号、房间、素材和密钥独立保存在 `%LOCALAPPDATA%\EmberTavern`。不要求手动装 Python / Git / Node，不修改系统 PATH。
+
+[启动器说明](launcher/README.md) · [验收边界](docs/LAUNCHER_TEST_REPORT.md)。Windows EXE 已构建；完整 Windows 桌面安装仍需实机验收。下载启动器版本对应的 Release，不要把旧应用源码包当成 EXE。
+
+## 手动运行（开发 / 备用）
 
 Python 3.13 为本次验证环境。无需 Node 即可运行附带的 static。
 
@@ -148,6 +156,7 @@ static/                 已构建发行前端（直接运行用）
 templates/              session-insights、scene-notes
 plugin-packages/         示例发行 ZIP、实际 SHA256
 registry/               示例插件索引；Release 下载 URL 由实际发布更新
+launcher/               Go + WebView2 桌面启动器、任务与事务更新
 scripts/                run、plugins、backup、restore
 .github/                CI、Release、Issue／PR 模板
 tests/                  自动测试、双浏览器内核与插件验收
