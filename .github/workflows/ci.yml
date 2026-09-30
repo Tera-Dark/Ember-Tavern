@@ -1,0 +1,35 @@
+name: Core and plugin checks
+on:
+  push:
+    branches: ['**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: pip install -r requirements-lock.txt && pip install -r requirements-dev.txt
+      - run: npm ci --prefix web && npm run build --prefix web
+      - run: python -m pytest -q
+      - run: python -m compileall -q server plugins
+      - run: python scripts/plugins.py package templates/session-insights /tmp/session-insights.zip
+      - run: python -m playwright install --with-deps chromium
+      - name: Real two-browser tests (demo providers only)
+        run: |
+          python scripts/plugins.py install /tmp/session-insights.zip --sha256 "$(sha256sum /tmp/session-insights.zip | cut -d' ' -f1)"
+          python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 1 --ws-max-size 65536 > /tmp/tavern.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID"; cat /tmp/tavern.log' EXIT
+          python -c "import urllib.request,time; exec('for attempt in range(100):\n try:\n  urllib.request.urlopen(\"http://127.0.0.1:8000/api/health\");break\n except OSError:time.sleep(.1)\nelse:raise SystemExit(\"server did not start\")')"
+          python tests/browser_smoke.py
+          python tests/browser_plugins.py

@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "api_version": 1,
+  "state_version": 1,
+  "default_enabled": false,
+  "backend": "backend.py",
+  "frontend": null,
+  "requires": [
+    "scene-map"
+  ],
+  "uses": [
+    "scene.map/v1"
+  ],
+  "provides": [
+    "scene.tokens/v1"
+  ],
+  "capabilities": [
+    "read:room"
+  ],
+  "actions": [
+    "move"
+  ],
+  "signals": [
+    "preview"
+  ],
+  "id": "map-tokens",
+  "name": "角色图标与移动",
+  "description": "玩家只能移动自己的角色；拖动预览即时广播，松手后落盘。",
+  "category": "地图",
+  "icon": "users"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "session-insights",
+  "name": "会话观察板",
+  "version": "1.0.0",
+  "api_version": 1,
+  "state_version": 1,
+  "description": "社区 UI 插件示例：观察轮次、角色生命与有效事件，不修改游戏数据。",
+  "category": "社区示例",
+  "icon": "file",
+  "default_enabled": false,
+  "backend": null,
+  "frontend": "ui.js",
+  "ui": {"group": "insights", "label": "会话观察板", "slot": "main", "height": 500},
+  "requires": [],
+  "uses": [],
+  "provides": [],
+  "capabilities": ["read:room", "read:events"],
+  "actions": [],
+  "signals": []
+}

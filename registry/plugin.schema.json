@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:plugin-manifest:v1",
+  "title": "Ember Tavern plugin API 1 manifest",
+  "type": "object",
+  "required": ["id", "name", "version", "description", "api_version"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,47}$"},
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "api_version": {"const": 1},
+    "state_version": {"type": "integer", "minimum": 1, "default": 1},
+    "backend": {"enum": [null, "backend.py"]},
+    "frontend": {"enum": [null, "ui.js"]},
+    "default_enabled": {"type": "boolean", "default": false},
+    "category": {"type": "string"},
+    "icon": {"type": "string"},
+    "requires": {"type": "array", "maxItems": 40, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]{2,47}$"}},
+    "uses": {"$ref": "#/$defs/resources"},
+    "provides": {"$ref": "#/$defs/resources"},
+    "capabilities": {"$ref": "#/$defs/names"},
+    "actions": {"$ref": "#/$defs/names"},
+    "signals": {"$ref": "#/$defs/names"},
+    "hooks": {"type": "array", "maxItems": 1, "items": {"const": "gm"}},
+    "ui": {
+      "type": "object", "required": ["group", "slot"],
+      "properties": {
+        "group": {"type": "string", "maxLength": 48},
+        "label": {"type": "string"},
+        "slot": {"enum": ["toolbar", "main"]},
+        "height": {"type": "integer", "minimum": 120, "maximum": 1200}
+      }
+    }
+  },
+  "$defs": {
+    "names": {"type": "array", "maxItems": 40, "items": {"type": "string", "maxLength": 120}},
+    "resources": {"type": "array", "maxItems": 40, "items": {"type": "string", "pattern": "^[a-z][a-z0-9.-]{1,70}/v[1-9][0-9]*$"}}
+  }
+}

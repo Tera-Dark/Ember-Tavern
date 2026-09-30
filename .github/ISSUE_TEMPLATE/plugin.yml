@@ -1,0 +1,25 @@
+name: 社区插件提案
+description: 先讨论契约与能力，再提交可执行代码。
+body:
+  - type: input
+    id: plugin
+    attributes:
+      label: 插件 ID、用途和源码仓库
+    validations:
+      required: true
+  - type: textarea
+    id: contracts
+    attributes:
+      label: requires / uses / provides / hooks / capabilities
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: 是否 Python、是否付费调用、数据与密钥流向、失败与回档策略
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: 权限、幂等、迁移、回档及隔离测试计划

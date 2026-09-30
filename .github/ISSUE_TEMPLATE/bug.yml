@@ -1,0 +1,19 @@
+name: 缺陷报告
+description: 内核或插件问题；请勿贴密钥、token 或私人完整备份。
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 宿主版本 / 插件 ID 与版本
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 最小复现步骤、预期、实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 浏览器 / 操作系统 / 部署方式 / 已脱敏日志

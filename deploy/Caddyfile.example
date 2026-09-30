@@ -1,0 +1,9 @@
+# Replace this hostname with a real domain pointing at your server.
+# This is a HOST-side Caddy example; the backend published port is 8000.
+# Caddy handles WebSocket upgrades automatically.
+tavern.example.com {
+    encode gzip zstd
+    reverse_proxy 127.0.0.1:8000
+}
+# For a private playtest add an access policy (VPN / identity gateway, etc.).
+# Public hosting also needs account verification, quotas and operational hardening.

@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-30",
+  "core": {
+    "action_sync_ms": 76,
+    "status": "passed",
+    "accounts": 2,
+    "websocket_sync": true,
+    "role_assignment": true,
+    "action_and_roll": true,
+    "full_state_rollback": true,
+    "permission_not_rewound": true,
+    "archived_memory_excluded": true,
+    "export": true,
+    "mobile_overflow": false,
+    "page_errors": []
+  },
+  "plugins": {
+    "drag_preview_sync_ms": 125,
+    "preview_not_persisted": true,
+    "move_committed": true,
+    "speech_bridge_stub": true,
+    "iframe_isolation": true,
+    "map_script_rollback": true,
+    "disable_retains_data": true,
+    "hot_installed_ui_plugin": true,
+    "mobile_no_horizontal_overflow": true,
+    "mobile_voice_no_horizontal_overflow": true,
+    "page_errors": [],
+    "console_errors": []
+  }
+}

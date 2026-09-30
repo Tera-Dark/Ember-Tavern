@@ -1,0 +1,14 @@
+.env
+.venv
+web/node_modules
+web/.vite
+data
+backups
+artifacts
+__pycache__
+.pytest_cache
+.git
+static
+*.zip
+
+!plugin-packages/*.zip

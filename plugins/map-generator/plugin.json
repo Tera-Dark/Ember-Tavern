@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "api_version": 1,
+  "state_version": 1,
+  "default_enabled": false,
+  "backend": "backend.py",
+  "frontend": "ui.js",
+  "requires": [
+    "scene-map"
+  ],
+  "uses": [
+    "scene.map/v1"
+  ],
+  "provides": [
+    "map.generator/v1"
+  ],
+  "capabilities": [
+    "read:room",
+    "invoke:scene-map.set_map",
+    "model:decision"
+  ],
+  "actions": [
+    "generate"
+  ],
+  "signals": [],
+  "id": "map-generator",
+  "name": "地图生成器",
+  "description": "程序生成海港、遗迹、森林或洞穴；可选接决策模型生成布局。",
+  "category": "地图",
+  "icon": "wand",
+  "ui": {
+    "group": "map",
+    "slot": "toolbar",
+    "height": 150
+  }
+}

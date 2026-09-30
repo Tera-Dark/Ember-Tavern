@@ -1,0 +1,26 @@
+name: Release example plugin
+on:
+  push:
+    tags:
+      - 'plugin-session-insights-v*'
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements-lock.txt
+      - name: Build immutable plugin bundle
+        run: |
+          python -c "import json,os; m=json.load(open('templates/session-insights/plugin.json')); assert os.environ['GITHUB_REF_NAME']=='plugin-session-insights-v'+m['version'], 'Tag version must match manifest'"
+          mkdir -p release
+          python scripts/plugins.py package templates/session-insights release/session-insights.zip
+          cd release && sha256sum session-insights.zip > session-insights.sha256
+      - name: Publish to this authorized repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/session-insights.zip release/session-insights.sha256 --title "$GITHUB_REF_NAME" --generate-notes

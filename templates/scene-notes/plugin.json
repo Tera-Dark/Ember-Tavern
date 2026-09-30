@@ -1,0 +1,10 @@
+{
+  "id": "scene-notes", "name": "场景便签", "version": "1.0.0",
+  "api_version": 1, "state_version": 1,
+  "description": "Python SDK 示例：房主追加便签，成员阅读；独立 namespace、事件与回档。",
+  "category": "社区示例", "icon": "file", "default_enabled": false,
+  "backend": "backend.py", "frontend": "ui.js",
+  "ui": {"group": "notes", "label": "场景便签", "slot": "main", "height": 500},
+  "requires": [], "uses": [], "provides": [],
+  "capabilities": ["read:room"], "actions": ["append"], "signals": []
+}

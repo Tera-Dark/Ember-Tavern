@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0",
+  "api_version": 1,
+  "state_version": 1,
+  "default_enabled": false,
+  "backend": "backend.py",
+  "frontend": "ui.js",
+  "requires": [],
+  "uses": [
+    "scene.tokens/v1"
+  ],
+  "provides": [
+    "scene.map/v1"
+  ],
+  "capabilities": [
+    "read:room",
+    "invoke-resource:scene.tokens/v1.move",
+    "signal-resource:scene.tokens/v1.preview"
+  ],
+  "actions": [
+    "set_map"
+  ],
+  "signals": [],
+  "id": "scene-map",
+  "name": "场景地图",
+  "description": "独立方格渲染器，接收版本化地图与角色图层。",
+  "category": "地图",
+  "icon": "map",
+  "ui": {
+    "group": "map",
+    "label": "场景地图",
+    "slot": "main",
+    "height": 650
+  }
+}

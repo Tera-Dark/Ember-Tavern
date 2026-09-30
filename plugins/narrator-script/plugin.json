@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "api_version": 1,
+  "state_version": 1,
+  "default_enabled": false,
+  "backend": "backend.py",
+  "frontend": "ui.js",
+  "requires": [],
+  "uses": [],
+  "provides": [
+    "narration.script/v1"
+  ],
+  "capabilities": [
+    "read:room",
+    "read:events"
+  ],
+  "actions": [
+    "rebuild",
+    "edit"
+  ],
+  "signals": [],
+  "id": "narrator-script",
+  "name": "旁白台本",
+  "description": "从有效剧情整理分段台本；独立编辑不改写正史。",
+  "category": "声音",
+  "icon": "file",
+  "ui": {
+    "group": "audio",
+    "label": "台本与声音",
+    "slot": "main",
+    "height": 650
+  }
+}

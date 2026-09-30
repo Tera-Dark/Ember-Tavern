@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "api_version": 1,
+  "state_version": 1,
+  "default_enabled": false,
+  "backend": "backend.py",
+  "frontend": "ui.js",
+  "requires": [
+    "narrator-script"
+  ],
+  "uses": [
+    "narration.script/v1"
+  ],
+  "provides": [
+    "narration.audio/v1"
+  ],
+  "capabilities": [
+    "local:speech",
+    "asset:audio",
+    "asset:write"
+  ],
+  "actions": [
+    "synthesize"
+  ],
+  "signals": [],
+  "id": "voice-tts",
+  "name": "TTS 旁白",
+  "description": "浏览器本地朗读或服务端生成可保存音频；两种来源明确区分。",
+  "category": "声音",
+  "icon": "mic",
+  "ui": {
+    "group": "audio",
+    "slot": "toolbar",
+    "height": 280
+  }
+}
