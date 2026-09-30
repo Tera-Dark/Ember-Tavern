@@ -2,14 +2,14 @@
   "registry_version": 1,
   "plugin_api_version": 1,
   "github_repository": "https://github.com/Tera-Dark/Ember-Tavern",
-  "status": "friends-preview",
+  "status": "friends-preview-published",
   "plugins": [
     {
       "id": "session-insights",
       "version": "1.0.0",
       "package": "session-insights-1.0.0.zip",
       "sha256": "8cada982bf789729f15c2656172daae7e81c23e971e4038fe49e851461131df5",
-      "download_url": null,
+      "download_url": "https://github.com/Tera-Dark/Ember-Tavern/releases/download/v2.0.0-preview.1/session-insights-1.0.0.zip",
       "backend": false,
       "review_status": "example",
       "capabilities": [
@@ -22,7 +22,7 @@
       "version": "1.0.0",
       "package": "scene-notes-1.0.0.zip",
       "sha256": "070e18d038a2886455abfc20e13592e7b03dbdd69250821e1c02bf1cccb1371e",
-      "download_url": null,
+      "download_url": "https://github.com/Tera-Dark/Ember-Tavern/releases/download/v2.0.0-preview.1/scene-notes-1.0.0.zip",
       "backend": true,
       "review_status": "example",
       "capabilities": [
