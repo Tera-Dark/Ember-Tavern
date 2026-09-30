@@ -1,6 +1,6 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**宿主 2.1.0-beta.1 测试版 · 启动器 0.1.0-beta.1 测试版 · Plugin API v1**
+**宿主 2.1.0-beta.2 测试版 · 启动器 0.1.0-beta.2 测试版 · Plugin API v1**
 
 项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
 

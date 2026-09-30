@@ -1,10 +1,10 @@
-# 余烬启动器 · 0.1.0-beta.1 测试版
+# 余烬启动器 · 0.1.0-beta.2 测试版
 
 Windows 10 / 11 x64 原生窗口（Go + WebView2），约 8 MB。参考集中式实例管理的首页、卡片和任务入口，不复制 Comfy 商标；余烬酒馆本体仍保留独立模块架构。
 
 ## 普通使用
 
-1. 双击 `ember-launcher-0.1.0-beta.1-windows-x64.exe`。
+1. 双击 `ember-launcher-0.1.0-beta.2-windows-x64.exe`。
 2. 「新建实例」填名称；测试版本通道适合固定版本，main 通道获取最新源码。
 3. 点「创建并启动」：下载官方 Python、准备实例依赖、拉项目、预检服务。
 4. 状态显示「运行中」后点「进入实例」。首次需联网；不要求预装 Python / Git / Node，也不修改系统 Python PATH。

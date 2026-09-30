@@ -39,6 +39,9 @@ func TestCreatePersistentIsolation(t *testing.T) {
 	}
 	m.Close()
 	n, e := New(Config{Root: m.Root()})
+	if e == nil {
+		defer n.Close()
+	}
 	if e != nil || len(n.List()) != 2 {
 		t.Fatal("index not persisted", e)
 	}
@@ -238,7 +241,7 @@ func TestSingleManagerPerDataDirectory(t *testing.T) {
 }
 func TestDeploymentProtocolRequiresSupportedRuntime(t *testing.T) {
 	dir := t.TempDir()
-	atomicJSON(filepath.Join(dir, "launcher-manifest.json"), map[string]string{"format": "ember-deploy/v1", "python_series": "3.14", "minimum_launcher": "0.1.0-beta.1", "requirements_file": "requirements-lock.txt", "entrypoint": "server.app:app", "health_path": "/api/health"})
+	atomicJSON(filepath.Join(dir, "launcher-manifest.json"), map[string]string{"format": "ember-deploy/v1", "python_series": "3.14", "minimum_launcher": "0.1.0-beta.2", "requirements_file": "requirements-lock.txt", "entrypoint": "server.app:app", "health_path": "/api/health"})
 	if e := validateDeployment(dir); e == nil {
 		t.Fatal("unsupported Python silently installed")
 	}

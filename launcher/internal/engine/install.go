@@ -72,7 +72,7 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	m.progress(t, 3, "读取 GitHub 版本信息")
 	var release Release
 	if m.config.LocalSource != "" {
-		release = Release{Version: "2.1.0-beta.1", Commit: "local-development", Source: "local"}
+		release = Release{Version: "2.1.0-beta.2", Commit: "local-development", Source: "local"}
 	} else {
 		release, err = Resolve(old.Channel)
 		if err != nil {

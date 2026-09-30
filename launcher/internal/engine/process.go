@@ -20,9 +20,17 @@ func localURL(port int) string { return "http://127.0.0.1:" + strconv.Itoa(port)
 func command(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = dir
-	if env != nil {
-		cmd.Env = env
+	if env == nil {
+		env = os.Environ()
 	}
+	cleaned := []string{}
+	for _, item := range env {
+		key, _, _ := strings.Cut(item, "=")
+		if !strings.EqualFold(key, "PYTHONUTF8") && !strings.EqualFold(key, "PYTHONIOENCODING") {
+			cleaned = append(cleaned, item)
+		}
+	}
+	cmd.Env = append(cleaned, "PYTHONUTF8=1", "PYTHONIOENCODING=utf-8")
 	prepareProcess(cmd)
 	return cmd
 }
