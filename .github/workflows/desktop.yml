@@ -145,6 +145,8 @@ jobs:
           REPO: ${{ github.repository }}
           COMMIT: ${{ github.sha }}
         run: |
+          (cd package && for sum in *.sha256; do sed 's/\r$//' "$sum" | sha256sum --check --strict -; done)
+          python3 -c 'import json; r=json.load(open("package/desktop-smoke.json")); assert r["status"]=="passed" and r["graceful_shutdown"], r'
           TAG=desktop-v0.2.0-beta.1
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             echo 'Release exists. Do not silently replace reviewed binaries.'

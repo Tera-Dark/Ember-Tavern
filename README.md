@@ -16,7 +16,7 @@
 
 参考 ComfyUI Desktop 的 **Electron + TypeScript + Vite** 架构，自己的 Vue 3 管理界面：本地实例卡片、自动安装、启停、房间与同伴、插件管理、API / LAN 配置、余烬 / 月下 / 浅色主题。沿用 Go 部署引擎与 Python / React 游戏宿主，不复制 Comfy 的 GPL 实现或品牌。
 
-[下载 Windows 安装器 / 便携 EXE](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1) · [房主桌面指南](docs/DESKTOP_GUIDE.md) · [部署引擎维护](launcher/README.md)
+[下载 Windows 安装器 / 便携 EXE](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1) · [房主桌面指南](docs/DESKTOP_GUIDE.md) · [桌面验收](docs/DESKTOP_TEST_REPORT.md) · [部署引擎维护](launcher/README.md)
 
 房主运行 EXE → 创建实例并等「运行中」→ 新建房间 → 为每位同伴创建 **身份＋验证密钥**。同伴只需在同一个可信 LAN 的浏览器打开房主地址入座，**不安装、不注册**。房主在嵌入式冒险桌分配角色、导入世界书、启用 AI 和其他模块。正式网页账号 + 通用邀请码的备用流程仍保留。
 
