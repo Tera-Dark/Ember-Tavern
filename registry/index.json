@@ -2,7 +2,7 @@
   "registry_version": 1,
   "plugin_api_version": 1,
   "github_repository": "https://github.com/Tera-Dark/Ember-Tavern",
-  "status": "friends-preview-published",
+  "status": "local-foundation-catalog",
   "plugins": [
     {
       "id": "session-insights",
@@ -15,7 +15,10 @@
       "capabilities": [
         "read:room",
         "read:events"
-      ]
+      ],
+      "minimum_host": "2.1.0",
+      "template_path": "templates/session-insights",
+      "download_note": "既有版本的发行引用；本轮只核验仓库内 ZIP 的 SHA，未重新验收远程下载。"
     },
     {
       "id": "scene-notes",
@@ -27,7 +30,57 @@
       "review_status": "example",
       "capabilities": [
         "read:room"
-      ]
+      ],
+      "minimum_host": "2.1.0",
+      "template_path": "templates/scene-notes",
+      "download_note": "既有版本的发行引用；本轮只核验仓库内 ZIP 的 SHA，未重新验收远程下载。"
+    },
+    {
+      "id": "dice-tray",
+      "version": "1.0.0",
+      "minimum_host": "2.2.0",
+      "template_path": "templates/dice-tray",
+      "backend": false,
+      "review_status": "source-template-not-published",
+      "capabilities": [
+        "read:room",
+        "dice:roll"
+      ],
+      "uses": [
+        "core.dice/v1",
+        "core.rules/v1"
+      ],
+      "download_url": null,
+      "sha256": null
     }
+  ],
+  "host_version": "2.2.0-beta.1",
+  "content_templates": [
+    {
+      "kind": "worldbook",
+      "format": "ember.worldbook/v1",
+      "template_path": "templates/worldbook/worldbook.json",
+      "schema_path": "registry/worldbook.schema.json"
+    },
+    {
+      "kind": "character",
+      "format": "ember.character/v1",
+      "template_path": "templates/character/character.json",
+      "schema_path": "registry/character.schema.json"
+    },
+    {
+      "kind": "theme",
+      "format": "ember.theme/v1",
+      "template_path": "templates/theme/theme.json",
+      "schema_path": "registry/theme.schema.json"
+    }
+  ],
+  "scaffold_kinds": [
+    "worldbook",
+    "character",
+    "theme",
+    "plugin-ui",
+    "plugin-backend",
+    "plugin-dice"
   ]
 }

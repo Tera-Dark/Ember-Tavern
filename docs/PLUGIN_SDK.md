@@ -1,6 +1,8 @@
 # 余烬酒馆 Plugin SDK v1
 
-宿主版本 2.0.0 · 插件 API 1 · 2026-09-30
+宿主版本 2.2.0-beta.1 · 插件 API 1 · 2026-09-30
+
+[创作指南](CREATOR_GUIDE.md)（世界书／角色／主题／脚手架） · [整体架构](ARCHITECTURE.md) · [LAN 部署](LAN_DEPLOYMENT.md)
 
 目标：让第三方开发者新增模块时不修改 `server/app.py`、`web/src/App.jsx` 或前端打包入口。房主按房间开启；默认关闭社区插件。地图、图标、台本、声音都不是账号／房间／事件内核的一部分。
 
@@ -26,12 +28,14 @@ my-plugin/
   README.md
 ```
 
-最小清单参见 `templates/session-insights/plugin.json`。字段：
+最小清单参见 `templates/session-insights/plugin.json`。也可用 `python scripts/creator.py init plugin-ui my-plugin --id my-plugin` 创建，或选择 plugin-backend／plugin-dice。`creator.py validate` 不执行 Python；`registry/plugin.schema.json` 与发现／安装／打包共用 `server/contracts/plugin.py`，未知额外字段拒绝。字段：
 
 | 字段 | 约束／含义 |
 | --- | --- |
 | id | 小写字母起始；小写字母、数字和连字符，3–48 字符；安装目录同名 |
 | name / description / version | 用户可读名称、描述、发行版本；version 由作者维护 |
+| authors / license / homepage | 可选真实署名／许可／HTTPS 项目链接；缺省不代表获得授权 |
+| minimum_host | 三段数字，默认 2.1.0；比较宿主数字基版（忽略 beta 后缀），高于当前版本不加载；roll／core 资源／个人主题／新隐私 API 的模块请声明至少 2.2.0 |
 | api_version | 目前只支持整数 1；其他主版本不加载 |
 | state_version | 状态 schema 版本，须与 Python `Extension.schema_version` 一致 |
 | backend / frontend | `backend.py`／`ui.js`，不需要时为 null；不支持任意文件路径 |
@@ -57,7 +61,7 @@ EmberSDK.onContext(ctx => {
 });
 ```
 
-`ctx` 包含：`api_version`、`plugin_id`、`plugin_revision`、`branch`、`user`、`is_owner`、`own_state`、安全裁剪的 `room`、最近有效 `events`、声明的 `resources`、模块开启状态 `integrations`、主题变量和浏览器 voice 名称。**没有会话令牌、供应商密钥、服务器环境变量或完整房间配置。**不要把私人凭据写进世界书；世界书属于房间公开信息。
+`ctx` 包含：`api_version`、`plugin_id`、`plugin_revision`、`branch`、`user`、`is_owner`、`own_state`、安全裁剪的 `room`、最近有效 `events`、声明的 `resources`、模块开启状态 `integrations`、主题变量和浏览器 voice 名称。**没有会话令牌、供应商密钥、服务器环境变量或完整房间配置。**`read:room` 即使由房主打开也只给公共世界／角色；`gm` 条目、gm_notes、provenance 与私有上下文选择不会发给普通 UI。`read:gm` 需显式部署者 grant，且仅房主获得额外秘密；核心 UI 资源仍公共。不要把私人凭据写进世界书。
 
 | 方法 | 用法 |
 | --- | --- |
@@ -66,10 +70,13 @@ EmberSDK.onContext(ctx => {
 | signal(name, payload, target?) | 发瞬态信号，不写事件；无持久化成功回执 |
 | onSignal(fn) | 接收来自声明 uses 资源提供者的信号 |
 | notify(text, kind) | 宿主提示；kind 为 success 或 error |
+| roll(expression) | 需 dice:roll 和 uses core.dice/v1；服务器权威自由骰，返回 rolls／modifier／total／request_key，记录 source_plugin；不是 pending_check 检定 |
 | speak(text, {rate,voice}) / stopSpeech() | 需 `local:speech`；最多 3000 字符；浏览器／系统朗读，不保存文件 |
 | asset(assetId) / downloadAsset(assetId) | 需 `asset:read`；认证读取／下载本插件音频或图像，返回 data_uri／下载回执 |
 | audio(assetId) | 需 `asset:audio`；读取本插件当前时间线音频，返回 `{data_uri}` |
 | downloadAudio(assetId) | 需 `asset:audio`；宿主认证下载本插件音频 |
+
+15 个主题颜色令牌由宿主发送到 ctx.theme，bridge 自动同步为 frame 的 CSS 变量；UI 使用这些变量，不依赖父 DOM。个人主题不改变 room revision 或朋友的配色。完整令牌见创作指南。
 
 跨插件授权既可以绑定 ID：`invoke:map-tokens.move`，也可以绑定资源：`invoke-resource:scene.tokens/v1.move`。资源能力必须同时在 `uses` 声明对应契约；父页解析实际 owner，服务端再次校验目标的 `provides`。信号对应 `signal:`／`signal-resource:`。
 
@@ -127,7 +134,8 @@ class Extension(Plugin):
 - `resources(ctx,data)`：返回 `{资源名:资源数据}`；只注册 manifest.provides 声明的契约。
 - `on_event(ctx,event,data)`：同步小型钩子，不做付费网络调用；返回新 data 或 None。异常隔离并记 `_plugin_faults`，不阻止内核事件。
 - `signal(ctx,name,payload)`：服务端校验瞬态数据／角色，返回待广播 payload；默认拒绝。
-- `gm(ctx,state,mode)`：仅给声明 `hooks:["gm"]` 的主持插件；返回服务端 `Decision` 与 trace。规则执行仍在内核。
+- `public_data(ctx,data)`：默认返回共享数据。私密 namespace 必须按 ctx.is_owner 投影，并测试 REST／历史／UI 资源；投影异常返回空，不能回退原始数据。可信 Python 能读取原始服务器资料，不是能力沙箱。
+- `gm(ctx,state,mode)`：仅给声明 hooks:["gm"]、model:gm 的提供者；所有提供者返回的 Decision 和 `server/contracts/hosting.py` GMTrace 都由宿主校验后再应用。trace 只允许有界 mode／label／retrieval_count／duration_ms／knowledge／decision／context_ids／context_selection，禁止任意 prompt/debug dump；秘密诊断仅房主可见。空 label 用清单名称。mode 应诚实对应房间 demo／live，演示不可暗中收费。规则执行仍在内核；文本规则不能改判定。
 
 ### 状态与并发
 
@@ -137,7 +145,7 @@ class Extension(Plugin):
 {"expected_plugin_revision":3,"expected_branch":1,"request_key":"唯一请求键","via":"来源插件","payload":{}}
 ```
 
-服务端按 room/plugin 串行、按 request_key 幂等；已提交同一请求直接返回当前房间。异步结束前核验本插件、读取依赖和 branch；冲突 409 时 UI 应重新获取上下文，不能静默覆盖。不同 namespace 操作不依赖全部剧情 revision，地图可以在 GM 生成期间移动；最终 GM 状态合并保留新的插件 namespace。
+服务端按 room/plugin 串行、按 request_key 幂等；已提交同一请求直接返回当前房间。异步结束前核验本插件、读取依赖和 branch；读取 core 资源还把房间 revision 记入冲突检查；冲突 409 时 UI 应重新获取上下文，不能静默覆盖。不同 namespace 操作不依赖全部剧情 revision，地图可以在 GM 生成期间移动；最终 GM 状态合并保留新的插件 namespace。
 
 **外部服务不是数据库事务**：调用可能已经收费，但回档、关闭、冲突或崩溃会令结果无法提交，留下未引用文件；不得宣称付费调用能撤销或 exactly-once。当前没有生产级供应商幂等、后台队列或费用硬额度。
 
@@ -155,11 +163,18 @@ class Extension(Plugin):
 
 | 名称 | 提供者 | 主要数据 |
 | --- | --- | --- |
+| core.world/v1 | @core | 公共世界设定；需 read:room |
+| core.characters/v1 | @core | 公共角色＋当前分配；需 read:room |
+| core.rules/v1 | @core | 权威规则 ID／描述／dice 限制／Decision schema；需 read:room |
+| core.events/v1 | @core | 最近 30 条当前分支事件，隐藏秘密证据；需 read:events |
+| core.dice/v1 | @core | 规则 ID／自由骰限制；需 dice:roll |
 | scene.map/v1 | scene-map | id/title/width/height/grid/source/seed；grid 字符 `. # ~ t =` |
 | scene.tokens/v1 | map-tokens | map_id；tokens[] 含 id/name/avatar/assigned_to/position |
 | map.generator/v1 | map-generator | AI 布局是否配置；不含 key |
 | narration.script/v1 | narrator-script | lines[]：id/speaker/text/kind/source_event_id |
 | narration.audio/v1 | voice-tts | clips[]：id/line_id/voice/bytes；tts 配置状态（非联网验收） |
+
+`core.*` 命名空间保留；插件不能提供／替换，使用还需对应清单权限，未知契约不读取内部数据。宿主资源表在 contracts/resources.py，creator catalog 可查询。其他资源仍由可信提供者负责公开投影和字段语义；uses 不是通用私有资源 ACL。共享 resources 只应输出公共数据，不要将 owner-only namespace 自动映射成可被所有插件读取的资源；细粒度资源等级见后续路线图。破坏性变更用 /vN。
 
 地图生成是程序网格／模型结构化布局，不是图像生成。可走格只有 `.` 和 `=`。移动检查整数格、边界、障碍、角色控制权；不做路径可达性、视线、距离消耗、先攻或完整战棋。
 
@@ -172,7 +187,7 @@ python scripts/plugins.py install bundle.zip --sha256 <SHA256>
 python scripts/plugins.py install https://github.com/<owner>/<repo>/releases/download/<tag>/bundle.zip --sha256 <SHA256>
 # Python 后端：明确审核信任
 python scripts/plugins.py install backend-bundle.zip --sha256 <SHA256> --trust-backend
-# 无 Python 但声明写入／语音／跨模块等非只读能力的 UI：单独授权
+# 无 Python 但声明写入／语音／跨模块等非只读能力的 UI（read:gm 也需审核）：单独授权
 python scripts/plugins.py install ui-bundle.zip --sha256 <SHA256> --grant-capabilities
 ```
 

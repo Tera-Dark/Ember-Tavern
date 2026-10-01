@@ -1,5 +1,7 @@
 # 余烬酒馆 · 产品需求与模块化架构 PRD v2.0
 
+> 此文及 PRD.docx 保留 2.1 阶段历史设计；2.2 创作／隐私／邀请与新契约以 ARCHITECTURE.md、CREATOR_GUIDE.md、ROADMAP.md 为准。本轮未重新生成 Word。
+
 版本：2.1.0-beta.2 · 日期：2026-09-30 · 插件 API：1
 
 > 从可运行的 V1 升级，不是重画静态原型。V1 账号、房间、权限、通用轻规则、双模型适配、事件与回档保留；新增小宿主、独立开关模块、方格场景、实时图标、台本、双模式 TTS 和可发布 GitHub 插件 SDK。真实模型／TTS 密钥尚未提供；项目仓库为 https://github.com/Tera-Dark/Ember-Tavern，当前为测试版。

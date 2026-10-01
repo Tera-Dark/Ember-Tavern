@@ -1,7 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {Puzzle,Map,Mic,FileText,Sparkles,Users,WandSparkles,ShieldCheck,Code2,RefreshCw,ChevronRight,Blocks,ExternalLink} from 'lucide-react';
-import {api,getToken,requestKey} from './api.js';
-const ICONS={map:Map,mic:Mic,file:FileText,spark:Sparkles,users:Users,wand:WandSparkles};
+import {Puzzle,Map,Mic,FileText,Sparkles,Users,WandSparkles,ShieldCheck,Code2,RefreshCw,ChevronRight,Blocks,ExternalLink,Dices} from 'lucide-react';
+import {api,authHeaders,requestKey} from './api.js';
+const ICONS={map:Map,mic:Mic,file:FileText,spark:Sparkles,users:Users,wand:WandSparkles,dice:Dices};
 export function PluginIcon({name,...props}){const Icon=ICONS[name]||Puzzle;return <Icon {...props}/>;}
 export function pluginGroups(room){
  const groups=new globalThis.Map();
@@ -19,7 +19,7 @@ export function PluginCenter({room,onToggle,onRefresh,onGuide}){
  return <div className="page-scroll plugin-center"><div className="extension-intro"><div className="extension-symbol"><Blocks size={30} strokeWidth={1.4}/></div><div><span className="eyebrow">A SMALL HOST. AN OPEN WORLD.</span><h2>按需组装你的冒险桌。</h2><p>每个模块独立开关、独立状态。关掉地图或声音，故事照常进行。</p></div><span className="badge amber">SDK v1</span></div><div className="plugin-summary"><div><b>{room.plugins?.length||0}</b><span>已安装模块</span></div><div><b>{active}</b><span>本房已开启</span></div><div><ShieldCheck size={22}/><span>界面沙箱 · 后端显式信任</span></div><button onClick={onGuide}><Code2 size={16}/>开发插件<ChevronRight size={14}/></button></div><div className="section-title"><h2>模块清单</h2><button className="text-button" onClick={onRefresh}><RefreshCw size={13}/>刷新已安装清单</button></div><div className="plugins-grid">{(room.plugins||[]).map(p=><article className={'extension-card '+(p.enabled?'enabled':'')} key={p.id}><div className="extension-card-top"><span className="extension-card-icon"><PluginIcon name={p.icon} size={23} strokeWidth={1.5}/></span><span className="badge mini">{p.builtin?'随项目提供':'社区安装'} / {p.category||'扩展'}</span><button role="switch" aria-checked={p.enabled} aria-label={'开关 '+p.name} className={'plugin-switch '+(p.enabled?'on':'')} disabled={!room.is_owner||room.busy||!!p.blocked} onClick={()=>onToggle(p,!p.enabled)}><i/></button></div><h3>{p.name}<small>v{p.version}</small></h3><p>{p.description}</p><div className="extension-deps">{p.requires?.length?<><span>依赖</span>{p.requires.map(id=><code key={id}>{room.plugins.find(x=>x.id===id)?.name||id}</code>)}</>:<span>无强制依赖</span>}</div><footer><span className={'status-dot '+(!p.enabled?'muted-dot':'')}/>{p.blocked||p.fault||(p.enabled?'本房已启用':'关闭 · 数据保留')}<code>{p.id}</code></footer></article>)}</div><div className="extension-notice"><Puzzle size={20}/><div><h3>社区扩展有入口，不代表已凭空拥有一个社区。</h3><p>安装包放入插件目录即可发现；界面无需改宿主或重新打包。GitHub 仓库模板、发布清单、安装器和贡献规范已提供。未填写实际社区地址时，不展示虚假的在线市场。</p><button className="text-button" onClick={onGuide}>查看安装、开发与信任流程<ChevronRight size={13}/></button></div></div><p className="plugin-center-footnote">账号、权限、事件与回档属于最小内核，不可由插件拔掉或绕过。开关是房间配置，不随剧情回档；插件状态随快照恢复。</p></div>;
 }
 
-function palette(){const css=getComputedStyle(document.documentElement);return Object.fromEntries(['--bg','--surface','--surface-2','--border','--text','--muted','--faint','--gold','--green'].map(k=>[k,css.getPropertyValue(k).trim()]));}
+function palette(){const css=getComputedStyle(document.documentElement);return Object.fromEntries(['--bg','--surface','--surface-2','--surface-3','--border','--text','--muted','--faint','--gold','--gold-hover','--gold-bg','--green','--green-bg','--red','--red-bg'].map(k=>[k,css.getPropertyValue(k).trim()]));}
 function nonce(){return [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');}
 
 function PluginFrame({plugin,room,user,apply,reload,notify,theme}){
@@ -40,6 +40,16 @@ function PluginFrame({plugin,room,user,apply,reload,notify,theme}){
     if(m.kind==='notify'){notify(String(m.message||'').slice(0,400),m.level==='error'?'error':'success');return;}
     const current=roomRef.current;
     if(!current.plugins.find(p=>p.id===plugin.id)?.enabled)throw new Error('模块已关闭');
+    if(m.kind==='coreDice'){
+     if(!plugin.capabilities.includes('dice:roll')||!plugin.uses.includes('core.dice/v1'))throw new Error('插件未声明宿主骰子能力');
+     if(typeof m.expression!=='string'||m.expression.length>16)throw new Error('骰子表达式无效');
+     const key=requestKey();
+     const response=await api('/rooms/'+current.id+'/dice',{method:'POST',body:{expression:m.expression,source_plugin:plugin.id,request_key:key,expected_revision:current.revision}});
+     apply(response);
+     const result=response.events.find(event=>event.type==='dice'&&event.payload.request_key===key)?.payload;
+     if(!result)throw new Error('未收到对应的服务端骰子事件，请到事件档案核对');
+     answer(result);await updateContext();return;
+    }
     if(m.kind==='invoke'){
      const target=m.target||plugin.id,targetPlugin=current.plugins.find(p=>p.id===target);
      if(!targetPlugin?.enabled)throw new Error('目标模块未开启');
@@ -67,7 +77,7 @@ function PluginFrame({plugin,room,user,apply,reload,notify,theme}){
     }
     if(['asset','downloadAsset','audio','downloadAudio'].includes(m.kind)){
      if(!plugin.capabilities.includes('asset:read')&&!plugin.capabilities.includes('asset:audio')||!String(m.assetId||'').match(/^[a-f0-9]{32}$/))throw new Error('非法音频请求');
-     const response=await fetch('/api/rooms/'+current.id+'/assets/'+plugin.id+'/'+m.assetId,{headers:{Authorization:'Bearer '+getToken()}});
+     const response=await fetch('/api/rooms/'+current.id+'/assets/'+plugin.id+'/'+m.assetId,{headers:authHeaders()});
      if(!response.ok)throw new Error('音频不可用，可能已被回档、关闭或数据卷缺失');
      const blob=await response.blob();
      if(!plugin.capabilities.includes('asset:read')&&!blob.type.startsWith('audio/'))throw new Error('插件没有通用素材读取能力');

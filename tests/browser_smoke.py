@@ -2,6 +2,7 @@
 Run: python tests/browser_smoke.py --base-url http://127.0.0.1:8000
 The script creates isolated disposable test accounts and a room.
 """
+import os
 import argparse
 import asyncio
 import json
@@ -19,7 +20,7 @@ async def run(base_url, screenshots):
     output=Path(screenshots) if screenshots else None
     if output:output.mkdir(parents=True,exist_ok=True)
     async with async_playwright() as p:
-        browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+        browser=await p.chromium.launch(headless=True,args=['--no-sandbox'],executable_path=os.getenv('EMBER_CHROMIUM_PATH'))
         a=await browser.new_context(viewport={'width':1440,'height':960})
         b=await browser.new_context(viewport={'width':1280,'height':900})
         host=await a.new_page();player=await b.new_page()

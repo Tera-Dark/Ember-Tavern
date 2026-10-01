@@ -1,0 +1,49 @@
+{
+  "format": "ember.worldbook/v1",
+  "metadata": {
+    "id": "mist-harbor",
+    "name": "雾港 · 创作起步模板",
+    "version": "1.0.0",
+    "description": "地点、桌面规则与主持秘密的最小示例。请改为你自己的作品信息。",
+    "authors": [],
+    "license": "",
+    "tags": ["海港", "悬疑", "模板"]
+  },
+  "world": {
+    "title": "雾港 · 第十三盏灯",
+    "premise": "午夜将至，你们在余烬酒馆收到一枚黄铜钥匙。废弃灯塔即将亮起第十三盏灯。你们决定先调查哪里？",
+    "tone": "低魔、克制的悬疑；尊重玩家选择，危险有预兆",
+    "rule_system": "ember-light/v1",
+    "lore": [
+      {
+        "id": "table-boundaries",
+        "title": "桌面约定 · 危险与选择",
+        "kind": "rule",
+        "content": "危险行动先说明可能的代价；不要替玩家决定行动。不描写露骨伤害。玩家说暂停时，先停下并确认边界。此约定不改变服务端骰子或生命计算。",
+        "visibility": "public",
+        "activation": "always",
+        "priority": 100
+      },
+      {
+        "id": "harbor-ferry",
+        "title": "雾港渡船",
+        "kind": "lore",
+        "content": "午夜是渡船最后一班。船长阿洛每夜将一只空箱子运向灯塔，拒绝解释。港口有一间旧海关。",
+        "keys": ["渡船", "阿洛", "码头"],
+        "tags": "港口 灯塔",
+        "visibility": "public",
+        "activation": "keywords"
+      },
+      {
+        "id": "keeper-secret",
+        "title": "主持秘密 · 守塔人的去向",
+        "content": "守塔人仍在灯塔地窖，正试图修好报信装置。只有玩家真正调查地窖或救出他，才揭示这个事实。传闻不能直接作为已确认事实。",
+        "keys": ["守塔人", "地窖"],
+        "visibility": "gm",
+        "activation": "keywords",
+        "priority": 20
+      }
+    ],
+    "extensions": {}
+  }
+}

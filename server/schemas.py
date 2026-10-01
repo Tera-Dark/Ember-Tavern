@@ -1,11 +1,13 @@
 from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
+from pydantic import Field, field_validator
+from .contracts.common import Contract
+from .contracts.content import Attributes, CharacterData, LoreEntry, WorldData
 import re
 
 Attribute = Literal['strength', 'dexterity', 'knowledge', 'insight', 'charisma']
 
-class StrictModel(BaseModel):
-    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+class StrictModel(Contract):
+    pass
 
 class Register(StrictModel):
     username: str = Field(min_length=3, max_length=24, pattern=r'^[a-zA-Z0-9_]+$')
@@ -39,6 +41,7 @@ class Chat(StrictModel):
 
 class FreeDice(Revision):
     expression: str = Field(min_length=3, max_length=16)
+    source_plugin: str | None = Field(default=None, pattern=r'^[a-z][a-z0-9-]{2,47}$')
 
 class Rollback(Revision):
     target_event_id: str = Field(min_length=1, max_length=40)
@@ -47,48 +50,11 @@ class Rollback(Revision):
 class Assign(Revision):
     user_id: str | None = None
 
-class Attributes(StrictModel):
-    strength: int = Field(default=0, ge=-3, le=5)
-    dexterity: int = Field(default=0, ge=-3, le=5)
-    knowledge: int = Field(default=0, ge=-3, le=5)
-    insight: int = Field(default=0, ge=-3, le=5)
-    charisma: int = Field(default=0, ge=-3, le=5)
+class CharacterInput(Revision, CharacterData):
+    pass
 
-class CharacterInput(Revision):
-    name: str = Field(min_length=1, max_length=32)
-    archetype: str = Field(min_length=1, max_length=32)
-    description: str = Field(default='', max_length=1000)
-    avatar: Literal['feather', 'shield', 'sword', 'book', 'spark'] = 'feather'
-    hp: int = Field(default=12, ge=0, le=100)
-    max_hp: int = Field(default=12, ge=1, le=100)
-    stress: int = Field(default=0, ge=0, le=6)
-    attributes: Attributes = Field(default_factory=Attributes)
-    inventory: list[str] = Field(default_factory=list, max_length=24)
-
-    @field_validator('inventory')
-    @classmethod
-    def item_lengths(cls, value):
-        if any(not item.strip() or len(item) > 60 for item in value):
-            raise ValueError('每件物品需要1至60个字符')
-        return [item.strip() for item in value]
-
-    @model_validator(mode='after')
-    def hp_range(self):
-        if self.hp > self.max_hp:
-            raise ValueError('当前生命不能超过生命上限')
-        return self
-
-class LoreEntry(StrictModel):
-    id: str = Field(default='', max_length=40)
-    title: str = Field(min_length=1, max_length=80)
-    content: str = Field(min_length=1, max_length=3000)
-    tags: str = Field(default='', max_length=120)
-
-class WorldUpdate(Revision):
-    title: str = Field(min_length=1, max_length=80)
-    premise: str = Field(min_length=1, max_length=4000)
-    tone: str = Field(default='克制、神秘、有选择的代价', max_length=160)
-    lore: list[LoreEntry] = Field(default_factory=list, max_length=40)
+class WorldUpdate(Revision, WorldData):
+    pass
 
 class SettingsUpdate(Revision):
     ai_mode: Literal['demo', 'live']

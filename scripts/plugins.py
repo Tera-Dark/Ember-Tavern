@@ -2,15 +2,28 @@
 """Operator-only installer. Nothing fetched from GitHub is silently trusted or executed."""
 import argparse,hashlib,json,shutil,sys,tempfile,zipfile
 from pathlib import Path,PurePosixPath
-from urllib.request import urlopen
+from urllib.request import HTTPRedirectHandler, build_opener
+from urllib.parse import urlsplit
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 from server.config import ROOT,settings
 from server.plugin_runtime.manager import package_hash,ID_PATTERN
+from server.contracts.plugin import validate_manifest, needs_capability_grant
+
+class HTTPSOnlyRedirect(HTTPRedirectHandler):
+    def redirect_request(self,req,fp,code,msg,headers,newurl):
+        # Check every hop, not merely the final URL after urllib follows redirects.
+        if urlsplit(newurl).scheme.lower() != 'https':
+            raise ValueError('Remote redirects must stay HTTPS')
+        return super().redirect_request(req,fp,code,msg,headers,newurl)
+
+urlopen=build_opener(HTTPSOnlyRedirect()).open
 
 def install(source,expected=None,trust_backend=False,grant_capabilities=False):
     if source.startswith('https://'):
         if not expected:raise ValueError('Remote installs require an independently verified --sha256')
-        with urlopen(source,timeout=30) as response:data=response.read(10*1024*1024+1)
+        with urlopen(source,timeout=30) as response:
+            if not response.geturl().startswith('https://'):raise ValueError('Remote redirects must stay HTTPS')
+            data=response.read(10*1024*1024+1)
     else:data=Path(source).read_bytes()
     if len(data)>10*1024*1024:raise ValueError('Package exceeds 10 MiB')
     archive_hash=hashlib.sha256(data).hexdigest()
@@ -19,18 +32,20 @@ def install(source,expected=None,trust_backend=False,grant_capabilities=False):
         temporary=Path(temporary);bundle=temporary/'bundle.zip';bundle.write_bytes(data)
         target=temporary/'unpacked';target.mkdir()
         with zipfile.ZipFile(bundle) as archive:
+            names=[entry.filename for entry in archive.infolist()]
+            if len(names)>1000 or len(names)!=len(set(names)):raise ValueError('Too many or duplicate archive entries')
             if sum(i.file_size for i in archive.infolist())>20*1024*1024:raise ValueError('Unpacked package exceeds20 MiB')
             for entry in archive.infolist():
                 path=PurePosixPath(entry.filename)
-                if path.is_absolute() or '..' in path.parts or '\\' in entry.filename or ((entry.external_attr>>16)&0o170000)==0o120000:raise ValueError('Unsafe archive path / symlink')
+                if path.is_absolute() or not path.parts or ':' in path.parts[0] or '..' in path.parts or '\\' in entry.filename or ((entry.external_attr>>16)&0o170000)==0o120000:raise ValueError('Unsafe archive path / symlink')
             archive.extractall(target)
         manifests=list(target.rglob('plugin.json'))
         if len(manifests)!=1:raise ValueError('Exactly one plugin.json required')
-        folder=manifests[0].parent;m=json.loads(manifests[0].read_text());pid=m['id']
+        folder=manifests[0].parent;m=validate_manifest(json.loads(manifests[0].read_bytes()),folder);pid=m['id']
         if not ID_PATTERN.fullmatch(pid) or m.get('api_version')!=1:raise ValueError('Invalid ID or incompatible API version')
         if (ROOT/'plugins'/pid).exists():raise ValueError('Cannot replace bundled plugins using community installer')
         if m.get('backend') and not trust_backend:raise ValueError('Python backend is trusted server code. Review first and explicitly pass --trust-backend')
-        if any(not c.startswith('read:') for c in m.get('capabilities',[])) and not (trust_backend or grant_capabilities):raise ValueError('High-risk UI capability requires review and explicit --grant-capabilities')
+        if needs_capability_grant(m) and not (trust_backend or grant_capabilities):raise ValueError('High-risk UI capability requires review and explicit --grant-capabilities')
         destination=settings.data_dir/'plugins'/pid
         if destination.exists():raise ValueError('Already installed. Remove/backup this plugin with the server stopped before upgrading.')
         destination.parent.mkdir(parents=True,exist_ok=True)
@@ -45,6 +60,7 @@ def install(source,expected=None,trust_backend=False,grant_capabilities=False):
 def package(source,output):
     source=Path(source);output=Path(output)
     if not (source/'plugin.json').is_file():raise ValueError('plugin.json required')
+    validate_manifest(json.loads((source/'plugin.json').read_bytes()),source)
     if output.resolve().is_relative_to(source.resolve()):raise ValueError('Write package outside source folder')
     output.parent.mkdir(parents=True,exist_ok=True);files=[]
     for path in sorted(source.rglob('*')):

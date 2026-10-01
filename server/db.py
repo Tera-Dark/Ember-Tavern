@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import uuid
 from .config import settings
+from .state import load_state
 
 
 def now():
@@ -77,6 +78,10 @@ def init_db():
         CREATE TABLE IF NOT EXISTS room_plugins (
             room_id TEXT PRIMARY KEY REFERENCES rooms(id), flags_json TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS room_access (
+            room_id TEXT PRIMARY KEY REFERENCES rooms(id),
+            accepting_players INTEGER NOT NULL DEFAULT 1 CHECK(accepting_players IN (0,1))
+        );
         CREATE TABLE IF NOT EXISTS receipts (
             room_id TEXT NOT NULL REFERENCES rooms(id), user_id TEXT NOT NULL REFERENCES users(id),
             request_key TEXT NOT NULL, created_at TEXT NOT NULL,
@@ -88,14 +93,14 @@ def init_db():
 def append_event(con, room_id, event_type, text, state=None, actor=None, character_id=None, payload=None):
     room = con.execute('SELECT * FROM rooms WHERE id=?', (room_id,)).fetchone()
     if state is None:
-        state = json.loads(room['state_json'])
+        state = load_state(room['state_json'])
     seq = con.execute('SELECT COALESCE(MAX(seq),0)+1 FROM events WHERE room_id=?', (room_id,)).fetchone()[0]
     event_id, timestamp = uid(), now()
     from .plugin_runtime.manager import manager
     # Preserve concurrent extension updates during an asynchronous GM turn.
     # Rewinds are the sole intentional exception: restore their full snapshot.
     if event_type != 'rewind':
-        latest = json.loads(room['state_json'])
+        latest = load_state(room['state_json'])
         for pid, namespace in latest.get('_plugins', {}).items():
             if namespace['revision'] > state.get('_plugins', {}).get(pid, {}).get('revision', -1):
                 state.setdefault('_plugins', {})[pid] = namespace

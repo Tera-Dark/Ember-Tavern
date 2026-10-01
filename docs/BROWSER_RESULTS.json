@@ -1,7 +1,14 @@
 {
   "date": "2026-09-30",
+  "host_version": "2.2.0-beta.1",
+  "environment": {
+    "python": "3.11.2",
+    "chromium": "153.0.8010.0",
+    "production_lock": true
+  },
+  "paid_provider_calls": false,
   "core": {
-    "action_sync_ms": 76,
+    "action_sync_ms": 312,
     "status": "passed",
     "accounts": 2,
     "websocket_sync": true,
@@ -15,7 +22,7 @@
     "page_errors": []
   },
   "plugins": {
-    "drag_preview_sync_ms": 125,
+    "drag_preview_sync_ms": 128,
     "preview_not_persisted": true,
     "move_committed": true,
     "speech_bridge_stub": true,
@@ -25,6 +32,26 @@
     "hot_installed_ui_plugin": true,
     "mobile_no_horizontal_overflow": true,
     "mobile_voice_no_horizontal_overflow": true,
+    "page_errors": [],
+    "console_errors": []
+  },
+  "foundation": {
+    "preview_no_write_then_confirmed_import": true,
+    "gm_only_not_delivered_to_player": true,
+    "context_inspector": true,
+    "character_import_assignment_export": true,
+    "editor_preserves_extension_data": true,
+    "theme_is_local_no_story_mutation": true,
+    "theme_propagates_to_isolated_plugin": true,
+    "sdk_dice_is_server_authoritative": true,
+    "owner_readonly_plugin_does_not_receive_secrets_or_token": true,
+    "mobile_creator_no_horizontal_overflow": true,
+    "mobile_navigation_and_import_preview": true,
+    "creator_guide_available_in_app": true,
+    "lan_hint_invite_pause_rotate_remove_and_disconnect": true,
+    "proxy_reserved_authorization_compatible": true,
+    "status": "passed",
+    "browser": "153.0.8010.0",
     "page_errors": [],
     "console_errors": []
   }
