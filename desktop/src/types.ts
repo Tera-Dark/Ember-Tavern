@@ -5,5 +5,5 @@ export interface Room {id:string;title:string;code:string;revision:number;branch
 export interface Invite {id:string;identity:string;enabled:boolean;key_hint:string;user_id?:string;verification_key?:string}
 export interface State {launcher_version:string;platform:string;root:string;instances:Instance[];tasks:Task[]}
 export type RPCMethod='state'|'createInstance'|'instanceAction'|'configureInstance'|'settings'|'saveSettings'|'rooms'|'createRoom'|'room'|'roomAction'|'guestInvites'|'issueGuest'|'revokeGuest'|'installPlugin'|'openGame'|'external'|'clipboard'|'window';
-export interface Bridge {invoke<T=any>(method:RPCMethod,args?:Record<string,any>):Promise<T>}
+export interface Bridge {kind?:string;invoke<T=any>(method:RPCMethod,args?:Record<string,any>):Promise<T>}
 declare global {interface Window {emberDesktop?:Bridge; emberGame?:{session():Promise<{token:string}>}}}

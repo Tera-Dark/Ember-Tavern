@@ -31,7 +31,7 @@ def backup(output,bundle=False):
             for path in candidates:
                 if path.is_symlink():raise ValueError('Backup refuses symlinks')
                 if path.is_file() and '__pycache__' not in path.parts and not path.name.endswith('.tmp'):
-                    files.append((str(path.relative_to(settings.data_dir)),path))
+                    files.append((path.relative_to(settings.data_dir).as_posix(),path))
         manifest={'format':'ember-tavern-backup/v2','created_at':datetime.now(timezone.utc).isoformat(),'files':[]}
         staged=Path(folder)/'bundle.zip'
         with zipfile.ZipFile(staged,'w',zipfile.ZIP_DEFLATED) as archive:

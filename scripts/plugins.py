@@ -53,7 +53,7 @@ def install(source,expected=None,trust_backend=False,grant_capabilities=False):
         try:shutil.copytree(folder,staging);staging.rename(destination)
         finally:
             if staging.exists():shutil.rmtree(staging)
-        trust=settings.data_dir/'plugin-trust.json';trusted=json.loads(trust.read_text()) if trust.exists() else {}
+        trust=settings.data_dir/'plugin-trust.json';trusted=json.loads(trust.read_text(encoding='utf-8')) if trust.exists() else {}
         if trust_backend or grant_capabilities:trusted[pid]=package_hash(destination);temporary_trust=trust.with_suffix('.json.tmp');temporary_trust.write_text(json.dumps(trusted,indent=2));temporary_trust.replace(trust)
         return {'installed':pid,'archive_sha256':archive_hash,'package_hash':package_hash(destination),'backend_trusted':bool(m.get('backend') and trust_backend),'capabilities_granted':bool(trust_backend or grant_capabilities)}
 

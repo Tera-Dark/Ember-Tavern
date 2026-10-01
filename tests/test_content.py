@@ -43,7 +43,7 @@ def test_templates_match_generated_schema_and_runtime(client, kind):
     jsonschema.validate(parsed['document'], schema)
     assert client.get('/api/contracts/' + kind).json() == schema
     assert client.get('/api/creators/templates/' + kind).json() == document
-    assert json.loads((ROOT / 'registry' / f'{kind}.schema.json').read_text()) == schema
+    assert json.loads((ROOT / 'registry' / f'{kind}.schema.json').read_text(encoding='utf-8')) == schema
     assert parsed['warnings'] # The starter deliberately leaves licensing for its author.
 
 
@@ -353,7 +353,9 @@ def test_invalid_trace_cannot_publish_arbitrary_private_prompt_dumps(client, mon
 
 def test_deep_raw_json_body_is_rejected_without_internal_error(client):
     content='{"kind":"worldbook","document":'+'{"nested":'*2000+'{}'+'}'*2000+'}'
-    assert client.post('/api/content/validate',content=content,headers={'content-type':'application/json'}).status_code == 400
+    _, headers, _ = account(client)
+    # CPython 3.13 can parse deeper JSON; our bounded validator still rejects it.
+    assert client.post('/api/content/validate',content=content,headers={**headers,'content-type':'application/json'}).status_code in (400,422)
 
 
 def test_world_data_total_limit_and_oversized_merge_never_write(client):
@@ -383,7 +385,8 @@ def test_world_data_total_limit_and_oversized_merge_never_write(client):
 
 def test_creator_catalog_advertises_capability_bound_core_resources(client):
     catalog = client.get('/api/creators').json()
-    assert catalog['host_version'] == '2.2.0-beta.1'
+    from server.version import HOST_VERSION
+    assert catalog['host_version'] == HOST_VERSION
     assert {r['name']:r['capability'] for r in catalog['core_resources']}['core.dice/v1'] == 'dice:roll'
 
 

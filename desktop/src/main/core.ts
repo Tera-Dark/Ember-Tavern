@@ -8,14 +8,14 @@ export function id(value:unknown):string {if(typeof value!=='string'||!/^[a-f0-9
 export function allowedExternal(value:string):boolean {try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='github.com'&&!u.username&&!u.password;}catch{return false;}}
 export function trustedFrame(sender:number,expected:number,frameURL:string,expectedURL:string,isMain:boolean):boolean {return sender===expected&&isMain&&frameURL===expectedURL;}
 export interface SecretStorage {encode(value:string):string;decode(value:string):string}
-export interface EngineOptions {exe:string;root:string;host:string;commit:string;testPython?:string}
+export interface EngineOptions {exe:string;root:string;host:string;commit:string;testPython?:string;testSkip?:boolean}
 
 export class EngineClient {
   child?:ChildProcess;port=0;private token='';
   constructor(readonly options:EngineOptions){}
   async start():Promise<void>{
     const args=['--headless','--desktop-control','--data-dir',this.options.root,'--bundled-source',this.options.host,'--bundled-commit',this.options.commit];
-    if(this.options.testPython)args.push('--dev-python',this.options.testPython,'--dev-system-packages','--dev-skip-deps');
+    if(this.options.testPython){args.push('--dev-python',this.options.testPython);if(this.options.testSkip!==false)args.push('--dev-system-packages','--dev-skip-deps');}
     this.child=spawn(this.options.exe,args,{windowsHide:true,stdio:['ignore','pipe','pipe']});
     await new Promise<void>((resolve,reject)=>{let buffer='';let ready=false;const timer=setTimeout(()=>reject(new Error('部署引擎启动超时，请查看 launcher.log')),15000);
       this.child!.once('error',error=>{clearTimeout(timer);reject(error)});
@@ -30,7 +30,7 @@ export class EngineClient {
     const response=await fetch(origin+path,{method,headers:{Cookie:'ember-launcher='+this.token,Origin:origin,'X-Ember-Launcher':'1','Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(60000),redirect:'error'});
     const value=await response.json().catch(()=>({error:'部署引擎响应异常'}));if(!response.ok)throw new Error(value.error||'部署请求失败');return value;
   }
-  async stop(){if(!this.child||this.child.exitCode!==null)return;try{await this.request('/api/shutdown','POST',{});}catch{}await new Promise<void>(resolve=>{const timer=setTimeout(()=>{this.child?.kill();resolve()},10000);this.child!.once('exit',()=>{clearTimeout(timer);resolve()});});}
+  async stop(){if(!this.child||this.child.exitCode!==null)return;try{await this.request('/api/shutdown','POST',{});}catch{}if(this.child.exitCode!==null)return;await new Promise<void>(resolve=>{const timer=setTimeout(()=>{this.child?.kill();resolve()},10000);this.child!.once('exit',()=>{clearTimeout(timer);resolve()});});}
 }
 
 export class HostController {

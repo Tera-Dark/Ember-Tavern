@@ -23,7 +23,7 @@ ID_PATTERN=re.compile(r'^[a-z][a-z0-9-]{2,47}$')
 def reviewed_records(path):
     if not path.exists():return {}
     try:
-        value=json.loads(path.read_text())
+        value=json.loads(path.read_text(encoding='utf-8'))
         if not isinstance(value,dict) or any(not isinstance(k,str) or not isinstance(v,str) or not re.fullmatch(r'[a-f0-9]{64}',v) for k,v in value.items()):raise ValueError('invalid review record')
         return value
     except (ValueError,OSError):logger.warning('Invalid plugin review record; privileged plugins remain blocked: %s',path.name);return {}
