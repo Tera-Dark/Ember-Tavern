@@ -21,6 +21,7 @@ from .routes.rooms import router as rooms_router
 from .routes.dossiers import router as dossiers_router
 from .routes.history import router as history_router
 from .routes.membership import router as membership_router
+from .routes.guests import router as guests_router
 from .network import websocket_origin_allowed
 from .state import load_state
 from .rules import engine_for
@@ -92,7 +93,7 @@ async def lifespan(app):
 
 app = FastAPI(title='余烬酒馆 API',version=HOST_VERSION,lifespan=lifespan)
 app.add_middleware(RequestBodyLimit)
-for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router):
+for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router, guests_router):
     app.include_router(router)
 
 

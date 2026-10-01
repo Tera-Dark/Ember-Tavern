@@ -26,7 +26,7 @@ export default function App() {
   const [user,setUser] = useState(null);
   const [checking,setChecking] = useState(true);
   const [path,setPath] = useState(location.pathname);
-  const [auth,setAuth] = useState(null);
+  const [auth,setAuth] = useState(new URLSearchParams(location.search).has('guest') ? 'guest' : null);
   const [help,setHelp] = useState(false);
   const [toast,setToast] = useState(null);
   const [demoBusy,setDemoBusy] = useState(false);
@@ -38,7 +38,7 @@ export default function App() {
   const navigate = useCallback(p=>{history.pushState({},'',p);setPath(p);},[]);
   useEffect(()=>{const pop=()=>setPath(location.pathname);window.addEventListener('popstate',pop);return()=>window.removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(toast){const t=setTimeout(()=>setToast(null),6000);return()=>clearTimeout(t);}},[toast]);
-  useEffect(()=>{if(!getToken()){setChecking(false);return;}api('/auth/me').then(setUser).catch(()=>setToken('')).finally(()=>setChecking(false));},[]);
+  useEffect(()=>{let alive=true;(async()=>{try{if(window.emberGame){const session=await window.emberGame.session();setToken(session.token);}if(getToken()){const who=await api('/auth/me');if(alive)setUser(who);}}catch{setToken('');}finally{if(alive)setChecking(false);}})();return()=>{alive=false;};},[]);
   useEffect(()=>{const expired=()=>{setToken('');setUser(null);notify('登录已过期，请重新登录','error');};window.addEventListener('auth-expired',expired);return()=>window.removeEventListener('auth-expired',expired);},[notify]);
   useEffect(()=>{const code=new URLSearchParams(location.search).get('join');if(user&&code){api('/rooms/join',{method:'POST',body:{code:code.toUpperCase()}}).then(r=>navigate('/room/'+r.id)).catch(e=>{notify(e.message,'error');navigate('/');});}},[user,navigate,notify]);
   const authenticated = result => {setToken(result.token);setUser(result.user);setAuth(null);if(result.room_id)navigate('/room/'+result.room_id);};
@@ -49,20 +49,27 @@ export default function App() {
   return <>
     {user&&roomId ? <Room key={roomId} id={roomId} user={user} onHome={()=>navigate('/')} onLogout={logout} onHelp={()=>setHelp(true)} theme={theme} appearance={appearance} toggleTheme={toggleTheme} notify={notify}/> : <>
       <header className="site-header"><div className="header-container"><Brand onClick={()=>navigate('/')}/><nav><button className="active" onClick={()=>navigate('/')}>冒险大厅</button><button onClick={()=>setHelp(true)}>关于酒馆<ArrowRight size={13}/></button></nav><div className="header-actions"><button className="icon-button" onClick={toggleTheme} aria-label="切换明暗主题">{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}</button>{user?<><span className="user-name"><span className="user-dot">{user.display_name[0]}</span>{user.display_name}</span><button className="icon-button" onClick={logout} aria-label="退出登录"><LogOut size={18}/></button></>:<><Button className="ghost" onClick={()=>setAuth('login')}>登录</Button><Button className="primary compact" onClick={()=>setAuth('register')}>加入酒馆<ArrowRight size={14}/></Button></>}</div></div></header>
-      {user?<Lobby user={user} navigate={navigate} notify={notify}/>:<Landing onDemo={demo} busy={demoBusy} demoEnabled={publicModels?.demo_enabled!==false} onRegister={()=>setAuth('register')} onLogin={()=>setAuth('login')}/>}
+      {user?<Lobby user={user} navigate={navigate} notify={notify}/>:<Landing onDemo={demo} busy={demoBusy} demoEnabled={publicModels?.demo_enabled!==false} onRegister={()=>setAuth('register')} onLogin={()=>setAuth('login')} onGuest={()=>setAuth('guest')}/>}
     </>}
-    {auth&&<AuthModal mode={auth} setMode={setAuth} onClose={()=>setAuth(null)} onSuccess={authenticated} notify={notify}/>}
+    {auth==='guest'&&<GuestModal onClose={()=>setAuth(null)} onSuccess={authenticated} notify={notify}/>}
+    {auth&&auth!=='guest'&&<AuthModal mode={auth} setMode={setAuth} onClose={()=>setAuth(null)} onSuccess={authenticated} notify={notify}/>}
     {help&&<HelpModal onClose={()=>setHelp(false)}/>}
     {toast&&<div className={'toast '+toast.kind} role="status">{toast.kind==='error'?<AlertCircle size={18}/>:<CheckCircle2 size={18}/>}<span>{toast.message}</span><button aria-label="关闭通知" onClick={()=>setToast(null)}><X size={15}/></button></div>}
   </>;
 }
 
-function Landing({onDemo,busy,demoEnabled,onRegister,onLogin}) {
+function Landing({onDemo,busy,demoEnabled,onRegister,onLogin,onGuest}) {
   return <main className="landing">
-    <section className="landing-hero"><img src="/harbor.jpg" alt="薄雾笼罩的海港，酒馆的灯仍然亮着"/><div className="hero-shade"/><div className="landing-copy"><div className="eyebrow"><span className="tiny-line"/> A TABLE. A WORLD. A STORY.</div><h1>围坐一桌，<br/>走进另一个世界<span>。</span></h1><p>为故事留一盏灯。<br/>轻量的多人跑团工作台，让设定、角色与每一次选择，都有迹可循。</p><div className="hero-buttons"><Button className="primary" icon={busy?Loader2:Compass} onClick={demoEnabled?onDemo:onRegister} disabled={busy}>{busy?'正在准备冒险…':demoEnabled?'走进酒馆 · 免费试玩':'创建你的冒险'}</Button><Button className="outline" onClick={onRegister}>创建正式账号<ArrowRight size={16}/></Button></div><div className="hero-note"><CircleDot size={12}/>{demoEnabled?'无密钥可体验 · 演示主持明确标注 · 随时回档':'账号保存冒险 · 双模型协作 · 随时回档'}</div></div><div className="hero-caption"><span>ADVENTURE 001</span><b>雾港 · 第十三盏灯</b><small>灯塔亮起时，不要相信渡船上的人。</small></div><span className="hero-coordinate">47° N / A STORY YET UNTOLD</span></section>
+    <section className="landing-hero"><img src="/harbor.jpg" alt="薄雾笼罩的海港，酒馆的灯仍然亮着"/><div className="hero-shade"/><div className="landing-copy"><div className="eyebrow"><span className="tiny-line"/> A TABLE. A WORLD. A STORY.</div><h1>围坐一桌，<br/>走进另一个世界<span>。</span></h1><p>为故事留一盏灯。<br/>轻量的多人跑团工作台，让设定、角色与每一次选择，都有迹可循。</p><div className="hero-buttons"><Button className="primary" icon={busy?Loader2:Compass} onClick={demoEnabled?onDemo:onRegister} disabled={busy}>{busy?'正在准备冒险…':demoEnabled?'走进酒馆 · 免费试玩':'创建你的冒险'}</Button><Button className="outline" onClick={onGuest}>身份与密钥 · 受邀入座<KeyRound size={16}/></Button></div><div className="hero-note"><CircleDot size={12}/>{demoEnabled?'无密钥可体验 · 演示主持明确标注 · 随时回档':'账号保存冒险 · 双模型协作 · 随时回档'}</div></div><div className="hero-caption"><span>ADVENTURE 001</span><b>雾港 · 第十三盏灯</b><small>灯塔亮起时，不要相信渡船上的人。</small></div><span className="hero-coordinate">47° N / A STORY YET UNTOLD</span></section>
     <section className="landing-under"><div className="section-intro"><span className="eyebrow">MADE FOR YOUR NEXT SESSION</span><h2>少一点配置，多一点冒险。</h2><p>不必维护一整座工具迷宫。先让一桌人，顺利讲完一个故事。</p></div><div className="feature-row"><div className="feature"><Users/><b>一桌人，一个世界</b><p>邀请同伴加入房间，由房主分配角色。行动、骰子和状态实时同步。</p><span>01 / TOGETHER</span></div><div className="feature"><Sparkles/><b>模型协作，规则兜底</b><p>Gemini 提供世界知识，决策模型提出检定；真正的骰子由服务器掷出。</p><span>02 / GUIDED</span></div><div className="feature"><RotateCcw/><b>选择可以被重新书写</b><p>每个事件都有状态快照。回档后，废弃的未来不会再混入主持记忆。</p><span>03 / REMEMBERED</span></div></div></section>
     <footer className="site-footer"><span><Flame size={14}/> 余烬酒馆 · EMBER TAVERN</span><small>轻规则 v1 · 一个可运行的跑团 MVP</small><button onClick={onLogin}>已有账号？继续你的故事<ArrowRight size={14}/></button></footer>
   </main>;
+}
+
+function GuestModal({onClose,onSuccess,notify}) {
+  const [busy,setBusy]=useState(false);
+  async function submit(e){e.preventDefault();const form=new FormData(e.currentTarget);setBusy(true);try{onSuccess(await api('/auth/guest-join',{method:'POST',body:{identity:String(form.get('identity')).trim(),verification_key:String(form.get('verification_key')).trim()}}));}catch(error){notify(error.message,'error');}finally{setBusy(false);}}
+  return <Modal title="同伴入座" subtitle="无需安装客户端、无需注册账号。使用房主单独给你的身份与验证密钥。" onClose={onClose}><form className="form" onSubmit={submit}><label>你的身份<input name="identity" required maxLength={24} autoComplete="nickname" placeholder="房主设置的称呼，例如小王"/></label><label>验证密钥<input name="verification_key" type="password" required minLength={24} maxLength={80} autoComplete="off" placeholder="ET- 开头的个人密钥"/></label><div className="info-box small"><LockKeyhole size={16}/><p>密钥只在这台房主服务器有效。不要贴进公开群聊；普通 LAN HTTP 不加密，公网请用 VPN／HTTPS。</p></div><Button className="primary full" type="submit" disabled={busy} icon={busy?Loader2:ArrowRight}>验证并进入房间</Button></form></Modal>;
 }
 
 function AuthModal({mode,setMode,onClose,onSuccess,notify}) {

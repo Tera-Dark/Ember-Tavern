@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -69,10 +70,33 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	if update && old.Commit == "" {
 		return errors.New("先完成首次安装")
 	}
-	m.progress(t, 3, "读取 GitHub 版本信息")
+	m.progress(t, 3, "读取本体版本信息")
+	localSource := m.config.LocalSource
+	if old.Channel == "bundled" {
+		localSource = m.config.BundledSource
+	}
 	var release Release
-	if m.config.LocalSource != "" {
-		release = Release{Version: "2.1.0-beta.2", Commit: "local-development", Source: "local"}
+	if localSource != "" {
+		var manifest struct {
+			Version string `json:"app_version"`
+		}
+		data, e := os.ReadFile(filepath.Join(localSource, "launcher-manifest.json"))
+		if e != nil && !os.IsNotExist(e) {
+			return e
+		}
+		if e == nil {
+			if e = json.Unmarshal(data, &manifest); e != nil {
+				return e
+			}
+		}
+		if manifest.Version == "" {
+			manifest.Version = "local-development"
+		}
+		commit := m.config.BundledCommit
+		if commit == "" {
+			commit = "local-development"
+		}
+		release = Release{Version: manifest.Version, Commit: commit, Source: "bundled"}
 	} else {
 		release, err = Resolve(old.Channel)
 		if err != nil {
@@ -94,8 +118,8 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	defer os.RemoveAll(work)
 	candidate := filepath.Join(work, "app")
 	m.progress(t, 30, "拉取 GitHub 项目内容")
-	if m.config.LocalSource != "" {
-		err = copyTree(m.config.LocalSource, candidate)
+	if localSource != "" {
+		err = copyTree(localSource, candidate)
 	} else {
 		archive := filepath.Join(work, "source.zip")
 		err = Download(release.URL, archive, "", 120<<20, func(got, total int64) {

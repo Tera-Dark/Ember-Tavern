@@ -84,6 +84,19 @@ func (m *Manager) Check(id string) (Release, error) {
 	}
 	channel := i.Channel
 	m.mu.Unlock()
+	if channel == "bundled" {
+		var manifest struct {
+			Version string `json:"app_version"`
+		}
+		b, e := os.ReadFile(filepath.Join(m.config.BundledSource, "launcher-manifest.json"))
+		if e != nil {
+			return Release{}, e
+		}
+		if e = json.Unmarshal(b, &manifest); e != nil {
+			return Release{}, e
+		}
+		return Release{Version: manifest.Version, Commit: m.config.BundledCommit, Source: "bundled"}, nil
+	}
 	return Resolve(channel)
 }
 func Download(url, path, expected string, max int64, progress func(int64, int64)) error {

@@ -82,6 +82,12 @@ def init_db():
             room_id TEXT PRIMARY KEY REFERENCES rooms(id),
             accepting_players INTEGER NOT NULL DEFAULT 1 CHECK(accepting_players IN (0,1))
         );
+        CREATE TABLE IF NOT EXISTS guest_invites (
+            id TEXT PRIMARY KEY, room_id TEXT NOT NULL REFERENCES rooms(id),
+            identity TEXT NOT NULL, identity_key TEXT NOT NULL, key_hash TEXT UNIQUE NOT NULL,
+            key_hint TEXT NOT NULL, user_id TEXT REFERENCES users(id), enabled INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL, UNIQUE(room_id,identity_key)
+        );
         CREATE TABLE IF NOT EXISTS receipts (
             room_id TEXT NOT NULL REFERENCES rooms(id), user_id TEXT NOT NULL REFERENCES users(id),
             request_key TEXT NOT NULL, created_at TEXT NOT NULL,

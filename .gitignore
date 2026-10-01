@@ -20,3 +20,10 @@ launcher/instances/
 
 # Private creator drafts: publish intentionally in a separate content repository
 creations/
+
+# Electron bundles, installers and desktop test profiles
+desktop/dist/
+desktop/.vite/
+desktop/resources/bin/
+desktop/resources/host/
+desktop/.test-data/

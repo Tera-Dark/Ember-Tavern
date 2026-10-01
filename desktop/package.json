@@ -1,0 +1,9 @@
+{
+  "name":"ember-tavern-desktop","productName":"余烬桌面","version":"0.2.0-beta.1","private":true,
+  "description":"房主的余烬酒馆安装、房间与扩展管理器","author":"Ember Tavern contributors",
+  "main":".vite/main.cjs","type":"module",
+  "scripts":{"build":"vue-tsc --noEmit && vite build && vite build --config vite.main.config.ts","dev":"vite --host 0.0.0.0","test":"node --test tests/*.test.cjs","package:win":"npm run build && electron-builder --win nsis portable --x64","prepare:host":"node scripts/prepare-host.mjs"},
+  "dependencies":{"vue":"3.5.43","lucide-vue-next":"1.0.0"},
+  "devDependencies":{"electron":"44.5.1","electron-builder":"26.15.3","typescript":"5.9.3","vite":"6.4.3","@vitejs/plugin-vue":"5.2.4","vue-tsc":"3.2.6","@types/node":"22.19.15","@playwright/test":"1.63.0"},
+  "build":{"appId":"org.embertavern.desktop","productName":"余烬桌面","directories":{"output":"dist"},"files":[".vite/**/*","package.json"],"extraResources":[{"from":"resources/bin","to":"bin"},{"from":"resources/host","to":"host"}],"win":{"icon":"../launcher/winres/icon.ico","target":[{"target":"nsis","arch":["x64"]},{"target":"portable","arch":["x64"]}],"artifactName":"ember-desktop-${version}-${arch}-${target}.${ext}","signAndEditExecutable":true},"nsis":{"oneClick":false,"perMachine":false,"allowToChangeInstallationDirectory":true,"deleteAppDataOnUninstall":false,"createDesktopShortcut":true,"createStartMenuShortcut":true,"shortcutName":"余烬桌面"},"portable":{"artifactName":"ember-desktop-${version}-x64-portable.exe"},"publish":null}
+}

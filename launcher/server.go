@@ -16,10 +16,11 @@ import (
 )
 
 type API struct {
-	Manager *engine.Manager
-	Preview bool
-	Token   string
-	Open    func(string) error
+	Manager  *engine.Manager
+	Preview  bool
+	Token    string
+	Open     func(string) error
+	Shutdown func()
 }
 
 func nonce() string { b := make([]byte, 24); _, _ = rand.Read(b); return hex.EncodeToString(b) }
@@ -52,6 +53,14 @@ func (a *API) Handler() http.Handler {
 		}
 		http.SetCookie(w, &http.Cookie{Name: "ember-launcher", Value: a.Token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 86400})
 		http.Redirect(w, r, "/", 303)
+	})
+	mux.HandleFunc("POST /api/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		if a.Shutdown == nil {
+			failure(w, errors.New("此引擎未提供关闭控制"))
+			return
+		}
+		answer(w, 202, map[string]bool{"stopping": true})
+		go a.Shutdown()
 	})
 	mux.HandleFunc("GET /api/state", func(w http.ResponseWriter, r *http.Request) {
 		answer(w, 200, map[string]any{"launcher_version": engine.LauncherVersion, "repository": engine.RepositoryURL, "root": a.Manager.Root(), "platform": platformName(), "preview": a.Preview, "instances": a.Manager.List(), "tasks": a.Manager.Tasks()})
@@ -188,6 +197,24 @@ func (a *API) Handler() http.Handler {
 			return
 		}
 		answer(w, 200, map[string]bool{"saved": true})
+	})
+	mux.HandleFunc("POST /api/instances/{id}/plugin-install", func(w http.ResponseWriter, r *http.Request) {
+		var v struct {
+			Path  string `json:"path"`
+			SHA   string `json:"sha256"`
+			Trust bool   `json:"trust_backend"`
+			Grant bool   `json:"grant_capabilities"`
+		}
+		if e := decode(r, &v); e != nil {
+			failure(w, e)
+			return
+		}
+		task, e := a.Manager.InstallPlugin(r.PathValue("id"), v.Path, v.SHA, v.Trust, v.Grant)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
 	})
 	mux.HandleFunc("GET /api/instances/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
 		if _, e := a.Manager.Get(r.PathValue("id")); e != nil {

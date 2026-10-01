@@ -15,24 +15,31 @@ def user_public(user):
     return {'id': user['id'], 'username': user['username'], 'display_name': user['display_name'], 'guest': bool(user['guest'])}
 
 
-def create_user(username, display_name, password, guest=False):
+def insert_user(con, username, display_name, password, guest=False):
     salt = secrets.token_hex(16)
     user_id = uid()
     encoded = password_hash(password, salt)
+    con.execute('INSERT INTO users VALUES (?,?,?,?,?,?,?)',
+                (user_id, username.lower(), display_name, encoded, salt, int(guest), now()))
+    return dict(con.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone())
+
+
+def create_user(username, display_name, password, guest=False):
     with connection() as con:
-        con.execute('INSERT INTO users VALUES (?,?,?,?,?,?,?)',
-                    (user_id, username.lower(), display_name, encoded, salt, int(guest), now()))
-        user = con.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
-    return dict(user)
+        return insert_user(con, username, display_name, password, guest)
+
+
+def insert_session(con, user):
+    token = secrets.token_urlsafe(40)
+    con.execute('DELETE FROM sessions WHERE expires_at<?', (time.time(),))
+    con.execute('INSERT INTO sessions VALUES (?,?,?)',
+                (hashlib.sha256(token.encode()).hexdigest(), user['id'], time.time() + settings.session_hours * 3600))
+    return token
 
 
 def issue_session(user):
-    token = secrets.token_urlsafe(40)
     with connection() as con:
-        con.execute('DELETE FROM sessions WHERE expires_at<?', (time.time(),))
-        con.execute('INSERT INTO sessions VALUES (?,?,?)',
-                    (hashlib.sha256(token.encode()).hexdigest(), user['id'], time.time() + settings.session_hours * 3600))
-    return token
+        return insert_session(con, user)
 
 
 def user_from_token(token):

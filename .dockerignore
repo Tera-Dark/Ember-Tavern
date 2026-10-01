@@ -15,3 +15,6 @@ static
 
 .cache
 creations
+
+# Electron is packaged separately, not shipped in the server image
+desktop/
