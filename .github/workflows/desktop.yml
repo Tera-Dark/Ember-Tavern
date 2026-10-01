@@ -215,6 +215,7 @@ jobs:
       - name: Wizard / guest / assignment / restart / recovery browser acceptance
         run: |
           python tests/browser_m0.py --seed
+          export EMBER_DESKTOP_PREVIEW_PYTHON="$(python -c 'import sys; print(sys.executable)')"
           node desktop/scripts/preview.mjs > artifacts-desktop-preview.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true; cat artifacts-desktop-preview.log' EXIT
