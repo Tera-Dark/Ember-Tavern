@@ -1,8 +1,8 @@
 // Explicit development preview with isolated QA data; not a production management server.
 import {createServer} from 'node:http';import {createRequire} from 'node:module';import {readFile,mkdir} from 'node:fs/promises';import {resolve,join,extname} from 'node:path';
 const require=createRequire(import.meta.url);const {EngineClient,HostController}=require('../.vite/core.cjs');const repo=resolve(import.meta.dirname,'../..');
-const root=join(repo,'artifacts/desktop-preview');await mkdir(root,{recursive:true});
-const engine=new EngineClient({exe:join(repo,'desktop/resources/bin/ember-engine'),root,host:join(repo,'desktop/resources/host'),commit:'development-preview',testPython:join(repo,'.venv/bin/python'),testSkip:false});await engine.start();
+const root=process.env.EMBER_DESKTOP_PREVIEW_ROOT?resolve(process.env.EMBER_DESKTOP_PREVIEW_ROOT):join(repo,'artifacts/desktop-preview');await mkdir(root,{recursive:true});
+const engine=new EngineClient({exe:join(repo,'desktop/resources/bin/ember-engine'),root,host:join(repo,'desktop/resources/host'),commit:JSON.parse(await readFile(join(repo,'desktop/resources/host/desktop-bundle.json'),'utf8')).commit,build:JSON.parse(await readFile(join(repo,'desktop/resources/host/desktop-bundle.json'),'utf8')),testPython:join(repo,'.venv/bin/python'),testSkip:false});await engine.start();
 const controller=new HostController(engine,{encode:value=>Buffer.from(value).toString('base64'),decode:value=>Buffer.from(value,'base64').toString()});
 const server=createServer(async(req,res)=>{try{
  const path=new URL(req.url,'http://preview').pathname;

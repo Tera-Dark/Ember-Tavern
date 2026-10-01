@@ -6,8 +6,14 @@ from ..schemas import RoomCreate, JoinRoom
 from ..state import load_state
 from ..runtime import throttle, pack_room, finish
 from ..room_service import create_room
+from ..starters import starter_worlds
 
 router = APIRouter()
+
+
+@router.get('/api/starters')
+def list_starters(user=Depends(current_user)):
+    return starter_worlds()
 
 
 @router.get('/api/rooms')

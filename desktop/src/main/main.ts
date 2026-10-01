@@ -4,7 +4,7 @@ import {pathToFileURL} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {EngineClient,HostController,allowedExternal,trustedFrame,id} from './core';
-import type {RPCMethod} from '../types';
+import type {RPCMethod,BuildInfo} from '../types';
 
 let window:BrowserWindow;let engine:EngineClient;let controller:HostController;let rendererURL='';let closing=false;
 const games=new Map<number,{instanceId:string;origin:string}>();
@@ -29,8 +29,10 @@ app.whenReady().then(async()=>{
   Menu.setApplicationMenu(null);
   const resources=app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');
   const root=process.env.EMBER_DESKTOP_TEST_ROOT||(process.platform==='win32'?join(process.env.LOCALAPPDATA||app.getPath('userData'),'EmberTavern'):join(app.getPath('userData'),'instances'));
-  let commit='bundled';try{commit=JSON.parse(await readFile(join(resources,'host','desktop-bundle.json'),'utf8')).commit;}catch{}
-  engine=new EngineClient({exe:join(resources,'bin',process.platform==='win32'?'ember-engine.exe':'ember-engine'),root,host:join(resources,'host'),commit,testPython:process.env.EMBER_DESKTOP_TEST_MODE==='1'?process.env.EMBER_DESKTOP_TEST_PYTHON:undefined});
+  const build:BuildInfo=JSON.parse(await readFile(join(resources,'host','desktop-bundle.json'),'utf8'));
+  if(build.format!=='ember.desktop-build/v1'||!/^([a-f0-9]{40})$/.test(build.commit)||build.desktop_version!==app.getVersion()||typeof build.source_dirty!=='boolean')throw new Error('打包来源清单缺失或与桌面版本不符；请保留实例数据并使用完整安装包。');
+  const commit=build.commit;
+  engine=new EngineClient({exe:join(resources,'bin',process.platform==='win32'?'ember-engine.exe':'ember-engine'),root,host:join(resources,'host'),commit,build,testPython:process.env.EMBER_DESKTOP_TEST_MODE==='1'?process.env.EMBER_DESKTOP_TEST_PYTHON:undefined});
   try{await engine.start();}catch(error){if(process.env.EMBER_DESKTOP_TEST_MODE==='1')console.error('ENGINE_START_FAILED',String(error));else dialog.showErrorBox('余烬桌面无法启动',String(error));app.quit();return;}
   controller=new HostController(engine,{encode:value=>{if(!safeStorage.isEncryptionAvailable()||(process.platform==='linux'&&safeStorage.getSelectedStorageBackend()==='basic_text'))throw new Error('系统凭据加密不可用；不会明文保存房主密码');return safeStorage.encryptString(value).toString('base64');},decode:value=>safeStorage.decryptString(Buffer.from(value,'base64'))});
   window=new BrowserWindow({width:1380,height:920,minWidth:1020,minHeight:720,title:'余烬桌面',backgroundColor:'#131713',autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true}});

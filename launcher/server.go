@@ -63,7 +63,22 @@ func (a *API) Handler() http.Handler {
 		go a.Shutdown()
 	})
 	mux.HandleFunc("GET /api/state", func(w http.ResponseWriter, r *http.Request) {
-		answer(w, 200, map[string]any{"launcher_version": engine.LauncherVersion, "repository": engine.RepositoryURL, "root": a.Manager.Root(), "platform": platformName(), "preview": a.Preview, "instances": a.Manager.List(), "tasks": a.Manager.Tasks()})
+		answer(w, 200, map[string]any{"launcher_version": engine.LauncherVersion, "repository": engine.RepositoryURL, "root": a.Manager.Root(), "platform": platformName(), "preview": a.Preview, "instances": a.Manager.List(), "tasks": a.Manager.Tasks(), "index_recovery": a.Manager.IndexRecovery(), "bundled_commit": a.Manager.BundledCommit()})
+	})
+	mux.HandleFunc("POST /api/index-recovery/{entry}", func(w http.ResponseWriter, r *http.Request) {
+		var v struct {
+			ConfirmStopped bool `json:"confirm_stopped"`
+		}
+		if e := decode(r, &v); e != nil {
+			failure(w, e)
+			return
+		}
+		row, e := a.Manager.RecoverIndexEntry(r.PathValue("entry"), v.ConfirmStopped)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, row)
 	})
 	mux.HandleFunc("POST /api/instances", func(w http.ResponseWriter, r *http.Request) {
 		var v struct {

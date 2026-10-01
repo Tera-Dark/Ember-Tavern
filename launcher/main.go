@@ -61,6 +61,9 @@ func main() {
 	log.SetOutput(logFile)
 	manager, e := engine.New(engine.Config{Root: *root, Python: *python, LocalSource: *source, BundledSource: *bundled, BundledCommit: *commit, SkipDependencies: *skip, SystemPackages: *system, Preview: *preview})
 	if e != nil {
+		if *desktop {
+			_ = json.NewEncoder(os.Stdout).Encode(map[string]any{"ready": false, "code": "startup_state"})
+		}
 		log.Fatal(e)
 	}
 	defer manager.Close()

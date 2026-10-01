@@ -1,4 +1,4 @@
-"""Gemini = setting/consistency advisor. OpenAI-compatible model = structured GM decision.
+"""Optional Gemini = setting/consistency advisor. OpenAI-compatible model = structured GM decision.
 Neither adapter is allowed to write game state or roll dice.
 """
 import json
@@ -17,7 +17,7 @@ class AIError(Exception):
 
 
 def model_status():
-    return {'live_ready':settings.live_ready, 'demo_enabled':settings.enable_demo,
+    return {'single_ready':settings.single_ready, 'live_ready':settings.live_ready, 'demo_enabled':settings.enable_demo,
             'knowledge':{'provider':'Gemini', 'model':settings.gemini_model or '尚未指定', 'configured':bool(settings.gemini_api_key and settings.gemini_model)},
             'decision':{'provider':'OpenAI 兼容接口', 'model':settings.decision_model or '尚未指定',
                         'configured':bool(settings.decision_api_key and settings.decision_model)}}
@@ -120,16 +120,23 @@ async def run_gm(room_id, state, mode):
         return decision, {'mode':'demo','label':'演示主持 · 规则脚本（未调用外部模型）',
                           'retrieval_count':len(context['retrieved']),'context_ids':[x['id'] for x in context['retrieved']], 'context_selection':selection,
                           'duration_ms':round((time.perf_counter()-start)*1000)}
-    if not settings.live_ready:
+    if mode not in ('single','live'):
+        raise AIError('不支持的主持模式，未调用外部模型。')
+    if mode == 'single' and not settings.single_ready:
+        raise AIError('单模型配置不完整：需要决策接口密钥和模型名称，不需要 Gemini。')
+    if mode == 'live' and not settings.live_ready:
         raise AIError('双模型配置不完整：需要 Gemini 密钥以及决策接口密钥和模型名称。')
     try:
-        knowledge = await gemini_knowledge(context)
+        knowledge = await gemini_knowledge(context) if mode == 'live' else ''
         middle = time.perf_counter()
         decision = await structured_decision(context, knowledge)
-        return decision, {'mode':'live','label':'双模型主持', 'knowledge':{'provider':'Gemini','model':settings.gemini_model,'duration_ms':round((middle-start)*1000)},
-                          'decision':{'provider':'OpenAI 兼容','model':settings.decision_model,'duration_ms':round((time.perf_counter()-middle)*1000)},
-                          'retrieval_count':len(context['retrieved']),'context_ids':[x['id'] for x in context['retrieved']], 'context_selection':selection,
-                          'duration_ms':round((time.perf_counter()-start)*1000)}
+        trace = {'mode':mode,'label':'真实单模型主持' if mode == 'single' else '双模型主持',
+                 'decision':{'provider':'OpenAI 兼容','model':settings.decision_model,'duration_ms':round((time.perf_counter()-middle)*1000)},
+                 'retrieval_count':len(context['retrieved']),'context_ids':[x['id'] for x in context['retrieved']], 'context_selection':selection,
+                 'duration_ms':round((time.perf_counter()-start)*1000)}
+        if mode == 'live':
+            trace['knowledge']={'provider':'Gemini','model':settings.gemini_model,'duration_ms':round((middle-start)*1000)}
+        return decision, trace
     except httpx.TimeoutException:
         raise AIError('模型调用超时。已提交的行动或骰子结果保留，可重试主持。')
     except httpx.HTTPError:

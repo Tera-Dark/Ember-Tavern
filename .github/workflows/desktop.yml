@@ -2,10 +2,17 @@ name: Desktop build and Windows package
 on:
   push:
     branches: ['**']
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', '.github/workflows/desktop.yml']
+    tags: ['desktop-v*']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', '.github/workflows/desktop.yml']
   pull_request:
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', '.github/workflows/desktop.yml']
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'After all checks, publish a NEW immutable version (never replace assets)'
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 jobs:
@@ -31,6 +38,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Verify coordinated desktop / engine / host versions
+        run: node desktop/scripts/release-metadata.mjs versions
       - name: Install production and test dependencies
         run: pip install -r requirements-lock.txt -r requirements-dev.txt
       - name: Verify backend and print failure summary
@@ -113,6 +122,8 @@ jobs:
             gh api --method POST "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" --input smoke-error.json
             exit $code
           }
+      - name: Bind installed smoke and EXEs to this exact source commit
+        run: node desktop/scripts/release-metadata.mjs create
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -121,6 +132,7 @@ jobs:
             desktop/dist/*.exe
             desktop/dist/*.sha256
             desktop-smoke.json
+            desktop-provenance.json
             desktop-smoke.json.*
             desktop-smoke.json.engine.log
             desktop-smoke.log
@@ -128,13 +140,18 @@ jobs:
             desktop-package.log
           retention-days: 14
   publish:
-    needs: windows
-    # Explicit owner-requested release marker, on this fixed working branch only.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/arena/01a0f297-ember-tavern' && contains(github.event.head_commit.message, '[desktop-release]')
+    needs: [windows, first-table-browser]
+    # Ordinary branch pushes / PRs only build artifacts. A tag or explicit
+    # maintainer dispatch is required; no commit-message release shortcut.
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/desktop-v')) || (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/download-artifact@v4
         with:
           name: ember-desktop-windows-x64
@@ -146,13 +163,18 @@ jobs:
           COMMIT: ${{ github.sha }}
         run: |
           (cd package/desktop/dist && for sum in *.sha256; do sed 's/\r$//' "$sum" | sha256sum --check --strict -; done)
-          python3 -c 'import json; r=json.load(open("package/desktop-smoke.json")); assert r["status"]=="passed" and r["graceful_shutdown"], r'
-          TAG=desktop-v0.2.0-beta.1
+          node desktop/scripts/release-metadata.mjs verify package "$COMMIT"
+          VERSION=$(node desktop/scripts/release-metadata.mjs versions | python3 -c 'import sys,json; print(json.load(sys.stdin)["desktop_version"])')
+          TAG="desktop-v$VERSION"
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF" != "refs/tags/$TAG" ]]; then
+            echo 'Tag and package version differ; publication refused.'
+            exit 1
+          fi
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             echo 'Release exists. Do not silently replace reviewed binaries.'
             exit 1
           fi
-          gh release create "$TAG" --repo "$REPO" --target "$COMMIT" --prerelease --title '余烬桌面 0.2.0-beta.1 · 房主安装器' --notes 'Electron + TypeScript + Vite + Vue。含 Windows x64 安装器／便携 EXE 与 SHA256。房主安装，同伴浏览器身份＋密钥入座。未代码签名；首次 Python／依赖安装需网络，实际设备／防火墙与供应商听感需用户确认。' package/desktop/dist/*.exe package/desktop/dist/*.sha256 package/desktop-smoke.json
+          gh release create "$TAG" --repo "$REPO" --target "$COMMIT" --prerelease --title "余烬桌面 $VERSION · 房主安装器" --notes "Electron + TypeScript + Vite + Vue。来源：$COMMIT。含安装器／便携 EXE、SHA256、此构建的真实安装冒烟与 desktop-provenance.json。房主安装，同伴浏览器身份＋密钥入座。未代码签名；首次环境下载需网络；实际多人、网卡／防火墙和付费供应商仍需实机验证。" package/desktop/dist/*.exe package/desktop/dist/*.sha256 package/desktop-smoke.json package/desktop-provenance.json
       - name: Diagnose release artifact layout
         if: failure()
         env:
@@ -161,3 +183,48 @@ jobs:
           files=$(find package -maxdepth 4 -type f | sort)
           gh api --method POST "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body="Desktop publish failed. Artifact layout (CI-only data):
           $files"
+
+  first-table-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GEMINI_API_KEY: ''
+      DECISION_API_KEY: ''
+      TTS_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r requirements-lock.txt -r requirements-dev.txt
+      - run: ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci --prefix desktop
+      - run: npm ci --prefix web && npm run build --prefix web
+      - run: npm run build --prefix desktop && npm test --prefix desktop
+      - run: python -m playwright install --with-deps chromium
+      - name: Prepare isolated real host and private engine
+        run: |
+          mkdir -p desktop/resources/bin
+          (cd launcher && go build -o ../desktop/resources/bin/ember-engine .)
+          npm run prepare:host --prefix desktop
+      - name: Wizard / guest / assignment / restart / recovery browser acceptance
+        run: |
+          python tests/browser_m0.py --seed
+          node desktop/scripts/preview.mjs > artifacts-desktop-preview.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true; cat artifacts-desktop-preview.log' EXIT
+          python -c "import urllib.request,time; exec('for attempt in range(100):\n try:\n  urllib.request.urlopen(\"http://127.0.0.1:8765\");break\n except OSError:time.sleep(.1)\nelse:raise SystemExit(\"preview did not start\")')"
+          python tests/browser_m0.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-table-browser-evidence
+          path: |
+            artifacts/desktop-m0-evidence/
+            artifacts-desktop-preview.log
+          retention-days: 7

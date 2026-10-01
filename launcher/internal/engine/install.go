@@ -267,7 +267,11 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	if _, e := os.Stat(oldDB); e == nil {
 		snapshotCode := "import sqlite3,sys; src=sqlite3.connect(\"file:\"+sys.argv[1]+\"?mode=ro\",uri=True); dst=sqlite3.connect(sys.argv[2]); src.backup(dst); dst.close(); src.close()"
 		os.Remove(filepath.Join(testData, "tavern.sqlite3"))
-		if err = m.run(t, 3*time.Minute, app, m.childEnv(id), oldRuntime, "-c", snapshotCode, oldDB, filepath.Join(testData, "tavern.sqlite3")); err != nil {
+		snapshotPython := oldRuntime
+		if snapshotPython == "" {
+			snapshotPython = python
+		} // Recovered data, first installation: no prior runtime exists.
+		if err = m.run(t, 3*time.Minute, app, m.childEnv(id), snapshotPython, "-c", snapshotCode, oldDB, filepath.Join(testData, "tavern.sqlite3")); err != nil {
 			rollback()
 			return err
 		}

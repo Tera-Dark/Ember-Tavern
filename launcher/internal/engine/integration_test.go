@@ -149,3 +149,72 @@ func TestRealInstallUpdateRollbackAndData(t *testing.T) {
 		t.Fatal("did not stop")
 	}
 }
+
+func TestLegacyDataCanBeReinstalledWithoutAPriorRuntime(t *testing.T) {
+	source := fixtureApp(t)
+	m := integrationManager(t, source)
+	original, e := m.Create("legacy integration", "main", 0, false)
+	if e != nil {
+		t.Fatal(e)
+	}
+	task, e := m.Install(original.ID, true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	waitTask(t, m, task, true)
+	py := m.installedPython(original.ID)
+	command := exec.Command(py, "-c", `import sqlite3,sys; c=sqlite3.connect(sys.argv[1]); c.execute("insert into records values ('legacy-world-survives')");c.commit();c.close()`, filepath.Join(original.DataPath, "tavern.sqlite3"))
+	if output, e := command.CombinedOutput(); e != nil {
+		t.Fatal(e, string(output))
+	}
+	task, e = m.Stop(original.ID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	waitTask(t, m, task, true)
+	config := m.config
+	root := m.Root()
+	m.Close()
+	legacy := original.Instance
+	legacy.ID = "old-world-folder"
+	if e = os.Rename(filepath.Join(root, "instances", original.ID), filepath.Join(root, "instances", legacy.ID)); e != nil {
+		t.Fatal(e)
+	}
+	if e = atomicJSON(filepath.Join(root, "launcher.json"), state{Schema: 1, Instances: []Instance{legacy}}); e != nil {
+		t.Fatal(e)
+	}
+	restored, e := New(config)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer restored.Close()
+	entry := restored.IndexRecovery().Entries[0]
+	recovered, e := restored.RecoverIndexEntry(entry.EntryID, true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if restored.installedPython(recovered.ID) != "" {
+		t.Fatal("legacy environment was adopted")
+	}
+	task, e = restored.Install(recovered.ID, true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	waitTask(t, restored, task, true)
+	view, e := restored.Get(recovered.ID)
+	if e != nil || view.Status != "running" {
+		t.Fatal("recovered runtime did not start", e, view.Error)
+	}
+	response, e := http.Get(view.URL + "/records")
+	if e != nil {
+		t.Fatal(e)
+	}
+	body, _ := io.ReadAll(response.Body)
+	response.Body.Close()
+	if !strings.Contains(string(body), "legacy-world-survives") {
+		t.Fatal("restored DB lost records", string(body))
+	}
+	if _, e = os.Stat(filepath.Join(root, "instances", legacy.ID, "data", "tavern.sqlite3")); e != nil {
+		t.Fatal("original legacy data removed", e)
+	}
+}

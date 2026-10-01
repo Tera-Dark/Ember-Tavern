@@ -45,6 +45,15 @@ func (m *Manager) SaveSettings(id string, changes map[string]string) error {
 		return errors.New("停止实例后再修改配置")
 	}
 	values := m.configValues(id)
+	if e := applySettings(values, changes); e != nil {
+		return e
+	}
+	return atomicJSON(filepath.Join(m.path(id), "settings.json"), values)
+}
+
+// Shared by explicit settings edits and conservative legacy recovery. Error
+// messages name no supplied value, so provider credentials cannot be echoed.
+func applySettings(values, changes map[string]string) error {
 	for k, v := range changes {
 		if !AllowedSettings[k] {
 			return errors.New("不支持的配置项")
@@ -72,7 +81,7 @@ func (m *Manager) SaveSettings(id string, changes map[string]string) error {
 		}
 		values[k] = v
 	}
-	return atomicJSON(filepath.Join(m.path(id), "settings.json"), values)
+	return nil
 }
 func isSecret(key string) bool {
 	return strings.Contains(key, "KEY") || strings.Contains(key, "TOKEN") || strings.Contains(key, "PASSWORD")

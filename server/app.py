@@ -28,6 +28,7 @@ from .rules import engine_for
 from .contracts.hosting import GMTrace
 from .http_limits import RequestBodyLimit
 from .version import HOST_VERSION
+from .hosting_modes import validate_hosting_mode, MODE_LABELS
 
 logger = logging.getLogger('ember')
 from .runtime import (locks, rate_windows, hub, throttle, get_room_member, check_revision,
@@ -267,14 +268,9 @@ async def update_settings(room_id:str,data:SettingsUpdate,user=Depends(current_u
             room = get_room_member(con,room_id,user,True)
             if not receipt(con,room_id,user,data.request_key):
                 check_revision(room,data.expected_revision)
-                if data.ai_mode=='live' and user['guest']:
-                    raise HTTPException(403,'体验账号不能启用付费模型，请使用正式账号')
-                if data.ai_mode=='live' and not settings.live_ready:
-                    raise HTTPException(422,'双模型尚未配置完整，请先设置服务端 .env')
-                if data.ai_mode=='demo' and not settings.enable_demo:
-                    raise HTTPException(403,'此部署未开启演示模式')
+                validate_hosting_mode(user,data.ai_mode)
                 con.execute('UPDATE rooms SET ai_mode=? WHERE id=?',(data.ai_mode,room_id))
-                append_event(con,room_id,'system',f"主持模式切换为{'真实双模型' if data.ai_mode=='live' else '演示规则脚本'}。",actor=user)
+                append_event(con,room_id,'system',f"主持模式切换为{MODE_LABELS[data.ai_mode]}。",actor=user)
                 save_receipt(con,room_id,user,data.request_key)
     return await finish(room_id,user)
 

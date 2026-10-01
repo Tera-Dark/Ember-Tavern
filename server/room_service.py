@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from .config import settings
 from .db import connection, uid, now, dump, append_event
 from .domain import initial_state
+from .hosting_modes import validate_hosting_mode
 
 
 def invitation_code(con):
@@ -15,12 +16,7 @@ def invitation_code(con):
 
 
 def create_room(user, data):
-    if data.ai_mode == 'live' and user['guest']:
-        raise HTTPException(403, '体验账号不能启用付费模型，请使用正式账号')
-    if data.ai_mode == 'live' and not settings.live_ready:
-        raise HTTPException(422, '请先在服务端 .env 配置两个模型，再开启真实双模型模式')
-    if data.ai_mode == 'demo' and not settings.enable_demo:
-        raise HTTPException(403, '此部署未开启演示模式')
+    validate_hosting_mode(user,data.ai_mode)
     room_id, timestamp = uid(), now()
     state = initial_state(data.preset,data.premise)
     with connection() as con:
