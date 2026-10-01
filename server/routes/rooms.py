@@ -1,6 +1,6 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException
-from ..auth import current_user
+from ..auth import current_user, named_guest
 from ..db import connection, now
 from ..schemas import RoomCreate, JoinRoom
 from ..state import load_state
@@ -28,12 +28,16 @@ def list_rooms(user=Depends(current_user)):
 
 @router.post('/api/rooms',status_code=201)
 def new_room(data:RoomCreate,user=Depends(current_user)):
+    if named_guest(user):
+        raise HTTPException(403, '受邀同伴不能创建房间，请联系房主')
     throttle(('create',user['id']),10,3600)
     return pack_room(create_room(user,data),user)
 
 
 @router.post('/api/rooms/join')
 async def join_room(data:JoinRoom,user=Depends(current_user)):
+    if named_guest(user):
+        raise HTTPException(403, '受邀同伴请使用身份与专属验证密钥入座，不能通过通用邀请码绕过撤销')
     throttle(('join',user['id']),15,300)
     with connection() as con:
         con.execute('BEGIN IMMEDIATE')

@@ -81,3 +81,18 @@ def test_guest_input_bounds_stale_revision_and_control_characters(client):
     a=issue(client,h,r).json()
     assert issue(client,h,r,'stale').status_code==409
     assert client.post('/api/auth/guest-join',json={'identity':'小王','verification_key':a['invite']['verification_key'],'owner':True}).status_code==422
+
+
+def test_named_guest_cannot_bypass_revocation_using_legacy_code(client):
+    owner, room = host(client)
+    minted = issue(client, owner, room, '受邀玩家').json()
+    invite=minted['invite'];room=minted['room']
+    joined = login(client, invite['verification_key'], '受邀玩家').json()
+    guest={'X-Ember-Session':joined['token']}
+    assert joined['user']['guest_kind']=='room'
+    assert client.post('/api/rooms',headers=guest,json={'title':'意外房主','preset':'harbor'}).status_code==403
+    assert client.post('/api/rooms/join',headers=guest,json={'code':room['code']}).status_code==403
+    room=client.get('/api/rooms/'+room['id'],headers=owner).json()
+    result=client.post(f"/api/rooms/{room['id']}/guest-access/{invite['id']}/revoke",headers=owner,json={'expected_revision':room['revision'],'request_key':uuid.uuid4().hex}).json()
+    assert client.post('/api/rooms/join',headers=guest,json={'code':room['code']}).status_code==403
+    assert login(client, invite['verification_key'], '受邀玩家').status_code==401

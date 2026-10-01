@@ -30,7 +30,7 @@ app.whenReady().then(async()=>{
   const root=process.env.EMBER_DESKTOP_TEST_ROOT||(process.platform==='win32'?join(process.env.LOCALAPPDATA||app.getPath('userData'),'EmberTavern'):join(app.getPath('userData'),'instances'));
   let commit='bundled';try{commit=JSON.parse(await readFile(join(resources,'host','desktop-bundle.json'),'utf8')).commit;}catch{}
   engine=new EngineClient({exe:join(resources,'bin',process.platform==='win32'?'ember-engine.exe':'ember-engine'),root,host:join(resources,'host'),commit,testPython:process.env.EMBER_DESKTOP_TEST_MODE==='1'?process.env.EMBER_DESKTOP_TEST_PYTHON:undefined});
-  try{await engine.start();}catch(error){dialog.showErrorBox('余烬桌面无法启动',String(error));app.quit();return;}
+  try{await engine.start();}catch(error){if(process.env.EMBER_DESKTOP_TEST_MODE==='1')console.error('ENGINE_START_FAILED',String(error));else dialog.showErrorBox('余烬桌面无法启动',String(error));app.quit();return;}
   controller=new HostController(engine,{encode:value=>{if(!safeStorage.isEncryptionAvailable()||(process.platform==='linux'&&safeStorage.getSelectedStorageBackend()==='basic_text'))throw new Error('系统凭据加密不可用；不会明文保存房主密码');return safeStorage.encryptString(value).toString('base64');},decode:value=>safeStorage.decryptString(Buffer.from(value,'base64'))});
   window=new BrowserWindow({width:1380,height:920,minWidth:1020,minHeight:720,title:'余烬桌面',backgroundColor:'#131713',autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true}});
   rendererURL=pathToFileURL(join(__dirname,'renderer','index.html')).href;
@@ -58,4 +58,4 @@ app.whenReady().then(async()=>{
   });
   await window.loadURL(rendererURL);
   if(process.env.EMBER_DESKTOP_TEST_MODE==='1')await window.webContents.executeJavaScript('window.__desktopSmoke = true');
-}).catch(error=>{if(!closing)dialog.showErrorBox('余烬桌面',String(error));app.quit()});
+}).catch(error=>{if(!closing){if(process.env.EMBER_DESKTOP_TEST_MODE==='1')console.error('DESKTOP_START_FAILED',String(error));else dialog.showErrorBox('余烬桌面',String(error));}app.quit()});

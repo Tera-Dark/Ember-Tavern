@@ -34,7 +34,7 @@ export class EngineClient {
 }
 
 export class HostController {
-  private tokens=new Map<string,string>();private accounts:Record<string,{username:string;password:string}>={};private loaded=false;private pending=new Map<string,Promise<string>>();
+  private tokens=new Map<string,string>();private accounts:Record<string,{username:string;password:string}>={};private loaded=false;private pending=new Map<string,Promise<string>>();private credentialsQueue:Promise<void>=Promise.resolve();
   constructor(readonly engine:EngineClient,readonly storage:SecretStorage){}
   async state():Promise<State>{return this.engine.request('/api/state');}
   async instance(instanceId:string):Promise<Instance>{const value=(await this.state()).instances.find(item=>item.id===id(instanceId));if(!value)throw new Error('实例不存在');return value;}
@@ -45,12 +45,21 @@ export class HostController {
   private async createHostSession(instanceId:string):Promise<string>{
     if(this.tokens.has(instanceId))return this.tokens.get(instanceId)!;
     const instance=await this.instance(instanceId);if(instance.status!=='running')throw new Error('请先安装并启动实例');
-    if(!this.loaded){try{const raw=await readFile(join(this.engine.options.root,'desktop-credentials.json'),'utf8');this.accounts=JSON.parse(this.storage.decode(JSON.parse(raw).encrypted));}catch(error:any){if(error.code!=='ENOENT')throw new Error('房主凭据无法解密，请保留数据并使用原 Windows 用户打开');}this.loaded=true;}
-    let account=this.accounts[instanceId];let fresh=false;
-    if(!account){account={username:'desktop_'+instanceId.slice(0,16),password:randomBytes(32).toString('base64url')};this.accounts[instanceId]=account;fresh=true;await mkdir(this.engine.options.root,{recursive:true});const file=join(this.engine.options.root,'desktop-credentials.json');await writeFile(file+'.tmp',JSON.stringify({encrypted:this.storage.encode(JSON.stringify(this.accounts))}),{mode:0o600});await rename(file+'.tmp',file);}
+    const account=await this.accountFor(instanceId);
     let response=await fetch(`http://127.0.0.1:${instance.port}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(account),signal:AbortSignal.timeout(15000),redirect:'error'});
     if(response.status===401)response=await fetch(`http://127.0.0.1:${instance.port}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...account,display_name:'房主'}),signal:AbortSignal.timeout(15000),redirect:'error'});
     const data=await response.json();if(!response.ok)throw new Error('本机房主登录失败；不会重置已有账号或覆盖数据');this.tokens.set(instanceId,data.token);return data.token;
+  }
+  private accountFor(instanceId:string):Promise<{username:string;password:string}>{
+    const task=this.credentialsQueue.then(async()=>{
+      if(!this.loaded){try{const raw=await readFile(join(this.engine.options.root,'desktop-credentials.json'),'utf8');this.accounts=JSON.parse(this.storage.decode(JSON.parse(raw).encrypted));}catch(error:any){if(error.code!=='ENOENT')throw new Error('房主凭据无法解密，请保留数据并使用原 Windows 用户打开');}this.loaded=true;}
+      if(this.accounts[instanceId])return this.accounts[instanceId];
+      const account={username:'desktop_'+instanceId.slice(0,16),password:randomBytes(32).toString('base64url')};
+      const updated={...this.accounts,[instanceId]:account};const encrypted=this.storage.encode(JSON.stringify(updated));
+      await mkdir(this.engine.options.root,{recursive:true});const file=join(this.engine.options.root,'desktop-credentials.json');await writeFile(file+'.tmp',JSON.stringify({encrypted}),{mode:0o600});await rename(file+'.tmp',file);
+      this.accounts=updated;return account;
+    });
+    this.credentialsQueue=task.then(()=>{},()=>{});return task;
   }
   async game(instanceId:string,path:string,method='GET',body?:unknown,retry=true):Promise<any>{
     const instance=await this.instance(instanceId);const token=await this.hostSession(instanceId);

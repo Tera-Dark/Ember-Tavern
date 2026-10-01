@@ -11,8 +11,12 @@ def password_hash(password, salt):
     return hashlib.scrypt(password.encode(), salt=bytes.fromhex(salt), n=16384, r=8, p=1, dklen=32).hex()
 
 
+def named_guest(user):
+    return bool(user['guest']) and user['username'].startswith('seat_')
+
+
 def user_public(user):
-    return {'id': user['id'], 'username': user['username'], 'display_name': user['display_name'], 'guest': bool(user['guest'])}
+    return {'id': user['id'], 'username': user['username'], 'display_name': user['display_name'], 'guest': bool(user['guest']), 'guest_kind': 'room' if named_guest(user) else ('demo' if user['guest'] else '')}
 
 
 def insert_user(con, username, display_name, password, guest=False):
