@@ -13,6 +13,7 @@ launcher/*.exe
 launcher/*.syso
 launcher/launcher
 launcher/instances/
+ember-desktop-*.exe
 *.part
 
 # Local tooling/download caches; not part of source or content releases

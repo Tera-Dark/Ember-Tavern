@@ -157,7 +157,7 @@ func New(config Config) (*Manager, error) {
 		}
 		for _, i := range s.Instances {
 			if !validID(i.ID) {
-				return nil, errors.New("实例索引 ID 非法")
+				continue
 			}
 			x := i
 			m.instances[i.ID] = &x
