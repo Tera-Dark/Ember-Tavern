@@ -145,11 +145,19 @@ jobs:
           REPO: ${{ github.repository }}
           COMMIT: ${{ github.sha }}
         run: |
-          (cd package && for sum in *.sha256; do sed 's/\r$//' "$sum" | sha256sum --check --strict -; done)
+          (cd package/desktop/dist && for sum in *.sha256; do sed 's/\r$//' "$sum" | sha256sum --check --strict -; done)
           python3 -c 'import json; r=json.load(open("package/desktop-smoke.json")); assert r["status"]=="passed" and r["graceful_shutdown"], r'
           TAG=desktop-v0.2.0-beta.1
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             echo 'Release exists. Do not silently replace reviewed binaries.'
             exit 1
           fi
-          gh release create "$TAG" --repo "$REPO" --target "$COMMIT" --prerelease --title '余烬桌面 0.2.0-beta.1 · 房主安装器' --notes 'Electron + TypeScript + Vite + Vue。含 Windows x64 安装器／便携 EXE 与 SHA256。房主安装，同伴浏览器身份＋密钥入座。未代码签名；首次 Python／依赖安装需网络，实际设备／防火墙与供应商听感需用户确认。' package/*.exe package/*.sha256 package/desktop-smoke.json
+          gh release create "$TAG" --repo "$REPO" --target "$COMMIT" --prerelease --title '余烬桌面 0.2.0-beta.1 · 房主安装器' --notes 'Electron + TypeScript + Vite + Vue。含 Windows x64 安装器／便携 EXE 与 SHA256。房主安装，同伴浏览器身份＋密钥入座。未代码签名；首次 Python／依赖安装需网络，实际设备／防火墙与供应商听感需用户确认。' package/desktop/dist/*.exe package/desktop/dist/*.sha256 package/desktop-smoke.json
+      - name: Diagnose release artifact layout
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=$(find package -maxdepth 4 -type f | sort)
+          gh api --method POST "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -f body="Desktop publish failed. Artifact layout (CI-only data):
+          $files"
