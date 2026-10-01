@@ -1,30 +1,49 @@
-# 发布到你自己的 GitHub
+# 维护者发布指南
 
-项目发布目标仓库：https://github.com/Tera-Dark/Ember-Tavern。后续发布需要拥有者授权；PAT 不要写进源码、远程 URL 或日志，使用后撤销。
+目标仓库：https://github.com/Tera-Dark/Ember-Tavern。仓库已经存在，不需要再次 git init 或改写 origin。本轮是 **2.2.0-beta.1 工作分支的本地基础验证**，不是宣称已合并、通过远程 Actions 或发布 Release。
 
-## 发布前检查
-1. 决定私有／公开与许可证；`LICENSE.example` 只是 MIT 模板，修改年份和持有人并命名 LICENSE 或改选其他许可证。未选择时不宣称已开源授权。
-2. 确认 .env、data、backups、浏览器 artifacts 不入 Git；检查插件代码是否有硬编码 key。
-3. 运行 README 的 tests/build/browser 检查。首次启用 Actions 后检查日志；以仓库 Actions 中实际完成的运行结果为准。
-4. Settings → Security 启用私下漏洞报告，替换 SECURITY.md 联系渠道。
+Arena 已连接 GitHub 时直接使用 git／gh，不提供密码、PAT、OAuth token 或验证码到聊天／源码／远程 URL。连接失败请在 Arena 重新连接。自己电脑首次使用 gh，可在本机走 `gh auth login` 的官方流程，不分享凭据。
 
-## 用 GitHub CLI（由仓库拥有者执行）
+## 1. 合并前
+
+1. 仓库拥有者决定私有／公开与许可证；LICENSE.example 仅为可选择模板，没有正式 LICENSE 前不宣称已经授予开源使用权。内容包还要分别核对 metadata.authors／license，多来源导出仅是署名待复核草稿。
+2. 审阅当前分支 diff，确认 .env、data、backups、creations、cache、浏览器运行 artifacts 和私人邀请／token 不在 Git／发行包；不硬编码供应商密钥。
+3. 运行 README／TEST_REPORT 的 Schema、pytest、build、compile 和三套浏览器。付费 key 必须为空、使用隔离 DATA_DIR，不对真实团本实例跑 QA。
+4. 对隐私／规则／迁移变更审阅数据兼容性；对新资源审阅公开投影／能力／版本／冲突；回档不应恢复旧邀请和已退出成员。
+5. 将工作推送到**当前工作分支**并提 PR，检查真实 Actions／review。Arena 会话有固定工作分支，不在会话里换分支或直推 main；保留未覆盖验证边界。
+
 ```bash
-gh auth login
-# 若还没有 Git 仓库：
-git init
-git add .
-git commit -m "Release modular host and Plugin SDK v1"
-# 下面的 owner/name 由你填写；--public 也可改 --private。
-gh repo create <owner>/ember-tavern --public --source=. --remote=origin --push
+git status --short
+git diff --check
+gh pr checks <PR编号>
 ```
 
-主项目发布可在 GitHub Release 上传整个源码包；不要上传运行 DB、音频用户数据或 .env。示例插件的自动 Release：
+## 2. 宿主发行
+
+由拥有者在合并与实际 CI 成功后选择 tag／发布权限。宿主版本应一致于 server/version.py、web/package.json／lock、launcher-manifest.json 与文档；发布前重新构建 static，不伪造启动器的 Windows 实机测试结果。
+
+GitHub Release 上传干净源码／static／模板／Schema／文档和锁定依赖；**不要**附运行 SQLite、.env、用户语音与完整私人备份。Docker／启动器实机还需分别验证。对版本升级说明备份与回退方案；2.2 主持秘密数据不要直接让旧宿主打开，回退需恢复升级前的完整备份。
+
+历史启动器 URL 指向既有发行，不代表它现在包含本轮 2.2；先发布并实际验证对应宿主版本，再更新正式下载入口。
+
+## 3. 插件发行
+
+作者可各自建仓库／Release，不强迫源码合并到宿主。先审阅源码、README、metadata／许可、minimum_host、依赖、capabilities、actions、signals、hooks、provides／uses 和迁移／回档测试。Python 有完整服务器权限，绝不是 sandbox；UI 只读公共能力之外（含 read:gm）也要明确批准。
+
 ```bash
-git tag plugin-session-insights-v1.0.0
-git push origin plugin-session-insights-v1.0.0
+python scripts/creator.py validate templates/dice-tray
+python scripts/plugins.py package templates/dice-tray artifacts/dice-tray.zip
+# 工具输出 SHA256；这只是本地打包，不是上传／发布。
 ```
 
-工作流在**你已授权的这个仓库**生成 ZIP + SHA256 并发布。用户按实际资产 URL 与 SHA256 安装。发布后把 registry/index.json 的 repository、download_url 更新为真实值；配置 PLUGIN_COMMUNITY_URL 后宿主可返回实际社区入口。
+旧 session-insights／scene-notes 有对应 plugin-<id>-v<版本> 标签工作流；实际流程见 .github/workflows/plugin-release.yml，必须获得拥有者授权再打 tag／运行，不对未配置的插件承诺自动发行。
 
-第三方作者通常各自建插件仓库／Release，提交 registry 提案，不强迫合并进本体。维护者检查 manifest／能力／权限／迁移／回档测试和许可证，不自动信任 Python；未知高风险 UI 也不自动授权。
+发布后验证 Release 资产确实可下载，记录实际 download_url 和 ZIP SHA256（不是运行时 package_hash），再更新 registry/index.json。既有包 SHA 本地核对不能证明旧远程 URL 可用；新 dice-tray 目前 source-only，URL／SHA 为 null，不能写一个不存在的链接。整个包变动会撤销已批准哈希，升级需备份／停服／重新审阅，不让安装器静默覆盖。
+
+## 4. 世界书、角色与主题发行
+
+只发布已校验的 JSON／说明／你有权分享的素材。使用标准格式 ember.worldbook/v1、ember.character/v1、ember.theme/v1；清理主持秘密／gm_notes；填写真实署名／许可与兼容说明。
+
+目前 registry 是可检查的本地目录，不是签名市场、收入结算、恶意包自动审核或浏览器一键执行入口。提交提案时说明来源、哈希、Schema 版本与许可证；`PLUGIN_COMMUNITY_URL`仅配置你真实维护的社区入口，不表示宿主自动信任内容。
+
+安全披露与联系渠道见 SECURITY.md；Settings → Security 的私下漏洞报告由拥有者启用。

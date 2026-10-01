@@ -23,6 +23,9 @@ class Settings:
     tts_voice: str = os.getenv('TTS_VOICE', 'alloy')
     plugin_community_url: str = os.getenv('PLUGIN_COMMUNITY_URL', '')
     session_hours: int = int(os.getenv('SESSION_HOURS', '168'))
+    context_max_chars: int = int(os.getenv('CONTEXT_MAX_CHARS', '24000'))
+    lore_context_chars: int = int(os.getenv('LORE_CONTEXT_CHARS', '6000'))
+    allowed_origins: str = os.getenv('ALLOWED_ORIGINS', '')
 
     @property
     def db_path(self):

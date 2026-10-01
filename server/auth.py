@@ -45,10 +45,16 @@ def user_from_token(token):
     return dict(row) if row else None
 
 
-def current_user(authorization: str = Header(default='')):
-    if not authorization.startswith('Bearer '):
+def session_token(authorization='', x_ember_session=''):
+    # Some access gateways consume Authorization; prefer the explicit app header.
+    return x_ember_session or (authorization[7:] if authorization.startswith('Bearer ') else '')
+
+
+def current_user(authorization: str = Header(default=''), x_ember_session: str = Header(default='')):
+    token = session_token(authorization, x_ember_session)
+    if not token:
         raise HTTPException(401, '请先登录')
-    user = user_from_token(authorization[7:])
+    user = user_from_token(token)
     if not user:
         raise HTTPException(401, '登录已过期，请重新登录')
     return user

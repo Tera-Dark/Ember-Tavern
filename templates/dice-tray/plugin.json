@@ -1,0 +1,21 @@
+{
+  "id": "dice-tray",
+  "name": "桌面骰盘",
+  "version": "1.0.0",
+  "api_version": 1,
+  "minimum_host": "2.2.0",
+  "authors": [],
+  "license": "",
+  "description": "纯 UI 扩展示例：调用宿主权威骰子，不在浏览器生成随机结果。",
+  "category": "骰子",
+  "icon": "dice",
+  "default_enabled": false,
+  "frontend": "ui.js",
+  "ui": {"group": "dice", "label": "桌面骰盘", "slot": "main", "height": 430},
+  "requires": [],
+  "uses": ["core.dice/v1", "core.rules/v1"],
+  "provides": [],
+  "capabilities": ["dice:roll", "read:room"],
+  "actions": [],
+  "signals": []
+}

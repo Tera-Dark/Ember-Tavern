@@ -1,0 +1,228 @@
+{
+  "$defs": {
+    "Attributes": {
+      "additionalProperties": false,
+      "properties": {
+        "strength": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": -3,
+          "title": "Strength",
+          "type": "integer"
+        },
+        "dexterity": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": -3,
+          "title": "Dexterity",
+          "type": "integer"
+        },
+        "knowledge": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": -3,
+          "title": "Knowledge",
+          "type": "integer"
+        },
+        "insight": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": -3,
+          "title": "Insight",
+          "type": "integer"
+        },
+        "charisma": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": -3,
+          "title": "Charisma",
+          "type": "integer"
+        }
+      },
+      "title": "Attributes",
+      "type": "object"
+    },
+    "CharacterData": {
+      "additionalProperties": false,
+      "properties": {
+        "extensions": {
+          "maxProperties": 16,
+          "patternProperties": {
+            "^[a-z][a-z0-9.-]{1,70}/v[1-9][0-9]*$": {
+              "additionalProperties": true,
+              "type": "object"
+            }
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "name": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "archetype": {
+          "default": "旅人",
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Archetype",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "gm_notes": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Gm Notes",
+          "type": "string"
+        },
+        "avatar": {
+          "default": "feather",
+          "enum": [
+            "feather",
+            "shield",
+            "sword",
+            "book",
+            "spark"
+          ],
+          "title": "Avatar",
+          "type": "string"
+        },
+        "hp": {
+          "default": 12,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Hp",
+          "type": "integer"
+        },
+        "max_hp": {
+          "default": 12,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Max Hp",
+          "type": "integer"
+        },
+        "stress": {
+          "default": 0,
+          "maximum": 6,
+          "minimum": 0,
+          "title": "Stress",
+          "type": "integer"
+        },
+        "attributes": {
+          "$ref": "#/$defs/Attributes"
+        },
+        "inventory": {
+          "items": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Inventory",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "CharacterData",
+      "type": "object"
+    },
+    "Metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "default": "1.0.0",
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "authors": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Authors",
+          "type": "array"
+        },
+        "license": {
+          "default": "",
+          "maxLength": 80,
+          "title": "License",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "ember.character/v1",
+      "title": "Format",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "rule_system": {
+      "const": "ember-light/v1",
+      "default": "ember-light/v1",
+      "title": "Rule System",
+      "type": "string"
+    },
+    "character": {
+      "$ref": "#/$defs/CharacterData"
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "character"
+  ],
+  "title": "CharacterCard",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:character:v1"
+}

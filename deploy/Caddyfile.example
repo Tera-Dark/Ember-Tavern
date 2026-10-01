@@ -3,7 +3,11 @@
 # Caddy handles WebSocket upgrades automatically.
 tavern.example.com {
     encode gzip zstd
-    reverse_proxy 127.0.0.1:8000
+    reverse_proxy 127.0.0.1:8000 {
+        # Do not trust a client-supplied forwarded host for WS origin checks.
+        header_up X-Forwarded-Host {host}
+        header_up -Forwarded
+    }
 }
 # For a private playtest add an access policy (VPN / identity gateway, etc.).
 # Public hosting also needs account verification, quotas and operational hardening.

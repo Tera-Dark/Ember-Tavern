@@ -4,6 +4,7 @@ from copy import deepcopy
 import json
 from fastapi import HTTPException
 from ..db import connection
+from ..contracts.resources import CORE_CAPABILITIES
 
 @dataclass
 class Result:
@@ -38,6 +39,9 @@ class Context:
     def resource(self, name):
         manifest=self.manager.items[self.plugin_id]['manifest']
         if name not in manifest.get('uses',[]): raise HTTPException(403,'插件未声明此资源读取能力')
+        grants=CORE_CAPABILITIES
+        if name.startswith('core.') and name not in grants:raise HTTPException(404,'未知宿主资源契约')
+        if name in grants and grants[name] not in manifest.get('capabilities',[]):raise HTTPException(403,'未声明宿主资源能力')
         resource=self.manager.resource(self.room,self.state,name,self.user,self.con)
         if resource:self.reads[resource['owner']]=resource['revision']
         return resource
@@ -61,6 +65,9 @@ class Plugin:
     def initial(self,ctx): return {}
     def on_event(self,ctx,event,data): return None
     def resources(self,ctx,data): return {}
+    def public_data(self,ctx,data):
+        # API v1 namespaces are shared by default. Override to redact private fields.
+        return deepcopy(data)
     async def action(self,ctx,name,payload,data): raise HTTPException(404,'插件操作不存在')
     def signal(self,ctx,name,payload,data): raise HTTPException(404,'插件信号不存在')
     def migrate(self,data,old_version):

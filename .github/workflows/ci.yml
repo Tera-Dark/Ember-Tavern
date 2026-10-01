@@ -1,4 +1,4 @@
-name: Core and plugin checks
+name: Core, contracts and browser checks
 on:
   push:
     branches: ['**']
@@ -8,11 +8,44 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: pip install -r requirements-lock.txt && pip install -r requirements-dev.txt
+      - name: Shared contracts and runtime regressions
+        run: |
+          python scripts/creator.py schemas --check
+          python -m pytest -q
+          python -m compileall -q server plugins scripts templates
+      - name: Reproducible release frontend
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
+          git diff --exit-code -- static
+  browser:
+    runs-on: ubuntu-latest
+    env:
+      DATA_DIR: /tmp/ember-browser-data
+      ENABLE_DEMO: 'true'
+      GEMINI_API_KEY: ''
+      DECISION_API_KEY: ''
+      TTS_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -20,16 +53,31 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: pip install -r requirements-lock.txt && pip install -r requirements-dev.txt
       - run: npm ci --prefix web && npm run build --prefix web
-      - run: python -m pytest -q
-      - run: python -m compileall -q server plugins
-      - run: python scripts/plugins.py package templates/session-insights /tmp/session-insights.zip
       - run: python -m playwright install --with-deps chromium
-      - name: Real two-browser tests (demo providers only)
+      - name: Reviewed UI fixtures (no third-party Python or paid secrets)
         run: |
+          python scripts/creator.py validate templates/session-insights
+          python scripts/creator.py validate templates/dice-tray
+          python scripts/plugins.py package templates/session-insights /tmp/session-insights.zip
+          python scripts/plugins.py package templates/dice-tray /tmp/dice-tray.zip
           python scripts/plugins.py install /tmp/session-insights.zip --sha256 "$(sha256sum /tmp/session-insights.zip | cut -d' ' -f1)"
-          python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 1 --ws-max-size 65536 > /tmp/tavern.log 2>&1 &
+          python scripts/plugins.py install /tmp/dice-tray.zip --sha256 "$(sha256sum /tmp/dice-tray.zip | cut -d' ' -f1)" --grant-capabilities
+      - name: Real two-browser core, plugin and creator acceptance
+        run: |
+          mkdir -p artifacts
+          python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 1 --ws-max-size 65536 > artifacts/server.log 2>&1 &
           PID=$!
-          trap 'kill "$PID"; cat /tmp/tavern.log' EXIT
+          trap 'kill "$PID" 2>/dev/null || true; cat artifacts/server.log' EXIT
           python -c "import urllib.request,time; exec('for attempt in range(100):\n try:\n  urllib.request.urlopen(\"http://127.0.0.1:8000/api/health\");break\n except OSError:time.sleep(.1)\nelse:raise SystemExit(\"server did not start\")')"
-          python tests/browser_smoke.py
-          python tests/browser_plugins.py
+          python tests/browser_smoke.py --screenshots artifacts/browser-core > artifacts/browser-core.json
+          python tests/browser_plugins.py --screenshots artifacts/browser-plugins > artifacts/browser-plugins.json
+          python tests/browser_foundation.py --screenshots artifacts/browser-foundation > artifacts/browser-foundation.json
+          cat artifacts/browser-*.json
+      - name: Browser evidence and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 7

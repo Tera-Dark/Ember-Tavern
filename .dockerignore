@@ -12,3 +12,6 @@ static
 *.zip
 
 !plugin-packages/*.zip
+
+.cache
+creations

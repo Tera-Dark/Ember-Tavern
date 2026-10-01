@@ -1,0 +1,26 @@
+{
+  "format": "ember.theme/v1",
+  "metadata": {
+    "id": "moonlit-archive",
+    "name": "月下档案馆",
+    "version": "1.0.0",
+    "description": "冷蓝底色与暖金强调。仅传递设计令牌，不注入 CSS、脚本或远程素材。",
+    "authors": [],
+    "license": "",
+    "tags": ["冷蓝", "模板"]
+  },
+  "modes": {
+    "dark": {
+      "--bg": "#141923", "--surface": "#1b2230", "--surface-2": "#252e3e", "--surface-3": "#2e394b",
+      "--border": "#364457", "--text": "#e5eaf3", "--muted": "#a3aec2", "--faint": "#73819c",
+      "--gold": "#d7b984", "--gold-hover": "#ebd4ac", "--gold-bg": "#352e25",
+      "--green": "#9fc6bb", "--green-bg": "#243833", "--red": "#e39b9d", "--red-bg": "#422b31"
+    },
+    "light": {
+      "--bg": "#edf0f5", "--surface": "#f8faff", "--surface-2": "#e6eaf2", "--surface-3": "#dce2ec",
+      "--border": "#c9d2e1", "--text": "#28354a", "--muted": "#596a84", "--faint": "#7c8ca3",
+      "--gold": "#89612d", "--gold-hover": "#a87637", "--gold-bg": "#ece2d2",
+      "--green": "#467869", "--green-bg": "#dbece6", "--red": "#a64e5b", "--red-bg": "#f2dfe5"
+    }
+  }
+}

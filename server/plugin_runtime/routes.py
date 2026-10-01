@@ -24,10 +24,8 @@ class Invoke(StrictModel):
     payload:dict=Field(default_factory=dict)
     via:str|None=None
 
-# Import host helpers lazily. The SDK never imports the host UI or feature plugins.
-def host():
-    from .. import app
-    return app
+from .. import runtime
+from ..state import load_state
 
 def authorized_via(room_id,via,target,operation,signal=False,con=None):
     item=manager.need(room_id,target,con)
@@ -79,45 +77,45 @@ def frame(plugin_id:str,bridge:str=''):
 @router.get('/api/rooms/{room_id}/extensions/{plugin_id}/context')
 def context(room_id:str,plugin_id:str,user=Depends(current_user)):
     with connection() as con:
-        room=host().get_room_member(con,room_id,user);state=json.loads(room['state_json'])
+        room=runtime.get_room_member(con,room_id,user);state=load_state(room['state_json'])
         return manager.public_context(room,state,user,plugin_id,con)
 
 @router.post('/api/rooms/{room_id}/extensions/{plugin_id}/toggle')
 async def toggle(room_id:str,plugin_id:str,data:Toggle,user=Depends(current_user)):
     manager.refresh()
-    async with host().game_lock(room_id):
+    async with runtime.game_lock(room_id):
         with connection() as con:
-            room=host().get_room_member(con,room_id,user,True)
-            if not host().receipt(con,room_id,user,data.request_key):
-                host().check_revision(room,data.expected_revision)
+            room=runtime.get_room_member(con,room_id,user,True)
+            if not runtime.receipt(con,room_id,user,data.request_key):
+                runtime.check_revision(room,data.expected_revision)
                 flags,changed=manager.toggle_plan(room_id,plugin_id,data.enabled,con)
                 con.execute('INSERT INTO room_plugins(room_id,flags_json) VALUES (?,?) ON CONFLICT(room_id) DO UPDATE SET flags_json=excluded.flags_json',(room_id,dump(flags)))
-                state=json.loads(room['state_json'])
+                state=load_state(room['state_json'])
                 if data.enabled:
                     for pid in changed:manager.initialize(room,state,pid,user,con)
                 names='、'.join(manager.items[x]['manifest']['name'] for x in changed) or manager.items[plugin_id]['manifest']['name']
                 append_event(con,room_id,'extension',('开启' if data.enabled else '关闭')+'模块：'+names+'。已有数据保留。',state,user,
                              payload={'plugin_id':plugin_id,'action':'toggle','changed':changed,'enabled':data.enabled})
-                host().save_receipt(con,room_id,user,data.request_key)
-    return await host().finish(room_id,user)
+                runtime.save_receipt(con,room_id,user,data.request_key)
+    return await runtime.finish(room_id,user)
 
 @router.post('/api/rooms/{room_id}/extensions/{plugin_id}/actions/{action}')
 async def invoke(room_id:str,plugin_id:str,action:str,data:Invoke,user=Depends(current_user)):
-    host().throttle(('plugin-action',user['id']),60,60)
+    runtime.throttle(('plugin-action',user['id']),60,60)
     if len(dump(data.payload).encode())>32768:raise HTTPException(422,'插件请求超过32 KiB')
     lock=plugin_locks[(room_id,plugin_id)]
     if lock.locked():raise HTTPException(409,'这个插件正在处理请求，其他模块仍可使用')
     async with lock:
         with connection() as con:
-            room=host().get_room_member(con,room_id,user)
-            if host().receipt(con,room_id,user,data.request_key):
-                return {'room':host().pack_room(room_id,user),'output':{},'duplicate':True}
+            room=runtime.get_room_member(con,room_id,user)
+            if runtime.receipt(con,room_id,user,data.request_key):
+                return {'room':runtime.pack_room(room_id,user),'output':{},'duplicate':True}
             item=authorized_via(room_id,data.via or plugin_id,plugin_id,action,con=con)
-            base=json.loads(room['state_json'])
+            base=load_state(room['state_json'])
             if room['branch']!=data.expected_branch or manager.namespace(base,plugin_id)['revision']!=data.expected_plugin_revision:
                 raise HTTPException(409,'插件状态或时间线已更新，请同步后重试')
         simulated=json.loads(dump(base));patches={};versions={};root_output={};message='插件状态已更新。'
-        pending=[(plugin_id,action,data.payload,data.via or plugin_id)];steps=0
+        pending=[(plugin_id,action,data.payload,data.via or plugin_id)];steps=0;core_revision=None
         while pending:
             steps+=1
             if steps>16:raise HTTPException(422,'跨插件调用链过长或形成循环')
@@ -132,7 +130,9 @@ async def invoke(room_id:str,plugin_id:str,action:str,data:Invoke,user=Depends(c
             except (ValueError,KeyError,TypeError): raise HTTPException(422,'插件请求格式不符合规范')
             if not isinstance(result,Result):raise HTTPException(500,'插件未返回 SDK Result')
             if pid==plugin_id:root_output=result.output;message=result.message or message
-            for provider in ctx.reads:versions.setdefault(provider,manager.namespace(base,provider)['revision'])
+            for provider in ctx.reads:
+                if provider=='@core':core_revision=room['revision']
+                else:versions.setdefault(provider,manager.namespace(base,provider)['revision'])
             if result.data is not None:
                 if pid not in patches and len(patches)>=8:raise HTTPException(422,'一次最多写入8个插件namespace')
                 manager.write(simulated,pid,result.data);patches[pid]=result.data
@@ -140,22 +140,22 @@ async def invoke(room_id:str,plugin_id:str,action:str,data:Invoke,user=Depends(c
                 authorized_via(room_id,pid,call['plugin'],call['action'])
                 pending.append((call['plugin'],call['action'],call.get('payload',{}),pid))
         with connection() as con:
-            latest=host().get_room_member(con,room_id,user);state=json.loads(latest['state_json'])
+            latest=runtime.get_room_member(con,room_id,user);state=load_state(latest['state_json'])
             manager.need(room_id,plugin_id,con)
-            if latest['branch']!=data.expected_branch or any(manager.namespace(state,pid)['revision']!=v for pid,v in versions.items()):
+            if (core_revision is not None and latest['revision']!=core_revision) or latest['branch']!=data.expected_branch or any(manager.namespace(state,pid)['revision']!=v for pid,v in versions.items()):
                 raise HTTPException(409,'生成期间依赖或时间线发生变化；结果未应用，请重试')
             for dependency in versions:manager.need(room_id,dependency,con)
             for pid,patch in patches.items():manager.need(room_id,pid,con);manager.write(state,pid,patch)
             append_event(con,room_id,'extension',message[:500],state,user,payload={'plugin_id':plugin_id,'action':action})
-            host().save_receipt(con,room_id,user,data.request_key)
-    return {'room':await host().finish(room_id,user),'output':root_output}
+            runtime.save_receipt(con,room_id,user,data.request_key)
+    return {'room':await runtime.finish(room_id,user),'output':root_output}
 
 @router.get('/api/rooms/{room_id}/assets/{plugin_id}/{asset_id}')
 def asset(room_id:str,plugin_id:str,asset_id:str,user=Depends(current_user)):
     if not __import__('re').fullmatch(r'[a-f0-9]{32}',asset_id):raise HTTPException(404,'素材不存在')
     with connection() as con:
-        room=host().get_room_member(con,room_id,user);manager.need(room_id,plugin_id,con)
-        state=json.loads(room['state_json']);assets=manager.namespace(state,plugin_id)['data'].get('_assets',[])
+        room=runtime.get_room_member(con,room_id,user);manager.need(room_id,plugin_id,con)
+        state=load_state(room['state_json']);assets=manager.namespace(state,plugin_id)['data'].get('_assets',[])
         metadata=next((x for x in assets if x['id']==asset_id),None)
         if not metadata:raise HTTPException(404,'素材不属于当前有效时间线')
     path=settings.data_dir/'assets'/room_id/plugin_id/(asset_id+'.bin')
@@ -166,13 +166,13 @@ def asset(room_id:str,plugin_id:str,asset_id:str,user=Depends(current_user)):
     return FileResponse(path,media_type=mime,filename=asset_id+'.'+extensions[mime])
 
 async def relay_signal(room_id,user,message):
-    host().throttle(('plugin-signal',user['id']),30,1)
+    runtime.throttle(('plugin-signal',user['id']),30,1)
     pid=message.get('plugin_id','');name=message.get('name','');payload=message.get('payload',{})
     if len(dump(payload).encode())>4096:raise HTTPException(422,'信号过大')
     with connection() as con:
-        room=host().get_room_member(con,room_id,user)
+        room=runtime.get_room_member(con,room_id,user)
         if room['branch']!=message.get('branch'):raise HTTPException(409,'时间线已变化')
         item=authorized_via(room_id,message.get('via') or pid,pid,name,True,con)
-        state=json.loads(room['state_json']);ctx=Context(manager,pid,room,state,user,con)
+        state=load_state(room['state_json']);ctx=Context(manager,pid,room,state,user,con)
         output=item['backend'].signal(ctx,name,payload,manager.namespace(state,pid)['data'])
-    await host().hub.signal(room_id,{'type':'plugin_signal','plugin_id':pid,'name':name,'payload':output,'branch':room['branch'],'actor_id':user['id']})
+    await runtime.hub.signal(room_id,{'type':'plugin_signal','plugin_id':pid,'name':name,'payload':output,'branch':room['branch'],'actor_id':user['id']})

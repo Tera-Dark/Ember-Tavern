@@ -14,3 +14,9 @@ launcher/*.syso
 launcher/launcher
 launcher/instances/
 *.part
+
+# Local tooling/download caches; not part of source or content releases
+.cache/
+
+# Private creator drafts: publish intentionally in a separate content repository
+creations/

@@ -9,6 +9,11 @@ from pathlib import Path
 from fastapi import HTTPException
 from ..config import ROOT, settings
 from ..db import connection
+from ..contracts.plugin import validate_manifest, needs_capability_grant
+from ..contracts.resources import CORE_CAPABILITIES
+from ..version import HOST_VERSION
+from ..projection import project_state, project_event
+from ..rules import engine_for
 from .sdk import Context, Plugin
 
 API_VERSION=1
@@ -47,38 +52,19 @@ class Manager:
                 try:
                     raw=(folder/'plugin.json').read_bytes()
                     if len(raw)>32768:raise ValueError('manifest too large')
-                    m=json.loads(raw);pid=m['id']
-                    if not ID_PATTERN.fullmatch(pid) or folder.name!=pid:raise ValueError('invalid plugin id')
+                    m=validate_manifest(json.loads(raw),folder);pid=m['id']
+                    if folder.name!=pid:raise ValueError('folder name must match plugin id')
                     if pid in discovered:continue # external packages cannot override bundled packages
-                    if any((folder/name).is_symlink() for name in ('plugin.json','backend.py','ui.js')):raise ValueError('symlink entry point')
-                    for resource in m.get('uses',[])+m.get('provides',[]):
-                        if not re.fullmatch(r'[a-z][a-z0-9.-]{1,70}/v[1-9][0-9]*',resource):raise ValueError('invalid resource contract')
-                    for field in ('name','version','description','api_version'): 
-                        if field not in m:raise ValueError('missing '+field)
-                    for field,limit in [('name',80),('description',1000),('category',64),('icon',64)]:
-                        if field in m and (not isinstance(m[field],str) or len(m[field])>limit):raise ValueError('invalid '+field)
-                    if type(m.get('default_enabled',False))is not bool:raise ValueError('invalid default enabled')
-                    for field in ('requires','uses','provides','capabilities','actions','signals','hooks'):
-                        values=m.get(field,[])
-                        if not isinstance(values,list) or len(values)>40 or any(not isinstance(v,str) or len(v)>120 for v in values):raise ValueError('invalid '+field)
-                    if type(m['api_version'])is not int or type(m.get('state_version',1))is not int or m.get('state_version',1)<1:raise ValueError('invalid API/state version')
-                    if any(h!='gm' for h in m.get('hooks',[])) or ((m.get('provides') or m.get('hooks')) and not m.get('backend')):raise ValueError('invalid backend provider declaration')
-                    if not re.fullmatch(r'\d+\.\d+\.\d+',m['version']):raise ValueError('invalid semantic version')
-                    if m.get('backend') not in (None,'backend.py') or m.get('frontend') not in (None,'ui.js'):raise ValueError('entry point must be backend.py / ui.js')
-                    if any(not ID_PATTERN.fullmatch(x) for x in m.get('requires',[])):raise ValueError('invalid dependency')
-                    if m.get('frontend') and m.get('ui'):
-                        ui=m['ui']
-                        if not isinstance(ui,dict) or ui.get('slot') not in ('toolbar','main') or not isinstance(ui.get('group'),str) or len(ui['group'])>48:raise ValueError('invalid UI slot/group')
-                        if 'label' in ui and (not isinstance(ui['label'],str) or len(ui['label'])>80):raise ValueError('invalid UI label')
-                        if type(ui.get('height',500))is not int or not 120<=ui.get('height',500)<=1200:raise ValueError('invalid UI height')
+                    if (folder/'plugin.json').is_symlink():raise ValueError('symlink manifest')
                     digest=package_hash(folder);reason=''
                     if m['api_version']!=API_VERSION:reason='插件 API 版本不兼容'
-                    elif (m.get('backend') or any(not c.startswith('read:') for c in m.get('capabilities',[]))) and trusted.get(pid)!=digest:reason='后端或高风险界面能力未获部署者信任，或文件已变化'
+                    elif tuple(map(int,m['minimum_host'].split('.'))) > tuple(map(int,HOST_VERSION.split('-')[0].split('.'))):reason='插件要求更高版本宿主：'+m['minimum_host']
+                    elif (m.get('backend') or needs_capability_grant(m)) and trusted.get(pid)!=digest:reason='后端或高风险界面能力未获部署者信任，或文件已变化'
                     backend=None
                     if not reason and m.get('backend'):
                         cache_key=(pid,digest)
                         if cache_key not in self.cache:
-                            module_name='ember_plugin_'+pid.replace('-','_')+'_'+digest[:8]
+                            module_name='ember_plugin_'+pid.replace('-','_')+'_'+digest
                             spec=importlib.util.spec_from_file_location(module_name,folder/'backend.py',submodule_search_locations=[str(folder)])
                             module=importlib.util.module_from_spec(spec);sys.modules[module_name]=module
                             try:spec.loader.exec_module(module)
@@ -101,12 +87,14 @@ class Manager:
             with connection() as c:return self.flags(room_id,c)
         row=con.execute('SELECT flags_json FROM room_plugins WHERE room_id=?',(room_id,)).fetchone()
         flags=json.loads(row[0]) if row else {}
-        return {pid:bool(flags.get(pid,item['manifest'].get('default_enabled',False))) for pid,item in self.items.items()}
+        return {pid:bool(flags.get(pid,item['manifest'].get('default_enabled',False) if item['builtin'] else False)) for pid,item in self.items.items()}
     def enabled(self,room_id,pid,con=None):
-        item=self.items.get(pid)
-        if not item or item['blocked']:return False
         flags=self.flags(room_id,con)
-        return bool(flags.get(pid) and all(flags.get(dep) and dep in self.items and not self.items[dep]['blocked'] for dep in item['manifest'].get('requires',[])))
+        def ready(current,trail):
+            item=self.items.get(current)
+            if current in trail or not item or item['blocked'] or not flags.get(current):return False
+            return all(ready(dep,trail|{current}) for dep in item['manifest'].get('requires',[]))
+        return ready(pid,set())
     def need(self,room_id,pid,con=None):
         if pid not in self.items:raise HTTPException(404,'插件未安装')
         if not self.enabled(room_id,pid,con):raise HTTPException(403,'插件未开启、依赖关闭或未获信任')
@@ -139,13 +127,49 @@ class Manager:
                 logger.exception('Plugin hook failed: %s',pid)
                 # Isolate a faulty hook. Never cancel the host's game transaction.
                 state.setdefault('_plugin_faults',{})[pid]='事件钩子异常；内核继续运行，需检查插件'
+    def viewer_state(self,state,user,manifest):
+        # The caller supplies a room-specific viewer; read:gm is an explicit, reviewed capability.
+        include_gm=bool(user and user.get('_is_owner') and 'read:gm' in manifest.get('capabilities',[]))
+        return project_state(state,include_gm=include_gm)
+    def public_data(self,room,state,pid,user,con=None):
+        item=self.items.get(pid)
+        if not item or item['blocked']:return {}
+        viewer=dict(user,_is_owner=room['owner_id']==user['id'])
+        safe=self.viewer_state(state,viewer,item['manifest'])
+        ctx=Context(self,pid,room,safe,user,con)
+        data=self.namespace(state,pid)['data']
+        try:
+            projected=item['backend'].public_data(ctx,deepcopy(data)) if item['backend'] else deepcopy(data)
+            if not isinstance(projected,dict) or len(json.dumps(projected,ensure_ascii=False,allow_nan=False).encode())>262144:raise ValueError('invalid public projection')
+            return projected
+        except Exception:
+            logger.exception('Plugin public projection failed: %s',pid)
+            return {} # Never fall back to potentially private raw data.
+    def core_resource(self,room,state,name,user=None,con=None):
+        ctx=Context(self,'@core',room,state,user,con)
+        data=None
+        if name=='core.world/v1':data=deepcopy(state['world'])
+        elif name=='core.characters/v1':data={'characters':ctx.characters()}
+        elif name=='core.rules/v1':data=engine_for(state).contract()
+        elif name=='core.dice/v1':data={'rule_system':engine_for(state).id,'limits':engine_for(state).contract()['dice']}
+        elif name=='core.events/v1':
+            data={'events':[project_event({'id':r['id'],'seq':r['seq'],'type':r['type'],'text':r['text'],
+                         'actor_name':r['actor_name'],'payload':json.loads(r['payload_json'])},include_gm=False) for r in ctx.events(30)]}
+        return {'owner':'@core','revision':room['revision'],'data':data} if data is not None else None
     def resource(self,room,state,name,user=None,con=None):
+        if name.startswith('core.'):
+            if name not in CORE_CAPABILITIES:return None
+            safe=project_state(state,include_gm=False) if user else state
+            return self.core_resource(room,safe,name,user,con)
         for pid,item in self.items.items():
             if name not in item['manifest'].get('provides',[]) or not self.enabled(room['id'],pid,con):continue
             if not item['backend']:return None
-            ctx=Context(self,pid,room,state,user,con)
+            viewer=dict(user,_is_owner=room['owner_id']==user['id']) if user else None
+            safe=self.viewer_state(state,viewer,item['manifest']) if user else state
+            ctx=Context(self,pid,room,safe,user,con)
+            data=self.public_data(room,safe,pid,user,con) if user else self.namespace(state,pid)['data']
             try:
-                res=item['backend'].resources(ctx,self.namespace(state,pid)['data']).get(name)
+                res=item['backend'].resources(ctx,data).get(name)
                 return {'owner':pid,'revision':self.namespace(state,pid)['revision'],'data':res} if res is not None else None
             except Exception:
                 logger.warning('Resource provider failed: %s/%s',pid,name);return None
@@ -156,18 +180,23 @@ class Manager:
                      blocked=item['blocked'],builtin=item['builtin'],hash=item['hash'],state_revision=self.namespace(state,pid)['revision'],
                      fault=state.get('_plugin_faults',{}).get(pid)) for pid,item in self.items.items()]
     def public_context(self,room,state,user,pid,con=None):
-        item=self.need(room['id'],pid,con);m=item['manifest'];ctx=Context(self,pid,room,state,user,con)
+        item=self.need(room['id'],pid,con);m=item['manifest']
+        viewer=dict(user,_is_owner=room['owner_id']==user['id'])
+        safe=self.viewer_state(state,viewer,m)
+        ctx=Context(self,pid,room,safe,user,con)
         data={'api_version':1,'plugin_id':pid,'room_id':room['id'],'branch':room['branch'],
               'plugin_revision':self.namespace(state,pid)['revision'],'is_owner':ctx.is_owner,
               'user':{'id':user['id'],'display_name':user['display_name'],'guest':bool(user['guest'])},
-              'own_state':self.namespace(state,pid)['data'],'resources':{}}
+              'own_state':self.public_data(room,safe,pid,user,con),'resources':{}}
         if 'read:room' in m.get('capabilities',[]):
-            data['room']={'title':room['title'],'scene':deepcopy(state['scene']),'world':deepcopy(state['world']),
-                         'characters':ctx.characters(),'turn':state['turn'],'facts':state['facts']}
+            data['room']={'title':room['title'],'scene':deepcopy(safe['scene']),'world':deepcopy(safe['world']),
+                         'characters':ctx.characters(),'turn':safe['turn'],'facts':safe['facts'],'rules':engine_for(state).description}
         if 'read:events' in m.get('capabilities',[]):
             data['events']=[{'id':r['id'],'seq':r['seq'],'type':r['type'],'text':r['text'],'actor_name':r['actor_name']} for r in ctx.events(30)]
+        grants=CORE_CAPABILITIES
         for resource in m.get('uses',[])+m.get('provides',[]):
-            data['resources'][resource]=self.resource(room,state,resource,user,con)
+            if resource in grants and grants[resource] not in m.get('capabilities',[]):continue
+            data['resources'][resource]=self.resource(room,safe,resource,user,con)
         data['integrations']={x:self.enabled(room['id'],x,con) for x in self.items}
         return data
     def toggle_plan(self,room_id,pid,enabled,con):

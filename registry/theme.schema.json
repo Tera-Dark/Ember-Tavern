@@ -1,0 +1,216 @@
+{
+  "$defs": {
+    "Metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "default": "1.0.0",
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "authors": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Authors",
+          "type": "array"
+        },
+        "license": {
+          "default": "",
+          "maxLength": 80,
+          "title": "License",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Metadata",
+      "type": "object"
+    },
+    "ThemeModes": {
+      "additionalProperties": false,
+      "properties": {
+        "dark": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThemePalette"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "light": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ThemePalette"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "ThemeModes",
+      "type": "object"
+    },
+    "ThemePalette": {
+      "additionalProperties": false,
+      "properties": {
+        "--bg": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Bg",
+          "type": "string"
+        },
+        "--surface": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Surface",
+          "type": "string"
+        },
+        "--surface-2": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Surface-2",
+          "type": "string"
+        },
+        "--surface-3": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Surface-3",
+          "type": "string"
+        },
+        "--border": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Border",
+          "type": "string"
+        },
+        "--text": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Text",
+          "type": "string"
+        },
+        "--muted": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Muted",
+          "type": "string"
+        },
+        "--faint": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Faint",
+          "type": "string"
+        },
+        "--gold": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Gold",
+          "type": "string"
+        },
+        "--gold-hover": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Gold-Hover",
+          "type": "string"
+        },
+        "--gold-bg": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Gold-Bg",
+          "type": "string"
+        },
+        "--green": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Green",
+          "type": "string"
+        },
+        "--green-bg": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Green-Bg",
+          "type": "string"
+        },
+        "--red": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Red",
+          "type": "string"
+        },
+        "--red-bg": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "--Red-Bg",
+          "type": "string"
+        }
+      },
+      "required": [
+        "--bg",
+        "--surface",
+        "--surface-2",
+        "--surface-3",
+        "--border",
+        "--text",
+        "--muted",
+        "--faint",
+        "--gold",
+        "--gold-hover",
+        "--gold-bg",
+        "--green",
+        "--green-bg",
+        "--red",
+        "--red-bg"
+      ],
+      "title": "ThemePalette",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "ember.theme/v1",
+      "title": "Format",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "modes": {
+      "$ref": "#/$defs/ThemeModes"
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "modes"
+  ],
+  "title": "Theme",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:theme:v1"
+}

@@ -1,0 +1,26 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "harbor-scout",
+    "name": "伊芙 · 轻规则角色模板",
+    "version": "1.0.0",
+    "description": "只包含角色资料，不携带账号、房间 ID 或操控权限。",
+    "authors": [],
+    "license": "",
+    "tags": ["斥候", "模板"]
+  },
+  "rule_system": "ember-light/v1",
+  "character": {
+    "name": "伊芙·灰羽",
+    "archetype": "斥候 / 路径寻找者",
+    "description": "熟悉港口的小巷，习惯先观察，再下决定。",
+    "gm_notes": "曾替旧海关送过信；由主持决定何时在剧情中揭示。",
+    "avatar": "feather",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {"strength": 0, "dexterity": 2, "knowledge": 1, "insight": 2, "charisma": 0},
+    "inventory": ["短弓", "麻绳", "旧港地图"],
+    "extensions": {}
+  }
+}

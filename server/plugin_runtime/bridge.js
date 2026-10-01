@@ -29,6 +29,7 @@
     onContext(fn){contexts.add(fn);if(current)fn(current);return()=>contexts.delete(fn);},
     onSignal(fn){signals.add(fn);return()=>signals.delete(fn);},
     getContext(){return current;},
+    roll(expression){return request('coreDice',{expression});},
     invoke(action,payload={},target){return request('invoke',{action,payload,target});},
     signal(name,payload={},target){parent.postMessage({ember:1,channel,kind:'signal',name,payload,target},'*');},
     notify(message,kind='success'){parent.postMessage({ember:1,channel,kind:'notify',message,level:kind},'*');},

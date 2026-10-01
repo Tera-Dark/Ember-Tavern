@@ -2,6 +2,7 @@
 python tests/browser_plugins.py --base-url http://127.0.0.1:8000 --screenshots artifacts/plugins
 Uses a stub ONLY for browser speechSynthesis; not an audible/real TTS test.
 """
+import os
 import argparse,asyncio,json,secrets,time
 from pathlib import Path
 from playwright.async_api import async_playwright,expect
@@ -10,7 +11,7 @@ async def run(base_url,screenshots):
  suffix=secrets.token_hex(4);password='Qa_'+secrets.token_urlsafe(18);errors=[];console=[];report={};out=Path(screenshots) if screenshots else None
  if out:out.mkdir(parents=True,exist_ok=True)
  async with async_playwright() as p:
-  browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+  browser=await p.chromium.launch(headless=True,args=['--no-sandbox'],executable_path=os.getenv('EMBER_CHROMIUM_PATH'))
   a=await browser.new_context(viewport={'width':1440,'height':1080});b=await browser.new_context(viewport={'width':1440,'height':1080})
   await a.add_init_script('window.__speechText=""; window.speechSynthesis.speak = u => { window.__speechText=u.text; };')
   host=await a.new_page();player=await b.new_page()
@@ -94,7 +95,7 @@ async def run(base_url,screenshots):
   voicechild=next(f for f in host.frames if '/plugin-frame/voice-tts' in f.url)
   assert not await voicechild.evaluate('() => document.documentElement.scrollWidth > innerWidth');report['mobile_voice_no_horizontal_overflow']=True
   if out:await host.screenshot(path=str(out/'mobile-voice.png'),full_page=True)
-  assert not errors,errors;assert not console,console;report.update({'page_errors':errors,'console_errors':console,'room_id':rid,'room_code':initial['code']})
+  assert not errors,errors;assert not console,console;report.update({'page_errors':errors,'console_errors':console})
   print(json.dumps(report,ensure_ascii=False,indent=2));await browser.close()
 
 if __name__=='__main__':

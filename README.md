@@ -1,6 +1,6 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**宿主 2.1.0-beta.2 测试版 · 启动器 0.1.0-beta.2 测试版 · Plugin API v1**
+**宿主 2.2.0-beta.1 测试版 · 启动器 0.1.0-beta.2 测试版 · Plugin API v1**
 
 项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
 
@@ -8,7 +8,9 @@
 
 小宿主维护身份、房间、权限、通用轻规则、权威状态、事件与回档；地图、生成器、图标移动、旁白台本、TTS 和 AI 主持都是独立可开关模块。界面不是静态原型，实际操作会写数据库、同步到同伴并生成回档快照。
 
-目前可演示／测试：双账号房间、分配角色、AI 演示主持、检定、属性、世界书、检索、分支回档、方格地图生成、多人拖动预览与提交、台本编辑、本地语音 SDK、社区插件安装／隔离。真实供应商联网与音频听感需要你在服务器配置自己的密钥；**不会让你把密钥发聊天。**
+目前可演示／测试：标准创作契约、世界／角色导入导出、个人配色包、主持秘密的服务端投影、有预算的 AI 上下文预览、邀请轮换／成员移除、双账号房间、分配角色、AI 演示主持、检定、属性、世界书、检索、分支回档、方格地图生成、多人拖动预览与提交、台本编辑、本地语音 SDK、社区插件安装／隔离。真实供应商联网与音频听感需要你在服务器配置自己的密钥；**不会让你把密钥发聊天。**
+
+先读：[整体架构](docs/ARCHITECTURE.md) · [创作指南](docs/CREATOR_GUIDE.md) · [LAN 使用](docs/LAN_DEPLOYMENT.md) · [分阶段路线图](docs/ROADMAP.md)。
 
 ## 桌面启动器（Windows x64）
 
@@ -20,7 +22,7 @@
 
 ## 手动运行（开发 / 备用）
 
-Python 3.13 为本次验证环境。无需 Node 即可运行附带的 static。
+支持 Python 3.11+；本轮在 Linux / Python 3.11.2 与锁定生产依赖验证。启动器仍使用其固定 3.13 系列，Windows 实机／Docker 需另验收。无需 Node 即可运行附带的 static。
 
 ```bash
 python -m venv .venv
@@ -33,7 +35,25 @@ python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 1 --ws-max
 
 浏览器打开本机 `http://localhost:8000`。首次选择免费试玩无需 key；与朋友长期保存房间请分别注册正式账号。房主建房、给邀请码、在角色档案分配操控者，接着到「模块中心」按需启用地图／声音。
 
+世界书／角色卡／主题请到 **「创作工坊」**下载模板，校验预览后导入；世界条目支持公共／主持秘密、规则／常驻／关键词／优先级。房主可在主持设置预览上下文，无 API 费用。个人主题只改本机配色，不改剧情；「邀请同伴」可暂停／重置邀请、移除成员。
+
 **单 worker 是当前架构要求**：SQLite WAL＋进程内 WS／锁。不要直接改 workers 为多进程；需先换共享消息与协调存储。对公网开放前审查 CORS／Origin、HTTPS、费用限额与备份；不是商业 SLA 的生产 VTT。
+
+## 创作标准
+
+| 类型 | 标准 | 权限／边界 |
+| --- | --- | --- |
+| 世界书 | ember.worldbook/v1 | 房主导入；160 条／384 KiB 世界数据；文字规则不替代可执行判定 |
+| 角色卡 | ember.character/v1 | 新角色、不携带账号或操控权；支持主持备注／命名空间扩展 |
+| 主题包 | ember.theme/v1 | 15 个颜色令牌、dark／light；不运行 CSS／脚本／URL |
+| 插件 | Plugin API 1 | 共享清单校验、minimum_host、版本化资源、明确能力／信任 |
+
+```bash
+python scripts/creator.py init worldbook creations/my-world --id my-world --name "我的世界"
+python scripts/creator.py validate creations/my-world/worldbook.json
+```
+
+只接受 JSON 创作包，512 KiB 上限，未知格式拒绝。支持旧余烬 JSON 与 ST entries 的明确子集，正则停用／未知注入语义告警；不支持 PNG 人格卡或自动执行规则。API 写请求在解析前另限 2 MiB。导出含主持秘密、署名许可需核对，分享前清理。
 
 ## 模块
 
@@ -64,7 +84,7 @@ python scripts/plugins.py package templates/scene-notes plugin-packages/scene-no
 python scripts/plugins.py install plugin-packages/scene-notes-1.0.0.zip --sha256 <实际ZIP的SHA256> --trust-backend
 ```
 
-Python 插件是受信任服务器代码，不是沙箱。非只读 UI 需要 `--grant-capabilities`；后台需要 `--trust-backend`。来源／整个包哈希变化会失去授权；拒绝覆盖内置、现有安装、路径穿越、symlink 和超限包。远程安装须 HTTPS＋可信 SHA256；没有浏览器点击任意 GitHub 自动执行的功能。
+Python 插件是受信任服务器代码，不是沙箱。非公共只读 UI（read:gm 也算）需要 `--grant-capabilities`；后台需要 `--trust-backend`。整个包哈希变化会失去授权；拒绝覆盖内置、现有安装、路径穿越、symlink 和超限包。远程安装须 HTTPS＋可信 SHA256；没有浏览器点击任意 GitHub 自动执行的功能。
 
 SDK：[docs/PLUGIN_SDK.md](docs/PLUGIN_SDK.md) · 发布：[docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md)
 
@@ -75,9 +95,13 @@ SDK：[docs/PLUGIN_SDK.md](docs/PLUGIN_SDK.md) · 发布：[docs/GITHUB_PUBLISH.
 - `GEMINI_API_KEY`、`GEMINI_MODEL`：知识模型与可选地图布局。
 - `DECISION_API_KEY`、`DECISION_BASE_URL`、`DECISION_MODEL`：OpenAI 兼容决策模型。未确认 jev 身份，接口保持可配置。
 - `TTS_API_KEY`、`TTS_BASE_URL`、`TTS_MODEL`、`TTS_VOICE`：兼容 `/audio/speech` 的 TTS。模型／voice 由供应商实际支持情况决定，勿把配置存在当作已验收。
-- `ENABLE_DEMO`：无外部模型演示。真实模式正式账号房主在主持设置开启；游客不能使用付费模型／服务端 TTS。
+- `ENABLE_DEMO`：无外部模型演示。真实模式正式账号房主在主持设置开启；体验账号不能开启真实模式或生成服务端付费 TTS；但正式房主的真实模式房间中，受邀成员行动也会调用部署者配置的模型。当前无费用硬额度，注意邀请与供应商预算。
 - `PLUGIN_COMMUNITY_URL`：你实际发布的 GitHub 仓库 HTTPS URL；未填就明确显示未发布，不虚构线上市场。
+- `CONTEXT_MAX_CHARS=24000`、`LORE_CONTEXT_CHARS=6000`：结构化游戏上下文／世界资料的序列化字符预算，不是 token 或费用估算。
+- `ALLOWED_ORIGINS`：额外明确 WS origin；正常同源访问不需要通配。代理必须覆盖客户端转发头，见 LAN 部署。
 - `DATA_DIR` 等完整参数见 `.env.example`。WebSocket 使用同源验证；前后端分开开发时使用 Vite 代理，不绕过 Origin 检查。
+
+演示模式只保证内置 GM 演示脚本不联网；地图 AI／服务端 TTS 等模块的显式生成可以独立调用付费服务，不把房间 demo 当作全局费用开关。
 
 浏览器朗读使用你设备的 Web Speech 声线，不保存文件，也不保证每个浏览器都有中文 voice。服务端 TTS 单音频上限 5 MiB；仅成员且模块开启、当前分支仍引用时认证读取。回档或关闭不会撤销已经发出的付费服务调用；异步冲突可能产生未引用文件。当前没有费用硬额度、持久任务队列或供应商 exactly-once 计费。
 
@@ -87,12 +111,19 @@ SDK：[docs/PLUGIN_SDK.md](docs/PLUGIN_SDK.md) · 发布：[docs/GITHUB_PUBLISH.
 pip install -r requirements-dev.txt
 npm ci --prefix web
 npm run build --prefix web
+python scripts/creator.py schemas --check
 python -m pytest -q
 python -m compileall -q server plugins scripts templates
 python -m playwright install --with-deps chromium
-# 另开终端启动服务器，然后：
+# 打包／安装已审阅的测试 UI（session-insights 不需要后台信任）：
+python scripts/plugins.py package templates/session-insights artifacts/session-insights.zip
+python scripts/plugins.py install artifacts/session-insights.zip --sha256 <实际SHA256>
+python scripts/plugins.py package templates/dice-tray artifacts/dice-tray.zip
+python scripts/plugins.py install artifacts/dice-tray.zip --sha256 <实际SHA256> --grant-capabilities
+# 独立测试 DATA_DIR；另开终端启动同一单 worker 服务，然后：
 python tests/browser_smoke.py
 python tests/browser_plugins.py
+python tests/browser_foundation.py
 ```
 
 当前插件 ZIP 无 Node 构建依赖；UI 单入口 ui.js 内联到独立 frame，CSS 可自行注入。Python 支持插件包内相对 helper 导入；所有文件参与信任哈希。改内置插件后必须审阅并执行 `python scripts/plugins.py lock-builtins`。**不要在 CI 自动更新此锁来掩盖未审阅变更。**
@@ -129,7 +160,7 @@ python scripts/restore.py backups/tavern-v2.zip --target data-restored --sha256 
 # 检查 integrity、重新审查插件与 trust 记录，再替换数据目录并启动。
 ```
 
-只恢复可信来源备份。记录服务器 key／配置并通过独立安全渠道保管；源码 ZIP 故意不带真实 DB、用户音频、已安装私人插件和密钥。
+只恢复可信来源备份。记录服务器 key／配置并通过独立安全渠道保管；源码 ZIP 故意不带真实 DB、用户音频、已安装私人插件和密钥。不要直接用 2.1 等旧宿主打开含 2.2 主持秘密的数据；降级需恢复升级前完整备份，旧代码即使能启动也不保证新投影边界。
 
 ## Docker / HTTPS
 
@@ -153,14 +184,14 @@ server/                 最小宿主、规则、API、模型服务、plugin_runt
 plugins/                六个独立清单／Backend／UI；catalog.lock.json
 web/                    React 宿主、模块中心、通用 iframe 桥接
 static/                 已构建发行前端（直接运行用）
-templates/              session-insights、scene-notes
+templates/              worldbook、character、theme、只读UI／后端／骰盘模板
 plugin-packages/         示例发行 ZIP、实际 SHA256
-registry/               示例插件索引；Release 下载 URL 由实际发布更新
+registry/               四个生成 Schema、作品／插件模板索引；不是在线商店
 launcher/               Go + WebView2 桌面启动器、任务与事务更新
-scripts/                run、plugins、backup、restore
+scripts/                creator、run、plugins、backup、restore
 .github/                CI、Release、Issue／PR 模板
-tests/                  自动测试、双浏览器内核与插件验收
-docs/                   PRD／Word、SDK、发布指南、测试报告、V1存档
+tests/                  自动测试、双浏览器内核／插件／创作隐私验收
+docs/                   架构／创作／LAN／路线图、SDK、测试报告、历史设计
 ```
 
 这是供小团体使用和社区继续开发的实际模块化 MVP；不冒充全规则 VTT、已上线社区或已验收的真实供应商服务。
