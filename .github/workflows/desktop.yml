@@ -73,9 +73,17 @@ jobs:
         shell: pwsh
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ${{ github.token }}
         run: |
-          npm run package:win --prefix desktop
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run package:win --prefix desktop > desktop-package.log 2>&1
+          $code=$LASTEXITCODE
+          Get-Content desktop-package.log
+          if ($code -ne 0) {
+            $text=(Get-Content desktop-package.log | Select-Object -Last 70) -join "`n"
+            @{body="Windows EXE packaging failure (build log):`n``````text`n$text`n``````"} | ConvertTo-Json | Set-Content -Encoding utf8 package-error.json
+            gh api --method POST "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" --input package-error.json
+            exit $code
+          }
           Get-ChildItem desktop/dist/*.exe | ForEach-Object {
             $hash=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
             "$hash  $($_.Name)" | Set-Content "$($_.FullName).sha256" -Encoding ascii
@@ -101,6 +109,7 @@ jobs:
             desktop/dist/*.sha256
             desktop-smoke.json
             backend-test.log
+            desktop-package.log
           retention-days: 14
   publish:
     needs: windows

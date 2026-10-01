@@ -32,7 +32,7 @@ async function toggle(plugin:any){if(!room.value)return;const result=await act('
 async function accepting(){if(!room.value)return;const result=await act('roomAction',{roomId:room.value.id,action:'invitation',accepting:room.value.access?.accepting_players===false});if(result)room.value=result;}
 async function saveSettings(){const result=await act('saveSettings',{values:changes.value});if(result){changes.value={};settings.value=await invoke('settings',{instanceId:selected.value});flash('配置已保存。启动实例后生效；密钥不会回显。');}}
 async function saveConnection(){if(await act('configureInstance',connection.value))flash('网络与实例配置已保存。');}
-async function copy(text:string){try{if(window.emberDesktop)await invoke('clipboard',{text});else await navigator.clipboard.writeText(text);flash('已复制');}catch{flash('自动复制不可用，请选中内容手动复制');}}
+async function copy(text:string){try{if(native)await invoke('clipboard',{text});else await navigator.clipboard.writeText(text);flash('已复制');}catch{flash('自动复制不可用，请选中内容手动复制');}}
 async function openGame(){if(!room.value)return;const result=await act('openGame',{roomId:room.value.id});if(result?.url)window.open(result.url,'_blank','noopener');}
 onMounted(()=>{setTheme(theme.value);refresh();timer=setInterval(refresh,1800);});onUnmounted(()=>{clearInterval(timer);clearTimeout(toastTimer);});
 </script>
