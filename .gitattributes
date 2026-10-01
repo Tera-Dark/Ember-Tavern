@@ -1,0 +1,9 @@
+# Package review digests must match on Linux and Windows checkouts.
+* text=auto eol=lf
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.ico -text
+*.zip -text
+*.docx -text
+*.exe -text

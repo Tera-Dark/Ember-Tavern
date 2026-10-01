@@ -48,13 +48,13 @@ def installed(user=Depends(current_user)):
 @router.get('/api/plugins/guide')
 def guide(user=Depends(current_user)):
     path=ROOT/'docs/PLUGIN_SDK.md'
-    return {'text':path.read_text() if path.exists() else '插件 SDK 文档正在整理。','community_url':settings.plugin_community_url or None}
+    return {'text':path.read_text(encoding='utf-8') if path.exists() else '插件 SDK 文档正在整理。','community_url':settings.plugin_community_url or None}
 
 @router.get('/api/plugins/{plugin_id}/ui')
 def ui(plugin_id:str,user=Depends(current_user)):
     manager.refresh();item=manager.items.get(plugin_id)
     if not item or item['blocked'] or not item['manifest'].get('frontend'):raise HTTPException(404,'界面插件不可用')
-    source=(item['folder']/'ui.js').read_text()
+    source=(item['folder']/'ui.js').read_text(encoding='utf-8')
     if len(source.encode())>524288:raise HTTPException(422,'前端插件包超过512 KiB')
     return {'source':source,'manifest':item['manifest'],'hash':item['hash']}
 
@@ -66,8 +66,8 @@ def frame(plugin_id:str,bridge:str=''):
     if not item or item['blocked'] or not item['manifest'].get('frontend'):raise HTTPException(404,'插件界面不可用')
     channel=bridge if re.fullmatch(r'[a-f0-9]{32}',bridge) else secrets.token_hex(16)
     nonce=secrets.token_urlsafe(24)
-    sdk=(ROOT/'server/plugin_runtime/bridge.js').read_text()
-    source=(item['folder']/'ui.js').read_text()
+    sdk=(ROOT/'server/plugin_runtime/bridge.js').read_text(encoding='utf-8')
+    source=(item['folder']/'ui.js').read_text(encoding='utf-8')
     if len(source.encode())>524288:raise HTTPException(422,'前端插件包过大')
     source=re.sub(r'</script',lambda m:'<'+chr(92)+m[0][1:],source,flags=re.I)
     css="*{box-sizing:border-box}body{margin:0;padding:14px;background:var(--bg,#141a17);color:var(--text,#e7e9df);font:13px -apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}input,select,textarea{background:var(--surface,#1a211d);border:1px solid var(--border,#303a32);border-radius:6px;padding:9px;outline:none}button{border:1px solid var(--border,#303a32);border-radius:6px;background:var(--surface,#1a211d);padding:9px 12px}button:hover:not(:disabled){border-color:var(--gold,#d5b37b)}button.primary{background:var(--gold,#d5b37b);color:#20271e;border-color:var(--gold,#d5b37b)}small,.muted{color:var(--muted,#96a093)}h2,h3,p{margin:0}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.row>label{display:flex;align-items:center;gap:6px;font-size:11px;max-width:100%}.row>label>select,.row>label>input{min-width:0}.badge{font-size:10px;color:var(--gold,#d5b37b);border:1px solid var(--border,#303a32);border-radius:4px;padding:4px 7px}.card{background:var(--surface,#1a211d);border:1px solid var(--border,#303a32);border-radius:8px;padding:15px}.note{font-size:11px;line-height:1.8;color:var(--muted,#96a093);margin-top:10px}::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:var(--border,#303a32);border-radius:4px}button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"

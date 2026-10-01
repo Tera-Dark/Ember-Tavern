@@ -132,10 +132,10 @@ def test_creator_scaffolds_all_template_types_and_never_overwrites(tmp_path):
 
 def test_single_plugin_schema_used_by_tools_and_runtime(client, tmp_path):
     import jsonschema
-    manifest = json.loads(Path('templates/dice-tray/plugin.json').read_text())
+    manifest = json.loads(Path('templates/dice-tray/plugin.json').read_text(encoding='utf-8'))
     jsonschema.validate(manifest, schema_for('plugin'))
     assert client.get('/api/contracts/plugin').json() == schema_for('plugin')
-    assert json.loads(Path('registry/plugin.schema.json').read_text()) == schema_for('plugin')
+    assert json.loads(Path('registry/plugin.schema.json').read_text(encoding='utf-8')) == schema_for('plugin')
     invalid = dict(manifest, default_enabled='yes')
     with pytest.raises(ValueError):
         validate_manifest(invalid)
@@ -320,7 +320,7 @@ def test_creator_guide_and_local_catalog_match_actual_templates(client):
     for item in catalog['content_templates']:
         document = json.loads(Path(item['template_path']).read_text(encoding='utf-8'))
         assert document['format'] == item['format']
-        assert json.loads(Path(item['schema_path']).read_text()) == schema_for(item['kind'])
+        assert json.loads(Path(item['schema_path']).read_text(encoding='utf-8')) == schema_for(item['kind'])
     for item in catalog['plugins']:
         assert (Path(item['template_path']) / 'plugin.json').is_file()
         if item.get('package'):

@@ -48,6 +48,7 @@ async def remove_member(room_id: str, member_id: str, data: Revision, user=Depen
                     raise HTTPException(404, '成员不在该房间')
                 con.execute('DELETE FROM assignments WHERE room_id=? AND user_id=?', (room_id, member_id))
                 con.execute('DELETE FROM members WHERE room_id=? AND user_id=?', (room_id, member_id))
+                con.execute('UPDATE guest_invites SET enabled=0 WHERE room_id=? AND user_id=?', (room_id, member_id))
                 append_event(con, room_id, 'system', '房主移除了一位成员，相关角色已解除分配。', actor=user)
                 save_receipt(con, room_id, user, data.request_key)
     await hub.disconnect_user(room_id, member_id)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"ember-tavern/launcher/internal/engine"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -37,6 +39,9 @@ func main() {
 	source := flag.String("dev-source", "", "Development local source snapshot")
 	skip := flag.Bool("dev-skip-deps", false, "Testing only: skip requirements install")
 	system := flag.Bool("dev-system-packages", false, "Testing only: venv can use system packages")
+	bundled := flag.String("bundled-source", "", "Trusted host files shipped with desktop")
+	commit := flag.String("bundled-commit", "", "Bundled host commit")
+	desktop := flag.Bool("desktop-control", false, "Private stdio handshake for Electron main process")
 	flag.Parse()
 	if !*preview {
 		host, _, e := net.SplitHostPort(*listen)
@@ -54,7 +59,7 @@ func main() {
 	}
 	defer logFile.Close()
 	log.SetOutput(logFile)
-	manager, e := engine.New(engine.Config{Root: *root, Python: *python, LocalSource: *source, SkipDependencies: *skip, SystemPackages: *system, Preview: *preview})
+	manager, e := engine.New(engine.Config{Root: *root, Python: *python, LocalSource: *source, BundledSource: *bundled, BundledCommit: *commit, SkipDependencies: *skip, SystemPackages: *system, Preview: *preview})
 	if e != nil {
 		log.Fatal(e)
 	}
@@ -64,15 +69,20 @@ func main() {
 		log.Fatal(e)
 	}
 	token := nonce()
-	api := &API{Manager: manager, Token: token, Preview: *preview, Open: openExternal}
+	stop := make(chan os.Signal, 1)
+	var stopOnce sync.Once
+	api := &API{Manager: manager, Token: token, Preview: *preview, Open: openExternal, Shutdown: func() { stopOnce.Do(func() { stop <- syscall.SIGTERM }) }}
 	server := &http.Server{Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() { _ = server.Serve(listener) }()
 	url := "http://" + listener.Addr().String() + "/bootstrap?key=" + token
 	if *preview {
 		url = "http://" + listener.Addr().String() + "/"
 	}
-	fmt.Println("余烬启动器 " + engine.LauncherVersion + " · UI " + listener.Addr().String())
-	stop := make(chan os.Signal, 1)
+	if *desktop {
+		_ = json.NewEncoder(os.Stdout).Encode(map[string]any{"ready": true, "port": listener.Addr().(*net.TCPAddr).Port, "token": token})
+	} else {
+		fmt.Println("余烬启动器 " + engine.LauncherVersion + " · UI " + listener.Addr().String())
+	}
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	done := make(chan struct{})
 	finished := make(chan struct{})

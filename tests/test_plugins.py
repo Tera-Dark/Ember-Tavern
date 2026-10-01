@@ -199,7 +199,7 @@ def test_hot_discovery_ui_plugin_and_installer_security(client,tmp_path):
     r=toggle(client,r,h,'test-panel')
     assert next(p for p in r['plugins'] if p['id']=='test-panel')['enabled']
     assert client.get('/plugin-frame/test-panel').status_code==200
-    assert 'test-panel' not in Path('web/src/App.jsx').read_text()
+    assert 'test-panel' not in Path('web/src/App.jsx').read_text(encoding='utf-8')
     malicious=tmp_path/'malicious.zip'
     with zipfile.ZipFile(malicious,'w') as z:z.writestr('../outside','bad')
     with pytest.raises(ValueError,match='Unsafe archive'):install(str(malicious))
@@ -254,10 +254,10 @@ def test_trusted_backend_template_and_rollback(client,tmp_path):
 def test_state_migration_on_reenable(client,tmp_path):
     install_notes(tmp_path)
     _,h,_=account(client);r=room(client,h);r=toggle(client,r,h,'scene-notes');r=toggle(client,r,h,'scene-notes',False)
-    folder=settings.data_dir/'plugins/scene-notes';m=json.loads((folder/'plugin.json').read_text());m.update(state_version=2,version='1.1.0');(folder/'plugin.json').write_text(json.dumps(m))
-    code=(folder/'backend.py').read_text().replace('schema_version=1','schema_version=2\n    def migrate(self,data,old_version):return dict(data,migrated_from=old_version)')
+    folder=settings.data_dir/'plugins/scene-notes';m=json.loads((folder/'plugin.json').read_text(encoding='utf-8'));m.update(state_version=2,version='1.1.0');(folder/'plugin.json').write_text(json.dumps(m))
+    code=(folder/'backend.py').read_text(encoding='utf-8').replace('schema_version=1','schema_version=2\n    def migrate(self,data,old_version):return dict(data,migrated_from=old_version)')
     (folder/'backend.py').write_text(code)
-    trust=settings.data_dir/'plugin-trust.json';values=json.loads(trust.read_text());values['scene-notes']=package_hash(folder);trust.write_text(json.dumps(values))
+    trust=settings.data_dir/'plugin-trust.json';values=json.loads(trust.read_text(encoding='utf-8'));values['scene-notes']=package_hash(folder);trust.write_text(json.dumps(values))
     manager.refresh();r=toggle(client,r,h,'scene-notes')
     assert r['state']['_plugins']['scene-notes']['schema_version']==2
     assert r['state']['_plugins']['scene-notes']['data']['migrated_from']==1

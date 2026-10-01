@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const LauncherVersion = "0.1.0-beta.2"
+const LauncherVersion = "0.2.0-beta.1"
 const Repository = "Tera-Dark/Ember-Tavern"
 const RepositoryURL = "https://github.com/" + Repository
 const PythonVersion = "3.13.15"
@@ -44,12 +44,13 @@ type Task struct {
 }
 type View struct {
 	Instance
-	Status   string `json:"status"`
-	URL      string `json:"url,omitempty"`
-	PID      int    `json:"pid,omitempty"`
-	DataPath string `json:"data_path"`
-	Task     *Task  `json:"task,omitempty"`
-	Error    string `json:"error,omitempty"`
+	Status   string   `json:"status"`
+	URL      string   `json:"url,omitempty"`
+	PID      int      `json:"pid,omitempty"`
+	DataPath string   `json:"data_path"`
+	LANURLs  []string `json:"lan_urls"`
+	Task     *Task    `json:"task,omitempty"`
+	Error    string   `json:"error,omitempty"`
 }
 type Release struct {
 	Version string `json:"version"`
@@ -61,6 +62,8 @@ type Config struct {
 	Root             string
 	Python           string
 	LocalSource      string
+	BundledSource    string
+	BundledCommit    string
 	SkipDependencies bool
 	SystemPackages   bool
 	Preview          bool
@@ -182,11 +185,14 @@ func (m *Manager) saveLocked() error {
 	return atomicJSON(filepath.Join(m.config.Root, "launcher.json"), state{Schema: 1, Instances: rows})
 }
 func (m *Manager) Create(name, channel string, port int, lan bool) (View, error) {
+	if channel == "bundled" && m.config.BundledSource == "" {
+		return View{}, errors.New("未提供随桌面打包的本体")
+	}
 	if e := checkName(name); e != nil {
 		return View{}, e
 	}
-	if channel != "release" && channel != "main" {
-		return View{}, errors.New("版本通道只支持 release / main")
+	if channel != "release" && channel != "main" && channel != "bundled" {
+		return View{}, errors.New("版本通道只支持 bundled / release / main")
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -237,7 +243,7 @@ func (m *Manager) Create(name, channel string, port int, lan bool) (View, error)
 }
 func (m *Manager) viewLocked(id string) View {
 	i := m.instances[id]
-	v := View{Instance: *i, Status: "not_installed", DataPath: filepath.Join(m.path(id), "data"), Error: m.errors[id]}
+	v := View{Instance: *i, Status: "not_installed", DataPath: filepath.Join(m.path(id), "data"), LANURLs: lanURLs(i.Port, i.LAN), Error: m.errors[id]}
 	if i.Commit != "" {
 		v.Status = "ready"
 	}
@@ -363,7 +369,7 @@ func (m *Manager) Configure(id, name, channel string, port int, lan bool) error 
 	if port < 1024 || port > 65535 {
 		return errors.New("端口范围错误")
 	}
-	if channel != "release" && channel != "main" {
+	if channel != "release" && channel != "main" && channel != "bundled" {
 		return errors.New("通道错误")
 	}
 	m.mu.Lock()

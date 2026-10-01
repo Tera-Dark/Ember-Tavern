@@ -117,10 +117,10 @@ async def run(base_url, screenshots):
             await host.get_by_role('button',name='导出档案',exact=True).click()
         file=await download.value
         temp=Path(await file.path())
-        exported=json.loads(temp.read_text())
+        exported=json.loads(temp.read_text(encoding='utf-8'))
         assert exported['format']=='ember-tavern/v1'
         assert any(not e['active'] for e in exported['all_events'])
-        assert password not in temp.read_text()
+        assert password not in temp.read_text(encoding='utf-8')
         await host.get_by_role('button',name='冒险现场',exact=True).click()
         await host.get_by_role('button',name='切换明暗主题',exact=True).click()
         if output:await host.screenshot(path=str(output/'light-room.png'),full_page=True)

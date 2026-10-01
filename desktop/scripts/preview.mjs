@@ -1,0 +1,14 @@
+// Explicit development preview with isolated QA data; not a production management server.
+import {createServer} from 'node:http';import {createRequire} from 'node:module';import {readFile,mkdir} from 'node:fs/promises';import {resolve,join,extname} from 'node:path';
+const require=createRequire(import.meta.url);const {EngineClient,HostController}=require('../.vite/core.cjs');const repo=resolve(import.meta.dirname,'../..');
+const root=join(repo,'artifacts/desktop-preview');await mkdir(root,{recursive:true});
+const engine=new EngineClient({exe:join(repo,'desktop/resources/bin/ember-engine'),root,host:join(repo,'desktop/resources/host'),commit:'development-preview',testPython:join(repo,'.venv/bin/python'),testSkip:false});await engine.start();
+const controller=new HostController(engine,{encode:value=>Buffer.from(value).toString('base64'),decode:value=>Buffer.from(value,'base64').toString()});
+const server=createServer(async(req,res)=>{try{
+ const path=new URL(req.url,'http://preview').pathname;
+ if(path==='/desktop-api'&&req.method==='POST'){let text='';for await(const chunk of req){text+=chunk;if(text.length>40000)throw new Error('请求过大')}const {method,args}=JSON.parse(text);let result;if(method==='clipboard'||method==='window'||method==='external'||method==='openGame'||method==='installPlugin')throw new Error('此操作需要原生桌面窗口；开发预览不调用系统功能');result=await controller.invoke(method,args);res.setHeader('Content-Type','application/json');res.end(JSON.stringify(result));return;}
+ if(path==='/preview-bridge.js'){res.setHeader('Content-Type','application/javascript');res.end(`window.emberDesktop={kind:'preview',invoke:async(method,args={})=>{const r=await fetch('/desktop-api',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({method,args})});const value=await r.json();if(!r.ok)throw new Error(value.error);return value}};`);return;}
+ const folder=join(repo,'desktop/.vite/renderer');const file=resolve(folder,'.'+(path==='/'?'/index.html':decodeURIComponent(path)));if(!file.startsWith(folder+'/'))throw new Error('路径无效');let bytes=await readFile(file);res.setHeader('Content-Type',extname(file)==='.js'?'application/javascript':extname(file)==='.css'?'text/css':'text/html; charset=utf-8');if(extname(file)==='.html')bytes=Buffer.from(bytes.toString().replace('</head>','<script src="/preview-bridge.js"></script></head>'));res.setHeader('Cache-Control','no-store');res.end(bytes);
+ }catch(error){res.statusCode=400;res.setHeader('Content-Type','application/json');res.end(JSON.stringify({error:error.message}));}});
+server.listen(8765,'0.0.0.0',()=>console.log('Desktop development preview on :8765; isolated QA data, no paid providers.'));
+for(const signal of ['SIGTERM','SIGINT'])process.on(signal,async()=>{server.close();await engine.stop();process.exit()});

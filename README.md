@@ -1,6 +1,6 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**宿主 2.2.0-beta.1 测试版 · 启动器 0.1.0-beta.2 测试版 · Plugin API v1**
+**宿主 2.3.0-beta.1 测试版 · 余烬桌面 / 部署引擎 0.2.0-beta.1 · Plugin API v1**
 
 项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
 
@@ -12,17 +12,19 @@
 
 先读：[整体架构](docs/ARCHITECTURE.md) · [创作指南](docs/CREATOR_GUIDE.md) · [LAN 使用](docs/LAN_DEPLOYMENT.md) · [分阶段路线图](docs/ROADMAP.md)。
 
-## 桌面启动器（Windows x64）
+## 房主桌面（Windows x64）
 
-双击版本号命名的启动器 EXE，点「新建实例 → 创建并启动」。启动器自动准备 Python、下载项目并安装依赖；卡片右上可从固定 GitHub 仓库原地更新，备份并预检后替换，失败恢复旧代码 / 环境 / 数据。
+参考 ComfyUI Desktop 的 **Electron + TypeScript + Vite** 架构，自己的 Vue 3 管理界面：本地实例卡片、自动安装、启停、房间与同伴、插件管理、API / LAN 配置、余烬 / 月下 / 浅色主题。沿用 Go 部署引擎与 Python / React 游戏宿主，不复制 Comfy 的 GPL 实现或品牌。
 
-账号、房间、素材和密钥独立保存在 `%LOCALAPPDATA%\EmberTavern`。不要求手动装 Python / Git / Node，不修改系统 PATH。
+[下载 Windows 安装器 / 便携 EXE](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1) · [房主桌面指南](docs/DESKTOP_GUIDE.md) · [桌面验收](docs/DESKTOP_TEST_REPORT.md) · [部署引擎维护](launcher/README.md)
 
-[启动器说明](launcher/README.md) · [验收边界](docs/LAUNCHER_TEST_REPORT.md)。Windows EXE 已构建；完整 Windows 桌面安装仍需实机验收。下载启动器版本对应的 Release，不要把旧应用源码包当成 EXE。
+房主运行 EXE → 创建实例并等「运行中」→ 新建房间 → 为每位同伴创建 **身份＋验证密钥**。同伴只需在同一个可信 LAN 的浏览器打开房主地址入座，**不安装、不注册**。房主在嵌入式冒险桌分配角色、导入世界书、启用 AI 和其他模块。正式网页账号 + 通用邀请码的备用流程仍保留。
+
+账号、房间、素材、配置独立保存在 `%LOCALAPPDATA%\EmberTavern`；不手工安装 Python / Git / Node，不修改系统 PATH。**首次安装需要网络、EXE 未代码签名、普通 LAN HTTP 不加密**；保留自己的 `.env` 和加密房主凭据，实际设备 / 防火墙 / 供应商需实机确认。详情与迁移边界见桌面指南。
 
 ## 手动运行（开发 / 备用）
 
-支持 Python 3.11+；本轮在 Linux / Python 3.11.2 与锁定生产依赖验证。启动器仍使用其固定 3.13 系列，Windows 实机／Docker 需另验收。无需 Node 即可运行附带的 static。
+支持 Python 3.11+；Linux CI / Python 3.11、3.13 与 Windows / Python 3.13 均运行锁定依赖和测试。桌面固定使用 3.13 系列，用户实机网络／Docker 需另验收。无需 Node 即可运行附带的 static。
 
 ```bash
 python -m venv .venv
@@ -90,7 +92,7 @@ SDK：[docs/PLUGIN_SDK.md](docs/PLUGIN_SDK.md) · 发布：[docs/GITHUB_PUBLISH.
 
 ## 双模型与 TTS 配置
 
-仅填服务器 `.env`／部署环境，勿提交 Git：
+房主可在桌面「API 与配置」填写，停机保存后重启；手动部署填服务器 `.env`／环境，勿提交 Git：
 
 - `GEMINI_API_KEY`、`GEMINI_MODEL`：知识模型与可选地图布局。
 - `DECISION_API_KEY`、`DECISION_BASE_URL`、`DECISION_MODEL`：OpenAI 兼容决策模型。未确认 jev 身份，接口保持可配置。

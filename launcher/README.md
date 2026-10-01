@@ -1,4 +1,6 @@
-# 余烬启动器 · 0.1.0-beta.2 测试版
+> **Windows 用户入口已升级为 [余烬桌面 Electron 房主控制台](../docs/DESKTOP_GUIDE.md)**。新版本部署引擎为 0.2.0-beta.1，保留下面的 CLI / 旧 Web 管理维护能力。不要把旧 0.1 EXE 当作新版 Electron 桌面。
+
+# 余烬启动器 · 0.2.0-beta.1 测试版
 
 Windows 10 / 11 x64 原生窗口（Go + WebView2），约 8 MB。参考集中式实例管理的首页、卡片和任务入口，不复制 Comfy 商标；余烬酒馆本体仍保留独立模块架构。
 

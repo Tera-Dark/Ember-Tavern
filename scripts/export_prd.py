@@ -10,7 +10,7 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from PIL import Image
 
 root=Path(__file__).resolve().parent.parent
-source=(root/'docs/PRD.md').read_text()
+source=(root/'docs/PRD.md').read_text(encoding='utf-8')
 doc=Document()
 section=doc.sections[0]
 section.page_width=Cm(21);section.page_height=Cm(29.7)
