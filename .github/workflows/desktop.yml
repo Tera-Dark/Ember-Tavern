@@ -121,6 +121,7 @@ jobs:
             desktop/dist/*.exe
             desktop/dist/*.sha256
             desktop-smoke.json
+            desktop-smoke.json.*
             desktop-smoke.json.engine.log
             desktop-smoke.log
             backend-test.log

@@ -17,7 +17,8 @@ async function openGame(instanceId:string,roomId:string){
   const instance=await controller.instance(id(instanceId));await controller.hostSession(instanceId);
   const origin=`http://127.0.0.1:${instance.port}`;
   const game=new BrowserWindow({width:1440,height:940,minWidth:880,title:'余烬酒馆 · 冒险桌',backgroundColor:'#111812',webPreferences:{preload:join(__dirname,'game-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true}});
-  games.set(game.webContents.id,{instanceId,origin});game.on('closed',()=>games.delete(game.webContents.id));
+  const gameContentsId=game.webContents.id;
+  games.set(gameContentsId,{instanceId,origin});game.on('closed',()=>games.delete(gameContentsId));
   game.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   game.webContents.on('will-navigate',(event,url)=>{if(new URL(url).origin!==origin)event.preventDefault()});
   game.webContents.session.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));
