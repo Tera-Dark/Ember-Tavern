@@ -22,6 +22,8 @@ from .routes.dossiers import router as dossiers_router
 from .routes.history import router as history_router
 from .routes.membership import router as membership_router
 from .routes.guests import router as guests_router
+from .presets.routes import router as presets_router
+from .presets.library import seed_bundled
 from .network import websocket_origin_allowed
 from .state import load_state
 from .rules import engine_for
@@ -83,6 +85,7 @@ async def lifespan(app):
     init_db()
     manager.refresh()
     with connection() as con:
+        seed_bundled(con)
         for room in con.execute('SELECT * FROM rooms').fetchall():
             state = load_state(room['state_json'])
             if dump(state) != room['state_json']:
@@ -94,7 +97,7 @@ async def lifespan(app):
 
 app = FastAPI(title='余烬酒馆 API',version=HOST_VERSION,lifespan=lifespan)
 app.add_middleware(RequestBodyLimit)
-for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router, guests_router):
+for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router, guests_router, presets_router):
     app.include_router(router)
 
 

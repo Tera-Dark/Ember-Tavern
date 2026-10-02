@@ -112,6 +112,13 @@ def model_context(room_id, state, action_text):
                'rule_system': engine_for(state).id, 'rules': engine_for(state).description,
                'characters': characters, 'facts': state['facts'][-8:], 'retrieved': [], 'recent_events': [],
                'continuation': state['continuation']}
+    from .presets.scenario import model_brief
+    brief = model_brief(state)
+    if brief:
+        brief['gm_notes'] = brief['gm_notes'][:600]
+        brief['clues'] = [{**clue,'text':clue['text'][:220],'gm_notes':clue['gm_notes'][:120]} for clue in brief['clues'][:6]]
+        brief['transitions'] = [{**edge,'gm_guidance':edge['gm_guidance'][:180]} for edge in brief['transitions'][:6]]
+        context['campaign'] = brief
     context['world']['premise'] = context['world']['premise'][:3000]
     # Preserve structured action/roll and all character stats even at a small budget.
     if encoded_chars(context) > total_budget - 1200:
@@ -122,6 +129,11 @@ def model_context(room_id, state, action_text):
             char['description'] = char['description'][:80]
             char['gm_notes'] = char['gm_notes'][:80]
             char['inventory'] = char['inventory'][:3]
+    if brief and encoded_chars(context) > total_budget - 1200:
+        context['campaign']['gm_notes'] = context['campaign']['gm_notes'][:120]
+        context['campaign']['objective'] = context['campaign']['objective'][:200]
+        context['campaign']['clues'] = context['campaign']['clues'][:2]
+        context['campaign']['transitions'] = context['campaign']['transitions'][:2]
     for row in recent[:2]:
         context['recent_events'].insert(0, {'id': row['id'], 'type': row['type'], 'actor': row['actor_name'], 'text': row['text'][:500]})
     if encoded_chars(context) > total_budget:

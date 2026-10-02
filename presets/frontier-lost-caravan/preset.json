@@ -1,0 +1,89 @@
+{
+  "format": "ember.preset/v1",
+  "metadata": {
+    "id": "frontier-lost-caravan",
+    "name": "余烬边境：失联商队",
+    "version": "1.0.0",
+    "description": "边境驿站收到一匹无人骑乘的黑马。邮袋里最后一张便笺指向石门山口。商队可能正在等待援助，但前往山口不只有正面冲突这一种方法。",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "minimum_host": "2.4.0",
+  "plugin_api": 1,
+  "language": "zh-CN",
+  "play_mode": "adventure",
+  "min_players": 1,
+  "max_players": 4,
+  "duration_minutes": 90,
+  "difficulty": "beginner",
+  "content_warnings": [
+    "悬疑与受困处境；请先约定可接受内容。"
+  ],
+  "rule_system": "ember-light/v1",
+  "rule_version": "1.1.0",
+  "profile": {
+    "checks": "normal",
+    "style": "有探索与危险，也有协商、迂回和撤退；失败仍可继续。"
+  },
+  "worldbook": {
+    "path": "world/worldbook.json",
+    "id": "frontier-lost-caravan-world",
+    "version": "1.0.0",
+    "sha256": "1c6855c5a2b036a162530c4e8bfc546fe2056a753096fbebb40f93d7022823c5"
+  },
+  "scenario": {
+    "path": "story/scenario.json",
+    "id": "frontier-lost-caravan-story",
+    "version": "1.0.0",
+    "sha256": "afc90f8cb6de4e0c4178678cda4f33e0b1832ca0fca8b4895a965baed3fe33e0"
+  },
+  "characters": [
+    {
+      "path": "characters/scout.json",
+      "id": "frontier-lost-caravan-scout",
+      "version": "1.0.0",
+      "sha256": "4d9569911eb942099cf45ff7cb5d1308b88082b41fce375dc1caaa9e8d51938d"
+    },
+    {
+      "path": "characters/guard.json",
+      "id": "frontier-lost-caravan-guard",
+      "version": "1.0.0",
+      "sha256": "4fde4dd24130b6d9a23e5fc3b366b93db66e56ad6a1f8aee942473172da39da7"
+    },
+    {
+      "path": "characters/scholar.json",
+      "id": "frontier-lost-caravan-scholar",
+      "version": "1.0.0",
+      "sha256": "cef4d5b3e056817fec8f0de936da5b55140fb325930b0b947e15a1526912754c"
+    },
+    {
+      "path": "characters/mediator.json",
+      "id": "frontier-lost-caravan-mediator",
+      "version": "1.0.0",
+      "sha256": "bbc20d6ed493de0e90401d340c9a7765d6a382cfef40b65d4a7dc649cc5a56a4"
+    }
+  ],
+  "theme": null,
+  "plugins": [
+    {
+      "id": "ai-host",
+      "version": "1.0.0",
+      "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+      "required": true,
+      "enabled": true
+    }
+  ],
+  "documents": [
+    {
+      "path": "readme.md",
+      "sha256": "5fe2cc91a655077cf82121da0b37bcf2280f728d74859ff13b9e33515d6275f8"
+    },
+    {
+      "path": "licenses/content.txt",
+      "sha256": "603d4c2b59048f1207812e1c369e6235fb737f1aa4f9223a70882ccfcb425ca7"
+    }
+  ]
+}

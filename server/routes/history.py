@@ -57,6 +57,12 @@ def export(room_id:str,user=Depends(current_user)):
         room = get_room_member(con,room_id,user,True)
         rows = con.execute('SELECT * FROM events WHERE room_id=? ORDER BY seq',(room_id,)).fetchall()
         all_events = [event_dict(r) | {'snapshot':load_state(r['snapshot_json'])} for r in rows]
+        lock_row = con.execute('SELECT package_hash FROM room_preset_locks WHERE room_id=?',(room_id,)).fetchone()
+        source_bundle = None
+        if lock_row:
+            from ..presets.library import get_package
+            source_bundle = get_package(con,lock_row['package_hash']).envelope()
     data = {'format':'ember-tavern/v1','exported_at':now(),'room':pack_room(room_id,user),'all_events':all_events}
+    if source_bundle is not None: data['preset_bundle'] = source_bundle
     return Response(json.dumps(data,ensure_ascii=False,indent=2),media_type='application/json',
                     headers={'Content-Disposition':f'attachment; filename="ember-session-{room_id[:8]}.json"'})

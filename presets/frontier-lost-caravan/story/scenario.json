@@ -1,0 +1,212 @@
+{
+  "format": "ember.scenario/v1",
+  "metadata": {
+    "id": "frontier-lost-caravan-story",
+    "name": "余烬边境：失联商队 · 剧本",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "rule_system": "ember-light/v1",
+  "objective": "寻找失联商队，选择救援、协商通行或带着可靠情报安全撤回。",
+  "start_scene": "outpost",
+  "scenes": [
+    {
+      "id": "outpost",
+      "title": "序幕 · 无人的黑马",
+      "text": "夜信在门前停下。邮袋尚未打开，米娅让出一张空桌，请你们先决定怎么调查。",
+      "gm_notes": "检查便笺后揭示 mail；允许安抚黑马或询问米娅作为替代入口。",
+      "kind": "scene",
+      "clues": [
+        "mail"
+      ],
+      "transitions": [
+        {
+          "id": "ridge",
+          "label": "从高地观察山口",
+          "target": "ridge",
+          "requires_clues": [
+            "mail"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "camp",
+          "label": "直接寻找商队营地",
+          "target": "camp",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "withdraw",
+          "label": "先撤回并报告可靠情报",
+          "target": "ending-report",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "ridge",
+      "title": "第一幕 · 高地的风",
+      "text": "山口在云影下露出轮廓。你们可以攀爬、寻找旧猎径，或观察营地的行动。",
+      "gm_notes": "失败可增加代价或延迟，但仍能发现缓坡，不能一次骰子封死全部路线。",
+      "kind": "scene",
+      "clues": [
+        "route"
+      ],
+      "transitions": [
+        {
+          "id": "gate",
+          "label": "沿安全路线前往石门",
+          "target": "gate",
+          "requires_clues": [
+            "route"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "camp",
+          "label": "先与营地交涉",
+          "target": "camp",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "report",
+          "label": "记下路线后撤回",
+          "target": "ending-report",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "camp",
+      "title": "第二幕 · 山口的条件",
+      "text": "若辛没有举起武器。他想知道这趟商队是否也能给山口留下补给。商队领队愿意谈，却担心承诺无法兑现。",
+      "gm_notes": "允许交换、担保或迂回，不替玩家承诺。确认双方接受后才揭示 agreement。",
+      "kind": "scene",
+      "clues": [
+        "agreement"
+      ],
+      "transitions": [
+        {
+          "id": "trade",
+          "label": "用公平条件协商通行",
+          "target": "ending-trade",
+          "requires_clues": [
+            "agreement"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "gate",
+          "label": "继续检查石门和侧坡",
+          "target": "gate",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "report",
+          "label": "不强迫交易，撤回报信",
+          "target": "ending-report",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "title": "第三幕 · 石门下的水声",
+      "text": "裂隙里传来水声，旁边有旧工具痕迹。你们可以辨认结构、利用绳索或请营地的人协助。",
+      "gm_notes": "确认入口后揭示 tunnel；检定失败也可在协作和时间代价下取得证据。",
+      "kind": "scene",
+      "clues": [
+        "tunnel"
+      ],
+      "transitions": [
+        {
+          "id": "rescue",
+          "label": "安排分批通过安全侧坡",
+          "target": "ending-rescue",
+          "requires_clues": [
+            "tunnel"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "negotiate",
+          "label": "返回营地寻求协商",
+          "target": "camp",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "report",
+          "label": "带着情报撤回",
+          "target": "ending-report",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "ending-rescue",
+      "title": "结局 · 归来的车轮",
+      "text": "商队分批越过侧坡，最后一辆车在同伴的帮助下离开险地。每位角色可以说出这次救援中愿意继续承担的责任。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-trade",
+      "title": "结局 · 山口的承诺",
+      "text": "补给与通行达成了双方认可的交换。商队继续上路，山口也不再只是地图上的阻碍。你们留下了一项可被追问的承诺。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-report",
+      "title": "结局 · 先把人带回家",
+      "text": "你们带回可靠情报，没有把无法承担的风险强加给同伴。下一次救援可以从这些证据开始。撤退不等于故事毫无进展。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    }
+  ],
+  "clues": [
+    {
+      "id": "mail",
+      "title": "商队的便笺",
+      "text": "便笺显示商队在石门附近等待，并没有主动放弃行程。",
+      "gm_notes": ""
+    },
+    {
+      "id": "route",
+      "title": "缓坡猎径",
+      "text": "旧猎径能避开最险的岩壁，到达石门侧面。",
+      "gm_notes": ""
+    },
+    {
+      "id": "agreement",
+      "title": "补给交换",
+      "text": "若辛愿意以公平补给换取商队通行。",
+      "gm_notes": ""
+    },
+    {
+      "id": "tunnel",
+      "title": "排水隧道入口",
+      "text": "现场痕迹确认隧道连通安全侧坡，可以安排分批救援。",
+      "gm_notes": ""
+    }
+  ]
+}

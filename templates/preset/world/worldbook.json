@@ -1,0 +1,80 @@
+{
+  "format": "ember.worldbook/v1",
+  "metadata": {
+    "id": "town-one-week-world",
+    "name": "小镇的一周 · 世界书",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [],
+    "license": "",
+    "tags": []
+  },
+  "world": {
+    "title": "小镇的一周",
+    "premise": "小镇准备一场周末晚宴。有人想守住传统，有人想让新来的人也有座位。你们的一周由几次谈话、一次失败的小制作，以及愿意兑现的承诺组成。",
+    "tone": "温暖但不替人物和解；倾听、关系与日常选择，不自动战斗或检定。",
+    "rule_system": "ember-light/v1",
+    "lore": [
+      {
+        "id": "bookshop",
+        "title": "书店后院",
+        "content": "书店主人阿澄愿意开放后院，但希望访客一起承担清理和布置。她不喜欢被当作无条件的资源。",
+        "keys": [
+          "阿澄",
+          "书店",
+          "后院"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "gardener",
+        "title": "园丁池远",
+        "content": "池远重视旧传统，也怕自己的手艺被遗忘。请他解释理由，比一句“你太保守了”更能推进关系。",
+        "keys": [
+          "池远",
+          "园丁",
+          "传统"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "courier",
+        "title": "新来的信使",
+        "content": "信使沐言不知道是否该参加镇上的晚宴。明确邀请与尊重拒绝都比擅自替她决定更好。",
+        "keys": [
+          "沐言",
+          "信使",
+          "邀请"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "secret",
+        "title": "没有说出口的心愿",
+        "content": "阿澄真正希望的是有人愿意共同照料后院，而不是把她的好意当作默认服务。这里只是主持理解，不是必须替玩家完成的隐藏任务。",
+        "keys": [
+          "照料",
+          "后院",
+          "心愿"
+        ],
+        "visibility": "gm",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      }
+    ]
+  }
+}

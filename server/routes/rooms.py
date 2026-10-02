@@ -36,7 +36,6 @@ def list_rooms(user=Depends(current_user)):
 def new_room(data:RoomCreate,user=Depends(current_user)):
     if named_guest(user):
         raise HTTPException(403, '受邀同伴不能创建房间，请联系房主')
-    throttle(('create',user['id']),10,3600)
     return pack_room(create_room(user,data),user)
 
 

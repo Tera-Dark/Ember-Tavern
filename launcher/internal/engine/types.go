@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const LauncherVersion = "0.2.0-beta.2"
+const LauncherVersion = "0.2.0-beta.3"
 const Repository = "Tera-Dark/Ember-Tavern"
 const RepositoryURL = "https://github.com/" + Repository
 const PythonVersion = "3.13.15"

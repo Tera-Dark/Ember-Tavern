@@ -1,0 +1,87 @@
+{
+  "format": "ember.preset/v1",
+  "metadata": {
+    "id": "my-gameplay-preset",
+    "name": "我的玩法预设",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [],
+    "license": "",
+    "tags": []
+  },
+  "minimum_host": "2.4.0",
+  "plugin_api": 1,
+  "language": "zh-CN",
+  "play_mode": "slice-of-life",
+  "min_players": 1,
+  "max_players": 4,
+  "duration_minutes": 45,
+  "difficulty": "beginner",
+  "content_warnings": [
+    "关系与承诺话题；尊重拒绝与边界。"
+  ],
+  "rule_system": "ember-light/v1",
+  "rule_version": "1.1.0",
+  "profile": {
+    "checks": "narrative",
+    "style": "温暖但不替人物和解；倾听、关系与日常选择，不自动战斗或检定。"
+  },
+  "worldbook": {
+    "path": "world/worldbook.json",
+    "id": "town-one-week-world",
+    "version": "1.0.0",
+    "sha256": "a3715256628cf7d1990c16d54e838b75b7ba7ecab7d8555d7db6e58c3d40b73d"
+  },
+  "scenario": {
+    "path": "story/scenario.json",
+    "id": "town-one-week-story",
+    "version": "1.0.0",
+    "sha256": "ec94894f81f3ad9c8cf64fecc46ca2b46dd5237cb42adc0985c05d5c4a41c81d"
+  },
+  "characters": [
+    {
+      "path": "characters/scout.json",
+      "id": "town-one-week-scout",
+      "version": "1.0.0",
+      "sha256": "4c479c20928f82c99c817f57eba0c47d8f27d0b24a4c1cc0d8e755c288584c4f"
+    },
+    {
+      "path": "characters/guard.json",
+      "id": "town-one-week-guard",
+      "version": "1.0.0",
+      "sha256": "13892b08761e1ae98aea1e2ccca46c31be0ce0117e9f51e61e45efe0ba7182dc"
+    },
+    {
+      "path": "characters/scholar.json",
+      "id": "town-one-week-scholar",
+      "version": "1.0.0",
+      "sha256": "278e374a8cd0a18629bdfbb8030f58f104a62410b8f1e596d86bfb4ed53a31e1"
+    },
+    {
+      "path": "characters/mediator.json",
+      "id": "town-one-week-mediator",
+      "version": "1.0.0",
+      "sha256": "d2d629e01078afbf61b66c970be1fa5fb459fdd3857eb6309f86d39d1ed5c81f"
+    }
+  ],
+  "theme": null,
+  "plugins": [
+    {
+      "id": "ai-host",
+      "version": "1.0.0",
+      "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+      "required": true,
+      "enabled": true
+    }
+  ],
+  "documents": [
+    {
+      "path": "readme.md",
+      "sha256": "94f9ddc7feea5102feb6d12e8c760de40b628bea479cc48fc0ed17050d2f97e1"
+    },
+    {
+      "path": "licenses/content.txt",
+      "sha256": "f984e2e0874a19106a42239a836724a1784270a5c124ce9cb3e39829c208d58d"
+    }
+  ]
+}

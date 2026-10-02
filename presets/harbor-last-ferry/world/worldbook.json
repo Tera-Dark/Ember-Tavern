@@ -1,0 +1,97 @@
+{
+  "format": "ember.worldbook/v1",
+  "metadata": {
+    "id": "harbor-last-ferry-world",
+    "name": "雾港：最后一班渡船 · 世界书",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "world": {
+    "title": "雾港：最后一班渡船",
+    "premise": "灯塔今晚将熄灯。三位各怀心事的港口居民都想搭上最后一班渡船，而你们手中有一封被雨水打湿的邀请。决定该公开什么、保护谁，以及是否承担揭开真相的代价。",
+    "tone": "潮湿、克制的悬疑；保留谈判、调查和退出的选择。",
+    "rule_system": "ember-light/v1",
+    "lore": [
+      {
+        "id": "dock",
+        "title": "旧码头",
+        "content": "旧码头的灯每隔十二息闪一下。渡船人诺亚会先询问乘客的来意，再出售船票。",
+        "keys": [
+          "码头",
+          "诺亚",
+          "渡船"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "clerk",
+        "title": "档案员苏弥",
+        "content": "苏弥相信证据比流言可靠。她愿意让有礼貌的访客查看公开货单，但不愿独自面对仓库守卫。",
+        "keys": [
+          "苏弥",
+          "档案",
+          "货单"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "keeper",
+        "title": "守灯人陶岚",
+        "content": "陶岚担心自己的学徒被牵连，会把问题绕回港口的风和潮。承认担忧比威胁更能让她开口。",
+        "keys": [
+          "陶岚",
+          "灯塔",
+          "学徒"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "warehouse",
+        "title": "三号仓库",
+        "content": "三号仓库设有正门、收货窗和公开登记处。每种入口都可能给出不同证据，不需要强迫角色战斗。",
+        "keys": [
+          "仓库",
+          "货单",
+          "登记"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "secret",
+        "title": "隐藏的调包",
+        "content": "真正的货物是岛上难民的药品。货单被改写以隐藏运输，但守卫误以为存在人口交易。hbr-secret-m1",
+        "keys": [
+          "药品",
+          "调包",
+          "难民"
+        ],
+        "visibility": "gm",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      }
+    ]
+  }
+}

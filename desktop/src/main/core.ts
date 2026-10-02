@@ -5,6 +5,7 @@ import {join} from 'node:path';
 import {localDiagnostics} from './diagnostics';
 import type {RPCMethod,State,Instance,Room,BuildInfo} from '../types';
 
+export function packageHash(value:unknown):string{if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw new Error('无效预设包散列');return value;}
 export function id(value:unknown):string {if(typeof value!=='string'||!/^[a-f0-9]{32}$/.test(value))throw new Error('无效实例／房间 ID');return value;}
 export function allowedExternal(value:string):boolean {try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='github.com'&&!u.username&&!u.password;}catch{return false;}}
 export function trustedFrame(sender:number,expected:number,frameURL:string,expectedURL:string,isMain:boolean):boolean {return sender===expected&&isMain&&frameURL===expectedURL;}
@@ -77,7 +78,7 @@ export class HostController {
     const instance=await this.instance(instanceId);const token=await this.hostSession(instanceId);
     const response=await fetch(`http://127.0.0.1:${instance.port}/api${path}`,{method,headers:{'X-Ember-Session':token,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(45000),redirect:'error'});
     if(response.status===401&&retry){this.tokens.delete(instanceId);return this.game(instanceId,path,method,body,false);}
-    const data=await response.json();if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:'房间请求失败，请刷新状态');return data;
+    const data=await response.json();if(!response.ok)throw new Error(typeof data.detail==='string'?data.detail:data.detail?.message?(data.detail.message+(data.detail.blockers?.length?'：'+data.detail.blockers.join('；'):'')):'房间请求失败，请刷新状态');return data;
   }
   async diagnostics(instanceId:string){const instance=await this.instance(instanceId);const settings=await this.engine.request('/api/instances/'+instanceId+'/settings');return localDiagnostics(instance,settings);}
   async invoke(method:RPCMethod,args:Record<string,any>={}):Promise<any>{
@@ -89,6 +90,8 @@ export class HostController {
       case 'instanceAction':{if(!['install','start','stop','update','check','folder'].includes(args.action))throw new Error('不支持的操作');if(args.action==='stop')this.tokens.delete(instanceId);return this.engine.request(prefix+'/'+args.action,'POST',{});}
       case 'configureInstance':return this.engine.request(prefix,'PUT',{name:args.name,channel:args.channel,port:Number(args.port),lan:!!args.lan});
       case 'diagnostics':return this.diagnostics(instanceId);
+      case 'presetCatalog':return this.game(instanceId,'/presets');
+      case 'createPresetRoom':{if(typeof args.title!=='string'||!args.title.trim()||[...args.title].length>60)throw new Error('房间名称需要 1–60 个字符');if(typeof args.requestKey!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(args.requestKey))throw new Error('开桌需要稳定请求标识');return this.game(instanceId,'/rooms/from-preset','POST',{title:args.title.trim(),package_hash:packageHash(args.packageHash),ai_mode:'demo',host_plays:args.hostPlays!==false,request_key:args.requestKey});}
       case 'starterWorlds':return this.game(instanceId,'/starters');
       case 'assignCharacter':{const room=await this.game(instanceId,'/rooms/'+id(args.roomId));return this.game(instanceId,'/rooms/'+args.roomId+'/characters/'+id(args.characterId)+'/assign','POST',{user_id:args.userId===null?null:id(args.userId),expected_revision:room.revision,request_key:randomBytes(16).toString('hex')});}
       case 'settings':return this.engine.request(prefix+'/settings');

@@ -1,0 +1,331 @@
+{
+  "$defs": {
+    "Component": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "id",
+        "version",
+        "sha256"
+      ],
+      "title": "Component",
+      "type": "object"
+    },
+    "DocumentFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "title": "DocumentFile",
+      "type": "object"
+    },
+    "Metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "default": "1.0.0",
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "authors": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Authors",
+          "type": "array"
+        },
+        "license": {
+          "default": "",
+          "maxLength": 80,
+          "title": "License",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Metadata",
+      "type": "object"
+    },
+    "NarrativeProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "default": "尊重玩家选择，提供可继续行动的叙事。",
+          "maxLength": 240,
+          "title": "Style",
+          "type": "string"
+        },
+        "checks": {
+          "default": "normal",
+          "enum": [
+            "normal",
+            "narrative"
+          ],
+          "title": "Checks",
+          "type": "string"
+        }
+      },
+      "title": "NarrativeProfile",
+      "type": "object"
+    },
+    "PluginPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "sha256"
+      ],
+      "title": "PluginPin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "ember.preset/v1",
+      "title": "Format",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "minimum_host": {
+      "default": "2.4.0",
+      "maxLength": 32,
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Minimum Host",
+      "type": "string"
+    },
+    "plugin_api": {
+      "const": 1,
+      "default": 1,
+      "title": "Plugin Api",
+      "type": "integer"
+    },
+    "language": {
+      "default": "zh-CN",
+      "maxLength": 32,
+      "title": "Language",
+      "type": "string"
+    },
+    "play_mode": {
+      "enum": [
+        "investigation",
+        "adventure",
+        "slice-of-life"
+      ],
+      "title": "Play Mode",
+      "type": "string"
+    },
+    "min_players": {
+      "default": 1,
+      "maximum": 12,
+      "minimum": 1,
+      "title": "Min Players",
+      "type": "integer"
+    },
+    "max_players": {
+      "default": 4,
+      "maximum": 12,
+      "minimum": 1,
+      "title": "Max Players",
+      "type": "integer"
+    },
+    "duration_minutes": {
+      "default": 60,
+      "maximum": 600,
+      "minimum": 10,
+      "title": "Duration Minutes",
+      "type": "integer"
+    },
+    "difficulty": {
+      "default": "beginner",
+      "enum": [
+        "beginner",
+        "standard"
+      ],
+      "title": "Difficulty",
+      "type": "string"
+    },
+    "content_warnings": {
+      "items": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 12,
+      "title": "Content Warnings",
+      "type": "array"
+    },
+    "rule_system": {
+      "const": "ember-light/v1",
+      "default": "ember-light/v1",
+      "title": "Rule System",
+      "type": "string"
+    },
+    "rule_version": {
+      "default": "1.1.0",
+      "maxLength": 32,
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "profile": {
+      "$ref": "#/$defs/NarrativeProfile"
+    },
+    "worldbook": {
+      "$ref": "#/$defs/Component"
+    },
+    "scenario": {
+      "$ref": "#/$defs/Component"
+    },
+    "characters": {
+      "items": {
+        "$ref": "#/$defs/Component"
+      },
+      "maxItems": 12,
+      "minItems": 1,
+      "title": "Characters",
+      "type": "array"
+    },
+    "theme": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Component"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "plugins": {
+      "items": {
+        "$ref": "#/$defs/PluginPin"
+      },
+      "maxItems": 24,
+      "title": "Plugins",
+      "type": "array"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/DocumentFile"
+      },
+      "maxItems": 12,
+      "title": "Documents",
+      "type": "array"
+    }
+  },
+  "required": [
+    "format",
+    "metadata",
+    "play_mode",
+    "worldbook",
+    "scenario",
+    "characters"
+  ],
+  "title": "Preset",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:preset:v1"
+}

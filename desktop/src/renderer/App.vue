@@ -8,7 +8,7 @@ import InstanceDiagnostics from './components/InstanceDiagnostics.vue';
 import './setup.css';
 import type {Instance,State,Room,Invite,Theme,RPCMethod} from '../types';
 const native=window.emberDesktop?.kind==='native';
-const state=ref<State>({launcher_version:'0.2.0-beta.2',root:'',platform:'Windows x64',instances:[],tasks:[]});
+const state=ref<State>({launcher_version:'0.2.0-beta.3',root:'',platform:'Windows x64',instances:[],tasks:[]});
 const search=ref('');const selected=ref<string|null>(null);const tab=ref('overview');const modal=ref<'create'|'invite'|null>(null);const loading=ref(false);const error=ref('');const toast=ref('');
 const rooms=ref<Room[]>([]);const room=ref<Room|null>(null);const guests=ref<Invite[]>([]);const logs=ref<string[]>([]);const settings=ref<Record<string,any>>({});const changes=ref<Record<string,string>>({});
 const theme=ref<Theme>((['ember','moonlit','light'].includes(localStorage.getItem('ember-desktop-theme')||'')?localStorage.getItem('ember-desktop-theme'):'ember') as Theme);

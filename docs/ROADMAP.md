@@ -1,6 +1,6 @@
 # 生态路线图：先把你们的一桌跑稳
 
-> **执行进度：**[M0 第一批交付](M0_DELIVERY.md) 已落地代码；真人 / 实机门槛和 M1–M4 未冒称完成。
+> **执行进度：**[M0 第一批](M0_DELIVERY.md)、[M1 工程切片](M1_DELIVERY.md) 已落地代码；真人 / 实机 / 许可门槛和 M2–M4 未冒称完成。
 
 > **2026-10-01 更新：**当前下一阶段工作的权威计划是 [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)，核心要求见 [CORE_REQUIREMENTS.md](CORE_REQUIREMENTS.md)，需求证据见 [AI_RPG_DEMAND_RESEARCH.md](AI_RPG_DEMAND_RESEARCH.md)。已核验 main `aed9957`（宿主 2.3 / 桌面 0.2 beta）。下文保留 2.2 阶段的历史路线与背景，不把已经完成的桌面入口误列为待实现。
 

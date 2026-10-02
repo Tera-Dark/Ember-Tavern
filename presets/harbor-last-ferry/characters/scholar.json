@@ -1,0 +1,36 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "harbor-last-ferry-scholar",
+    "name": "岚·纸页",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "rule_system": "ember-light/v1",
+  "character": {
+    "name": "岚·纸页",
+    "archetype": "学者 / 记录者",
+    "description": "收集证据，也愿意承认还不知道的事。",
+    "gm_notes": "尊重操控者的选择，不替玩家对白。",
+    "avatar": "book",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {
+      "strength": 0,
+      "dexterity": 1,
+      "knowledge": 2,
+      "insight": 2,
+      "charisma": 0
+    },
+    "inventory": [
+      "笔记本",
+      "炭笔"
+    ]
+  }
+}

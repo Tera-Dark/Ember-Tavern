@@ -1,0 +1,36 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "town-one-week-mediator",
+    "name": "沐·弦声",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "rule_system": "ember-light/v1",
+  "character": {
+    "name": "沐·弦声",
+    "archetype": "艺人 / 新来的朋友",
+    "description": "善于倾听，愿意把误解变成可以讨论的问题。",
+    "gm_notes": "尊重操控者的选择，不替玩家对白。",
+    "avatar": "spark",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {
+      "strength": 0,
+      "dexterity": 1,
+      "knowledge": 0,
+      "insight": 2,
+      "charisma": 2
+    },
+    "inventory": [
+      "口琴",
+      "便笺"
+    ]
+  }
+}

@@ -7,7 +7,7 @@ const versions=await releaseVersions(repo);
 const commit=execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim();
 const sourceDirty=!!execFileSync('git',['status','--porcelain','--untracked-files=normal'],{cwd:repo,encoding:'utf8'}).trim();
 await rm(target,{recursive:true,force:true});await mkdir(target,{recursive:true});
-for(const name of ['server','plugins','static','scripts','registry','templates','docs','plugin-packages','requirements-lock.txt','launcher-manifest.json'])await cp(join(repo,name),join(target,name),{recursive:true,filter:path=>!path.includes('__pycache__')&&!path.endsWith('.pyc')});
+for(const name of ['server','plugins','presets','static','scripts','registry','templates','docs','plugin-packages','requirements-lock.txt','launcher-manifest.json'])await cp(join(repo,name),join(target,name),{recursive:true,filter:path=>!path.includes('__pycache__')&&!path.endsWith('.pyc')});
 const bundle={format:'ember.desktop-build/v1',commit,source:'Tera-Dark/Ember-Tavern',source_dirty:sourceDirty,...versions,built_at:new Date().toISOString(),files:await hostDigests(target)};
 await writeFile(join(target,'desktop-bundle.json'),JSON.stringify(bundle,null,2)+'\n');
 console.log(`Bundled host ${versions.app_version}, desktop ${versions.desktop_version}, commit ${commit}${sourceDirty?' (uncommitted development tree)':''}. No .env, database or user content.`);

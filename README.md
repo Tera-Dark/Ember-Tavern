@@ -1,6 +1,6 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**当前开发：宿主 2.3.0-beta.2 · 余烬桌面 / 部署引擎 0.2.0-beta.2 · Plugin API v1**
+**当前开发：宿主 2.4.0-beta.1 · 余烬桌面 / 部署引擎 0.2.0-beta.3 · Plugin API v1**
 
 项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
 
@@ -10,7 +10,9 @@
 
 目前可演示／测试：标准创作契约、世界／角色导入导出、个人配色包、主持秘密的服务端投影、有预算的 AI 上下文预览、邀请轮换／成员移除、双账号房间、分配角色、AI 演示主持、检定、属性、世界书、检索、分支回档、方格地图生成、多人拖动预览与提交、台本编辑、本地语音 SDK、社区插件安装／隔离。真实供应商联网与音频听感需要你在服务器配置自己的密钥；**不会让你把密钥发聊天。**
 
-本阶段：[M0 第一批交付](docs/M0_DELIVERY.md) · 当前开发版本宿主 **2.3.0-beta.2** / 桌面 **0.2.0-beta.2**。旧 beta.1 下载链接仍是旧 Release；本轮不覆盖旧 EXE。
+本阶段：[M1 玩法预设交付](docs/M1_DELIVERY.md) · [预设／剧本作者教程](docs/PRESET_AUTHORING.md) · [设计决策](docs/PRESET_FORMAT_RFC.md)。三个原创样板、精确版本锁、原子新建房间、线索／结局和独立只读 HUD 已落地；正式再分发许可与真人反馈仍待确认。
+
+上一阶段：[M0 第一批交付](docs/M0_DELIVERY.md)。旧 beta.1 下载链接仍是旧 Release；本轮不覆盖旧 EXE。
 
 下一阶段：[开发计划](docs/DEVELOPMENT_PLAN.md) · [长期核心要求](docs/CORE_REQUIREMENTS.md) · [AI 跑团需求调研](docs/AI_RPG_DEMAND_RESEARCH.md) · [文档入口](docs/README.md)。
 

@@ -21,24 +21,24 @@
     "#1": {
       "0000": {
         "fixed": {
-          "file_version": "0.2.0.2",
-          "product_version": "0.2.0.2",
+          "file_version": "0.2.0.3",
+          "product_version": "0.2.0.3",
           "flags": "Prerelease"
         },
         "info": {
           "0804": {
             "FileDescription": "余烬启动器",
             "ProductName": "余烬启动器",
-            "ProductVersion": "0.2.0-beta.2 测试版",
-            "FileVersion": "0.2.0.2",
-            "OriginalFilename": "ember-launcher-0.2.0-beta.2-windows-x64.exe"
+            "ProductVersion": "0.2.0-beta.3 测试版",
+            "FileVersion": "0.2.0.3",
+            "OriginalFilename": "ember-launcher-0.2.0-beta.3-windows-x64.exe"
           },
           "0409": {
             "FileDescription": "Ember Tavern Launcher",
             "ProductName": "Ember Tavern Launcher",
-            "ProductVersion": "0.2.0-beta.2",
-            "FileVersion": "0.2.0.2",
-            "OriginalFilename": "ember-launcher-0.2.0-beta.2-windows-x64.exe"
+            "ProductVersion": "0.2.0-beta.3",
+            "FileVersion": "0.2.0.3",
+            "OriginalFilename": "ember-launcher-0.2.0-beta.3-windows-x64.exe"
           }
         }
       }

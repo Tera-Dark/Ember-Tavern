@@ -1,0 +1,153 @@
+{
+  "format": "ember.scenario/v1",
+  "metadata": {
+    "id": "harbor-last-ferry-story",
+    "name": "雾港：最后一班渡船 · 剧本",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "rule_system": "ember-light/v1",
+  "objective": "查清渡船与失踪货单的联系，并共同决定是否让最后一班渡船离港。",
+  "start_scene": "dock",
+  "scenes": [
+    {
+      "id": "dock",
+      "title": "第一幕 · 雨中的码头",
+      "text": "渡船即将售出最后一张票。诺亚收起绳结，苏弥抱着档案盒站在雨棚下。你们可以观察灯塔、询问两人，或先决定是否介入。",
+      "gm_notes": "开场给每位角色一次表达立场的机会。调查失败可由苏弥提供另一入口，不把故事卡死。",
+      "kind": "scene",
+      "clues": [
+        "letter"
+      ],
+      "transitions": [
+        {
+          "id": "warehouse",
+          "label": "先到仓库核对邀请",
+          "target": "warehouse",
+          "requires_clues": [
+            "letter"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "boat",
+          "label": "直接上船询问",
+          "target": "boat",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "leave",
+          "label": "不介入，保留自己的边界",
+          "target": "ending-quiet",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "warehouse",
+      "title": "第二幕 · 仓库的空行",
+      "text": "公开登记处亮着一盏小灯。守卫愿意听解释，收货窗也能观察货箱；你们可以交涉、寻找旁证或谨慎调查。",
+      "gm_notes": "hbr-secret-m1：货物确为药品。只有玩家取得证据后再揭示 ledger，不能让 AI 提前宣布真相。",
+      "kind": "scene",
+      "clues": [
+        "ledger"
+      ],
+      "transitions": [
+        {
+          "id": "board",
+          "label": "带着证据回到渡船",
+          "target": "boat",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "withdraw",
+          "label": "没有把握，选择退出",
+          "target": "ending-quiet",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "boat",
+      "title": "第三幕 · 灯光与绳结",
+      "text": "陶岚的学徒终于出现，手里还拎着一只湿透的药箱。你们有机会听完每个人的解释，再决定是否放行。",
+      "gm_notes": "允许公开证据、保密运输或要求陪同；结局文字留出角色自己的解释，不代玩家决定。",
+      "kind": "scene",
+      "clues": [
+        "signal"
+      ],
+      "transitions": [
+        {
+          "id": "evidence",
+          "label": "用货单证据促成共同决定",
+          "target": "ending-open",
+          "requires_clues": [
+            "ledger"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "return",
+          "label": "证据不足，回仓库核实",
+          "target": "warehouse",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "quiet",
+          "label": "放下追问，让渡船离去",
+          "target": "ending-quiet",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "ending-open",
+      "title": "结局 · 灯仍为人亮着",
+      "text": "药箱被重新标记，乘客的担忧得到解释。最后一班渡船在你们共同认可的安排下离港。留下来的，不是一份完美答案，而是能够继续承担的选择。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-quiet",
+      "title": "结局 · 雾中的距离",
+      "text": "你们没有替所有人作决定。渡船的灯消失在雾里，码头仍有下一次交谈的可能。每位角色可以说出自己愿意记住或放下的一件事。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    }
+  ],
+  "clues": [
+    {
+      "id": "letter",
+      "title": "湿透的邀请",
+      "text": "邀请背面写着“三号仓库，先问证据再问人”。",
+      "gm_notes": ""
+    },
+    {
+      "id": "ledger",
+      "title": "货单的空行",
+      "text": "被划去的一栏记录了药品而不是乘客名单。请先核实，而不要把传闻当作罪行。",
+      "gm_notes": ""
+    },
+    {
+      "id": "signal",
+      "title": "灯光约定",
+      "text": "渡船人解释：闪灯是要求推迟离港，等待尚未到达的乘客。",
+      "gm_notes": ""
+    }
+  ]
+}

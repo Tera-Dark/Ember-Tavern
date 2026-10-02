@@ -4,6 +4,7 @@ import {pathToFileURL} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {EngineClient,HostController,allowedExternal,trustedFrame,id} from './core';
+import {importPreset} from './preset-import';
 import type {RPCMethod,BuildInfo} from '../types';
 
 let window:BrowserWindow;let engine:EngineClient;let controller:HostController;let rendererURL='';let closing=false;
@@ -49,6 +50,7 @@ app.whenReady().then(async()=>{
       if(method==='window'){if(args.action==='minimize')window.minimize();else if(args.action==='close')window.close();return {};}
       if(method==='clipboard'){if(typeof args.text!=='string'||args.text.length>5000)throw new Error('文字过长');clipboard.writeText(args.text);return {copied:true};}
       if(method==='external'){if(!allowedExternal(args.url))throw new Error('只打开可信 GitHub 文档');await shell.openExternal(args.url);return {};}
+      if(method==='importPreset')return await importPreset(window,controller,id(args.instanceId));
       if(method==='installPlugin'){
         const instance=await controller.instance(id(args.instanceId));if(instance.status==='running'||instance.status==='busy')throw new Error('请先停止实例再安装插件');
         const selected=await dialog.showOpenDialog(window,{title:'选择已审阅的插件 ZIP',filters:[{name:'插件包',extensions:['zip']}],properties:['openFile']});if(selected.canceled)return {cancelled:true};

@@ -58,10 +58,13 @@ jobs:
         run: |
           python scripts/creator.py validate templates/session-insights
           python scripts/creator.py validate templates/dice-tray
+          python scripts/creator.py validate templates/campaign-compass
           python scripts/plugins.py package templates/session-insights /tmp/session-insights.zip
           python scripts/plugins.py package templates/dice-tray /tmp/dice-tray.zip
+          python scripts/plugins.py package templates/campaign-compass /tmp/campaign-compass.zip
           python scripts/plugins.py install /tmp/session-insights.zip --sha256 "$(sha256sum /tmp/session-insights.zip | cut -d' ' -f1)"
           python scripts/plugins.py install /tmp/dice-tray.zip --sha256 "$(sha256sum /tmp/dice-tray.zip | cut -d' ' -f1)" --grant-capabilities
+          python scripts/plugins.py install /tmp/campaign-compass.zip --sha256 "$(sha256sum /tmp/campaign-compass.zip | cut -d' ' -f1)"
       - name: Real two-browser core, plugin and creator acceptance
         run: |
           mkdir -p artifacts
@@ -72,6 +75,7 @@ jobs:
           python tests/browser_smoke.py --screenshots artifacts/browser-core > artifacts/browser-core.json
           python tests/browser_plugins.py --screenshots artifacts/browser-plugins > artifacts/browser-plugins.json
           python tests/browser_foundation.py --screenshots artifacts/browser-foundation > artifacts/browser-foundation.json
+          python tests/browser_presets.py --screenshots artifacts/browser-presets > artifacts/browser-presets.json
           cat artifacts/browser-*.json
       - name: Browser evidence and logs
         if: always()

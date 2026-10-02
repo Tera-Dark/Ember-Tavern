@@ -2,6 +2,9 @@
 
 ## 当前交付
 
+- [M1 数据玩法组合与剧本交付](M1_DELIVERY.md)
+- [世界／剧本／预设作者实战](PRESET_AUTHORING.md) · [格式设计决策](PRESET_FORMAT_RFC.md)
+
 - [M0 第一批交付 / 新手开桌 / 恢复与发布](M0_DELIVERY.md)：宿主 2.3.0-beta.2，桌面 / 引擎 0.2.0-beta.2；与当前已发布 beta.1 区分。
 
 ## 当前计划与长期约束
@@ -25,7 +28,7 @@
 3. [格式与 schema](../registry/README.md)
 4. [GitHub 发布](GITHUB_PUBLISH.md)
 
-剧本 / 完整玩法预设和规则作者专门手册仍在开发计划中；当前 CLI 不支持计划中的新契约。
+M1 剧本 / 完整玩法组合已支持，参见上方作者手册；新规则适配器手册仍是后续阶段，不冒称支持 D&D / SLG。
 
 ## 插件与宿主开发者
 

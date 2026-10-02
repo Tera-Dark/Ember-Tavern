@@ -2,6 +2,7 @@
 import {computed,onUnmounted,ref,watch} from 'vue';
 import {BookOpen,Check,Copy,KeyRound,Play,RefreshCw,Users,ShieldCheck} from 'lucide-vue-next';
 import {invoke} from '../bridge';
+import PresetChooser from './PresetChooser.vue';
 import type {Instance,Room,Starter,Invite} from '../../types';
 const props=defineProps<{instance:Instance;native:boolean}>();
 const emit=defineEmits<{open:[roomId:string];error:[message:string];message:[message:string]}>();
@@ -48,6 +49,7 @@ async function createRoom(){await work(async()=>{
   rooms.value=[room,...rooms.value.filter(item=>item.id!==room.id)];
   emit('message','房间已保存；现在可以邀请同伴或单人试用。');
 });}
+async function fromPreset(room:Room){issued.value=null;remember(room.id);await reloadRoom(room.id);rooms.value=[room,...rooms.value.filter(item=>item.id!==room.id)];}
 async function continueRoom(roomId:string){await work(async()=>{issued.value=null;await reloadRoom(roomId);remember(roomId);});}
 async function issue(){if(!current.value)return;await work(async()=>{
   const reply=await invoke<{invite:Invite;room:Room}>('issueGuest',{instanceId:props.instance.id,roomId:current.value!.id,identity:identity.value.trim()});
@@ -68,6 +70,7 @@ onUnmounted(()=>{disposed=true;generation++;clearInterval(timer);issued.value=nu
     <p v-if="error" class="warning" role="alert">{{error}}</p>
     <section v-if="!ready" class="panel"><h3>先准备实例</h3><p class="help-text">请使用右上角的安装／启动按钮。已有房间和身份会保留；不要为了排错删库。安装的下载时间单独显示。</p></section>
     <template v-else>
+      <PresetChooser :instance="instance" :native="native" @created="fromPreset" @error="error=$event" @message="emit('message',$event)"/>
       <section class="panel"><div class="panel-title"><h3><BookOpen :size="18"/>选择世界或继续存档</h3><button class="secondary" :disabled="busy||fetching" @click="load"><RefreshCw :size="15"/>刷新房间</button></div>
         <div v-if="rooms.length" class="existing-adventures"><p class="help-text">已有冒险无需重新创建。选中后继续原房间、角色、事件与邀请。</p><button v-for="room in rooms" :key="room.id" :class="['secondary',{selected:current?.id===room.id}]" :disabled="busy" @click="continueRoom(room.id)">{{room.title}} · 第 {{room.turn||0}} 轮</button></div>
         <div class="starter-grid"><label v-for="world in starters" :key="world.id" :class="['starter-card',{selected:selectedStarter===world.id}]"><input v-model="selectedStarter" type="radio" name="starter-world" :value="world.id" :disabled="busy"/><span class="eyebrow">{{world.category}}</span><b>{{world.name}}</b><p>{{world.description}}</p><small>{{world.suggested_players}} · ember-light/v1</small><small>{{world.label}}</small></label></div>

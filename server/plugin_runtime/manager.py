@@ -15,6 +15,8 @@ from ..version import HOST_VERSION
 from ..projection import project_state, project_event
 from ..rules import engine_for
 from .sdk import Context, Plugin
+from .integrity import package_hash
+from ..state import load_state
 
 API_VERSION=1
 logger=logging.getLogger('ember.plugins')
@@ -28,13 +30,6 @@ def reviewed_records(path):
         return value
     except (ValueError,OSError):logger.warning('Invalid plugin review record; privileged plugins remain blocked: %s',path.name);return {}
 
-def package_hash(folder):
-    digest=hashlib.sha256()
-    for path in sorted(folder.rglob('*')):
-        if '__pycache__' in path.parts or path.name.endswith('.pyc'):continue
-        if path.is_symlink():raise ValueError('package symlinks are not allowed')
-        if path.is_file():digest.update(path.relative_to(folder).as_posix().encode()+b'\0'+path.read_bytes()+b'\0')
-    return digest.hexdigest()
 
 class Manager:
     def __init__(self): self.items={};self.cache={}
@@ -88,11 +83,23 @@ class Manager:
         row=con.execute('SELECT flags_json FROM room_plugins WHERE room_id=?',(room_id,)).fetchone()
         flags=json.loads(row[0]) if row else {}
         return {pid:bool(flags.get(pid,item['manifest'].get('default_enabled',False) if item['builtin'] else False)) for pid,item in self.items.items()}
+    def pin_reason(self,room_id,pid,con=None):
+        if con is None:
+            with connection() as c: return self.pin_reason(room_id,pid,c)
+        row=con.execute('SELECT state_json FROM rooms WHERE id=?',(room_id,)).fetchone()
+        lock=load_state(row['state_json']).get('_preset_lock') if row else None
+        if not lock: return ''
+        pin=next((pin for pin in lock['plugins'] if pin['id']==pid),None)
+        if not pin: return '本预设未锁定此模块；添加新模块需要显式升级，不自动改变旧房间'
+        item=self.items.get(pid)
+        if not item or item['manifest']['version']!=pin['version'] or item['hash']!=pin['sha256']:
+            return '原模块版本 / SHA256 已变化；保留状态并恢复匹配版本，不自动替换'
+        return ''
     def enabled(self,room_id,pid,con=None):
         flags=self.flags(room_id,con)
         def ready(current,trail):
             item=self.items.get(current)
-            if current in trail or not item or item['blocked'] or not flags.get(current):return False
+            if current in trail or not item or item['blocked'] or not flags.get(current) or self.pin_reason(room_id,current,con):return False
             return all(ready(dep,trail|{current}) for dep in item['manifest'].get('requires',[]))
         return ready(pid,set())
     def need(self,room_id,pid,con=None):
@@ -148,7 +155,10 @@ class Manager:
     def core_resource(self,room,state,name,user=None,con=None):
         ctx=Context(self,'@core',room,state,user,con)
         data=None
-        if name=='core.world/v1':data=deepcopy(state['world'])
+        if name=='core.campaign/v1':
+            from ..presets.scenario import view as campaign_view
+            data={'campaign':campaign_view(state,False) if state.get('_scenario') else deepcopy(state.get('campaign'))}
+        elif name=='core.world/v1':data=deepcopy(state['world'])
         elif name=='core.characters/v1':data={'characters':ctx.characters()}
         elif name=='core.rules/v1':data=engine_for(state).contract()
         elif name=='core.dice/v1':data={'rule_system':engine_for(state).id,'limits':engine_for(state).contract()['dice']}
@@ -177,7 +187,7 @@ class Manager:
     def catalog(self,room,state,con=None):
         flags=self.flags(room['id'],con)
         return [dict(item['manifest'],enabled=self.enabled(room['id'],pid,con),requested_enabled=flags.get(pid,False),
-                     blocked=item['blocked'],builtin=item['builtin'],hash=item['hash'],state_revision=self.namespace(state,pid)['revision'],
+                     blocked=item['blocked'] or self.pin_reason(room['id'],pid,con),builtin=item['builtin'],hash=item['hash'],state_revision=self.namespace(state,pid)['revision'],
                      fault=state.get('_plugin_faults',{}).get(pid)) for pid,item in self.items.items()]
     def public_context(self,room,state,user,pid,con=None):
         item=self.need(room['id'],pid,con);m=item['manifest']
@@ -206,6 +216,8 @@ class Manager:
         def enable(current,trail):
             if current in trail:raise HTTPException(422,'插件依赖存在环')
             if current not in self.items or self.items[current]['blocked']:raise HTTPException(422,'依赖不可用：'+current)
+            pinned=self.pin_reason(room_id,current,con)
+            if pinned:raise HTTPException(422,pinned)
             for dep in self.items[current]['manifest'].get('requires',[]):enable(dep,trail+[current])
             if not flags.get(current):changed.append(current)
             flags[current]=True

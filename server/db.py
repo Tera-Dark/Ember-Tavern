@@ -88,6 +88,24 @@ def init_db():
             key_hint TEXT NOT NULL, user_id TEXT REFERENCES users(id), enabled INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL, UNIQUE(room_id,identity_key)
         );
+        CREATE TABLE IF NOT EXISTS preset_packages (
+            package_hash TEXT PRIMARY KEY, preset_id TEXT NOT NULL, version TEXT NOT NULL,
+            bundle_json TEXT NOT NULL, source TEXT NOT NULL, created_by TEXT REFERENCES users(id),
+            created_at TEXT NOT NULL, summary_json TEXT NOT NULL, UNIQUE(preset_id,version)
+        );
+        CREATE TABLE IF NOT EXISTS preset_access (
+            package_hash TEXT NOT NULL REFERENCES preset_packages(package_hash),
+            user_id TEXT NOT NULL REFERENCES users(id), PRIMARY KEY(package_hash,user_id)
+        );
+        CREATE TABLE IF NOT EXISTS room_preset_locks (
+            room_id TEXT PRIMARY KEY REFERENCES rooms(id),
+            package_hash TEXT NOT NULL REFERENCES preset_packages(package_hash)
+        );
+        CREATE TABLE IF NOT EXISTS room_creation_receipts (
+            user_id TEXT NOT NULL REFERENCES users(id), request_key TEXT NOT NULL,
+            payload_hash TEXT NOT NULL, room_id TEXT NOT NULL REFERENCES rooms(id),
+            created_at TEXT NOT NULL, PRIMARY KEY(user_id,request_key)
+        );
         CREATE TABLE IF NOT EXISTS receipts (
             room_id TEXT NOT NULL REFERENCES rooms(id), user_id TEXT NOT NULL REFERENCES users(id),
             request_key TEXT NOT NULL, created_at TEXT NOT NULL,

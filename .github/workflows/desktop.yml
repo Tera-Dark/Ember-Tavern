@@ -3,9 +3,9 @@ on:
   push:
     branches: ['**']
     tags: ['desktop-v*']
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
   pull_request:
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
   workflow_dispatch:
     inputs:
       publish:
@@ -221,11 +221,13 @@ jobs:
           trap 'kill "$PID" 2>/dev/null || true; cat artifacts-desktop-preview.log' EXIT
           python -c "import urllib.request,time; exec('for attempt in range(100):\n try:\n  urllib.request.urlopen(\"http://127.0.0.1:8765\");break\n except OSError:time.sleep(.1)\nelse:raise SystemExit(\"preview did not start\")')"
           python tests/browser_m0.py
+          python tests/browser_m1_desktop.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: first-table-browser-evidence
           path: |
             artifacts/desktop-m0-evidence/
+            artifacts/desktop-m1-evidence/
             artifacts-desktop-preview.log
           retention-days: 7
