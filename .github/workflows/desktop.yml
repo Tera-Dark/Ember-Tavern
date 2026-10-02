@@ -231,3 +231,47 @@ jobs:
             artifacts/desktop-m1-evidence/
             artifacts-desktop-preview.log
           retention-days: 7
+
+  native-diagnostics:
+    # Authorized push marker only; reads CI artifacts as DATA, never executes them.
+    # Useful when the caller can read Actions but cannot rerun/download in sandbox.
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, '[native-diagnose:')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Parse previous run marker
+        id: marker
+        env:
+          MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          python3 - <<'PY'
+          import os,re
+          match=re.search(r'\[native-diagnose:(\d+)\]',os.environ['MESSAGE'])
+          if not match: raise SystemExit('Invalid numeric diagnostic run marker')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as file: file.write('run='+match.group(1)+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ember-desktop-windows-x64
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.marker.outputs.run }}
+          path: evidence
+      - name: Surface only synthetic smoke failure details
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          path=pathlib.Path('evidence/desktop-smoke.json')
+          if path.stat().st_size>131072: raise SystemExit('Smoke report unexpectedly large')
+          report=json.loads(path.read_text())
+          fields=('stage','status','source_commit','desktop_version','app_version','error','ui_error','graceful_shutdown','page_errors')
+          summary={key:report[key] for key in fields if key in report}
+          body='Previous native smoke diagnostic (synthetic CI data only):\n```json\n'+json.dumps(summary,ensure_ascii=False,indent=2)+'\n```'
+          pathlib.Path('comment.json').write_text(json.dumps({'body':body},ensure_ascii=False))
+          PY
+          gh api --method POST "repos/$REPO/commits/$COMMIT/comments" --input comment.json
