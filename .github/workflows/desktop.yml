@@ -3,9 +3,9 @@ on:
   push:
     branches: ['**']
     tags: ['desktop-v*']
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/test_*.py', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
   pull_request:
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/test_*.py', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
   workflow_dispatch:
     inputs:
       publish:
