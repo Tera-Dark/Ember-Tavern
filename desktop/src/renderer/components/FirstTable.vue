@@ -45,12 +45,21 @@ async function work(fn:()=>Promise<void>){
 }
 async function createRoom(){await work(async()=>{
   const room=await invoke<Room>('createRoom',{instanceId:props.instance.id,title:title.value,preset:selectedStarter.value});
-  remember(room.id);issued.value=null;await reloadRoom(room.id);
-  rooms.value=[room,...rooms.value.filter(item=>item.id!==room.id)];
+  await fromPreset(room);
   emit('message','房间已保存；现在可以邀请同伴或单人试用。');
 });}
-async function fromPreset(room:Room){issued.value=null;remember(room.id);await reloadRoom(room.id);rooms.value=[room,...rooms.value.filter(item=>item.id!==room.id)];}
-async function continueRoom(roomId:string){await work(async()=>{issued.value=null;await reloadRoom(roomId);remember(roomId);});}
+async function fromPreset(room:Room){
+  if(disposed)return;
+  // Invalidate in-flight polling BEFORE applying an explicit selection. The
+  // creation reply is already a complete authoritative room, so do not keep the
+  // old room selected while awaiting another GET (which lets a poll win).
+  generation++;fetching.value=false;const epoch=generation;
+  issued.value=null;remember(room.id);current.value=room;invites.value=[];
+  rooms.value=[room,...rooms.value.filter(item=>item.id!==room.id)];
+  const guestList=await invoke<Invite[]>('guestInvites',{instanceId:props.instance.id,roomId:room.id});
+  if(!disposed&&epoch===generation)invites.value=guestList;
+}
+async function continueRoom(roomId:string){await work(async()=>{generation++;fetching.value=false;issued.value=null;await reloadRoom(roomId);remember(roomId);});}
 async function issue(){if(!current.value)return;await work(async()=>{
   const reply=await invoke<{invite:Invite;room:Room}>('issueGuest',{instanceId:props.instance.id,roomId:current.value!.id,identity:identity.value.trim()});
   issued.value=reply.invite;identity.value='';await reloadRoom(current.value!.id);

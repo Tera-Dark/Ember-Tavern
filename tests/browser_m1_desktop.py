@@ -32,6 +32,23 @@ async def main():
             state=await desktop.evaluate("() => window.emberDesktop.invoke('state')")
             active=next(item for item in state['instances'] if item['commit'] and not item.get('recovered_from_id'))
             i=active['id'];base='http://127.0.0.1:'+str(active['port']);intents=[]
+            # Reproduce the native flake deterministically: an already-fetched
+            # old room poll returns only AFTER explicit new-preset selection.
+            old=await desktop.evaluate("id => window.emberDesktop.invoke('createRoom',{instanceId:id,title:'M1 旧轮询回归房间',preset:'harbor'})",i)
+            await desktop.get_by_role('button',name='刷新房间',exact=True).click()
+            await desktop.locator('.existing-adventures').get_by_role('button',name='M1 旧轮询回归房间',exact=False).click()
+            await expect(desktop.get_by_role('heading',name='M1 旧轮询回归房间',exact=True)).to_be_visible()
+            poll_started=asyncio.Event();poll_release=asyncio.Event();poll_done=asyncio.Event();armed=True
+            async def delay_old_poll(route):
+                nonlocal armed
+                data=route.request.post_data_json
+                if armed and data.get('method')=='room' and data.get('args',{}).get('roomId')==old['id']:
+                    armed=False;response=await route.fetch();poll_started.set();await poll_release.wait();await route.fulfill(response=response);poll_done.set()
+                else:await route.continue_()
+            await desktop.route('**/desktop-api',delay_old_poll)
+            await desktop.get_by_role('button',name='刷新房间',exact=True).click()
+            await asyncio.wait_for(poll_started.wait(),20)
+
             async def capture(request):
                 if request.url.endswith('/desktop-api') and request.method=='POST':
                     data=request.post_data_json
@@ -41,6 +58,12 @@ async def main():
             await desktop.get_by_label('玩法房间名称',exact=True).fill('M1 桌面整套组合')
             await desktop.get_by_role('button',name='用预设开新桌',exact=True).click()
             await expect(desktop.get_by_role('heading',name='M1 桌面整套组合',exact=True)).to_be_visible()
+            poll_release.set();await asyncio.wait_for(poll_done.wait(),20)
+            await desktop.evaluate('() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+            await expect(desktop.get_by_role('heading',name='M1 桌面整套组合',exact=True)).to_be_visible()
+            report['late_old_poll_cannot_replace_new_selection']=True
+            await desktop.unroute('**/desktop-api',delay_old_poll)
+
             rooms=await desktop.evaluate("id => window.emberDesktop.invoke('rooms',{instanceId:id})",i)
             room=next(room for room in rooms if room['title']=='M1 桌面整套组合');rid=room['id']
             result=await desktop.evaluate("args => window.emberDesktop.invoke('createPresetRoom',args)",intents[-1])
