@@ -22,12 +22,15 @@ from .routes.dossiers import router as dossiers_router
 from .routes.history import router as history_router
 from .routes.membership import router as membership_router
 from .routes.guests import router as guests_router
+from .presets.routes import router as presets_router
+from .presets.library import seed_bundled
 from .network import websocket_origin_allowed
 from .state import load_state
 from .rules import engine_for
 from .contracts.hosting import GMTrace
 from .http_limits import RequestBodyLimit
 from .version import HOST_VERSION
+from .hosting_modes import validate_hosting_mode, MODE_LABELS
 
 logger = logging.getLogger('ember')
 from .runtime import (locks, rate_windows, hub, throttle, get_room_member, check_revision,
@@ -82,6 +85,7 @@ async def lifespan(app):
     init_db()
     manager.refresh()
     with connection() as con:
+        seed_bundled(con)
         for room in con.execute('SELECT * FROM rooms').fetchall():
             state = load_state(room['state_json'])
             if dump(state) != room['state_json']:
@@ -93,7 +97,7 @@ async def lifespan(app):
 
 app = FastAPI(title='余烬酒馆 API',version=HOST_VERSION,lifespan=lifespan)
 app.add_middleware(RequestBodyLimit)
-for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router, guests_router):
+for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router, guests_router, presets_router):
     app.include_router(router)
 
 
@@ -267,14 +271,9 @@ async def update_settings(room_id:str,data:SettingsUpdate,user=Depends(current_u
             room = get_room_member(con,room_id,user,True)
             if not receipt(con,room_id,user,data.request_key):
                 check_revision(room,data.expected_revision)
-                if data.ai_mode=='live' and user['guest']:
-                    raise HTTPException(403,'体验账号不能启用付费模型，请使用正式账号')
-                if data.ai_mode=='live' and not settings.live_ready:
-                    raise HTTPException(422,'双模型尚未配置完整，请先设置服务端 .env')
-                if data.ai_mode=='demo' and not settings.enable_demo:
-                    raise HTTPException(403,'此部署未开启演示模式')
+                validate_hosting_mode(user,data.ai_mode)
                 con.execute('UPDATE rooms SET ai_mode=? WHERE id=?',(data.ai_mode,room_id))
-                append_event(con,room_id,'system',f"主持模式切换为{'真实双模型' if data.ai_mode=='live' else '演示规则脚本'}。",actor=user)
+                append_event(con,room_id,'system',f"主持模式切换为{MODE_LABELS[data.ai_mode]}。",actor=user)
                 save_receipt(con,room_id,user,data.request_key)
     return await finish(room_id,user)
 

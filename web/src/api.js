@@ -15,7 +15,7 @@ export async function api(path, options = {}) {
   if (!response.ok) {
     let message = data.detail || '请求失败，请重试';
     if (Array.isArray(message)) message = '请检查填写内容：' + message.map(e => e.loc.slice(1).join('.') + ' ' + e.msg).join('；');
-    if (message && typeof message === 'object') message = (message.message || '创作文件校验失败') + (message.errors?.length ? '：' + message.errors.map(e => e.path + ' ' + e.message).join('；') : '');
+    if (message && typeof message === 'object') message = (message.message || '创作文件校验失败') + (message.blockers?.length ? '：'+message.blockers.join('；') : '') + (message.errors?.length ? '：' + message.errors.map(e => e.path + ' ' + e.message).join('；') : '');
     if (response.status === 401 && !path.startsWith('/auth/login')) window.dispatchEvent(new Event('auth-expired'));
     throw new ApiError(message, response.status);
   }

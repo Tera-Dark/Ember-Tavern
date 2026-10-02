@@ -8,11 +8,12 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
 
-const LauncherVersion = "0.2.0-beta.1"
+const LauncherVersion = "0.2.0-beta.3"
 const Repository = "Tera-Dark/Ember-Tavern"
 const RepositoryURL = "https://github.com/" + Repository
 const PythonVersion = "3.13.15"
@@ -20,15 +21,16 @@ const PythonURL = "https://www.python.org/ftp/python/3.13.15/python-3.13.15-amd6
 const PythonSHA256 = "6479223746cdfb79d25865110d6f524ac98de081324e119af1dc3ae36bddc7a5"
 
 type Instance struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Port        int    `json:"port"`
-	LAN         bool   `json:"lan"`
-	Channel     string `json:"channel"`
-	Version     string `json:"version"`
-	Commit      string `json:"commit"`
-	InstalledAt string `json:"installed_at,omitempty"`
-	UpdatedAt   string `json:"updated_at,omitempty"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Port            int    `json:"port"`
+	LAN             bool   `json:"lan"`
+	Channel         string `json:"channel"`
+	Version         string `json:"version"`
+	Commit          string `json:"commit"`
+	InstalledAt     string `json:"installed_at,omitempty"`
+	UpdatedAt       string `json:"updated_at,omitempty"`
+	RecoveredFromID string `json:"recovered_from_id,omitempty"`
 }
 type Task struct {
 	ID         string   `json:"id"`
@@ -69,8 +71,10 @@ type Config struct {
 	Preview          bool
 }
 type state struct {
-	Schema    int        `json:"schema"`
-	Instances []Instance `json:"instances"`
+	Schema      int           `json:"schema"`
+	Instances   []Instance    `json:"instances"`
+	Quarantined []indexRecord `json:"quarantined,omitempty"`
+	IndexBackup string        `json:"index_backup,omitempty"`
 }
 
 func ident() string     { b := make([]byte, 16); _, _ = rand.Read(b); return hex.EncodeToString(b) }
@@ -114,18 +118,21 @@ type runtimeProcess struct {
 	started time.Time
 }
 type Manager struct {
-	mu        sync.Mutex
-	runtimeMu sync.Mutex
-	config    Config
-	instances map[string]*Instance
-	tasks     map[string]*Task
-	active    map[string]string
-	processes map[string]*runtimeProcess
-	errors    map[string]string
-	closing   bool
-	lock      *os.File
-	ctx       context.Context
-	cancel    context.CancelFunc
+	mu            sync.Mutex
+	runtimeMu     sync.Mutex
+	config        Config
+	instances     map[string]*Instance
+	tasks         map[string]*Task
+	active        map[string]string
+	processes     map[string]*runtimeProcess
+	errors        map[string]string
+	closing       bool
+	lock          *os.File
+	ctx           context.Context
+	cancel        context.CancelFunc
+	quarantined   []indexRecord
+	indexOriginal []byte
+	indexBackup   string
 }
 
 func New(config Config) (*Manager, error) {
@@ -149,25 +156,12 @@ func New(config Config) (*Manager, error) {
 		}
 	}()
 	m.ctx, m.cancel = context.WithCancel(context.Background())
-	b, e := os.ReadFile(filepath.Join(config.Root, "launcher.json"))
-	if e == nil {
-		var s state
-		if e = json.Unmarshal(b, &s); e != nil {
-			return nil, errors.New("启动器索引损坏；请保留数据并恢复 launcher.json")
-		}
-		for _, i := range s.Instances {
-			if !validID(i.ID) {
-				continue
-			}
-			x := i
-			m.instances[i.ID] = &x
-		}
-	}
-	if e != nil && !os.IsNotExist(e) {
+	if e := m.loadIndex(); e != nil {
+		m.cancel()
 		return nil, e
 	}
 	for id := range m.instances {
-		if e = m.recover(id); e != nil {
+		if e := m.recover(id); e != nil {
 			return nil, e
 		}
 	}
@@ -182,7 +176,18 @@ func (m *Manager) saveLocked() error {
 	for _, i := range m.instances {
 		rows = append(rows, *i)
 	}
-	return atomicJSON(filepath.Join(m.config.Root, "launcher.json"), state{Schema: 1, Instances: rows})
+	sort.Slice(rows, func(i, j int) bool { return rows[i].ID < rows[j].ID })
+	encoded, e := json.MarshalIndent(state{Schema: 1, Instances: rows, Quarantined: m.quarantined, IndexBackup: m.indexBackup}, "", "  ")
+	if e != nil {
+		return e
+	}
+	if len(encoded) > (4<<20)-256 {
+		return errors.New("索引将超过 4 MiB，未保存；请保留原始备份人工整理")
+	}
+	if e := m.backupIndexLocked(); e != nil {
+		return e
+	}
+	return atomicJSON(filepath.Join(m.config.Root, "launcher.json"), state{Schema: 1, Instances: rows, Quarantined: m.quarantined, IndexBackup: m.indexBackup})
 }
 func (m *Manager) Create(name, channel string, port int, lan bool) (View, error) {
 	if channel == "bundled" && m.config.BundledSource == "" {
@@ -268,6 +273,12 @@ func (m *Manager) List() []View {
 	for id := range m.instances {
 		result = append(result, m.viewLocked(id))
 	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Name == result[j].Name {
+			return result[i].ID < result[j].ID
+		}
+		return result[i].Name < result[j].Name
+	})
 	return result
 }
 func (m *Manager) Get(id string) (View, error) {

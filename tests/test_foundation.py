@@ -316,7 +316,10 @@ def test_creator_guide_and_local_catalog_match_actual_templates(client):
     assert guide.status_code == 200
     assert 'ember.worldbook/v1' in guide.json()['text'] and '正在整理' not in guide.json()['text']
     catalog = json.loads(Path('registry/index.json').read_text(encoding='utf-8'))
-    assert set(catalog['scaffold_kinds']) == {'worldbook','character','theme','plugin-ui','plugin-backend','plugin-dice'}
+    from scripts.creator import KINDS
+    assert set(catalog['scaffold_kinds']) == set(KINDS)
+    assert {'preset','scenario','plugin-campaign'} <= set(KINDS)
+    assert {entry['kind'] for entry in catalog['gameplay_templates']} == {'preset','scenario'}
     for item in catalog['content_templates']:
         document = json.loads(Path(item['template_path']).read_text(encoding='utf-8'))
         assert document['format'] == item['format']

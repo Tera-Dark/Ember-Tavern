@@ -2,7 +2,7 @@
 import json
 from copy import deepcopy
 
-STATE_VERSION = 1
+STATE_VERSION = 2
 LORE_DEFAULTS = {
     'keys': [], 'kind': 'lore', 'visibility': 'public', 'enabled': True,
     'activation': 'keywords', 'priority': 0,
@@ -24,6 +24,10 @@ def migrate_state(value):
             char.setdefault('gm_notes', '')
             char.setdefault('extensions', {})
         state['schema_version'] = 1
+    # Only M1 compositions require schema 2. Older hosts must refuse these
+    # snapshots rather than accidentally projecting private scenario documents.
+    if '_scenario' in state or '_preset_lock' in state:
+        state['schema_version'] = 2
     return state
 
 

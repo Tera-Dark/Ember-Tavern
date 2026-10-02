@@ -1,5 +1,7 @@
 # 余烬酒馆 Plugin SDK v1
 
+**M1 新只读资源：**`core.campaign/v1`（能力 read:room）返回当前目标／场景／已揭示线索的公开投影，不含 GM 指引和未来图。示例 `templates/campaign-compass`，创作与版本锁教程见 [PRESET_AUTHORING.md](PRESET_AUTHORING.md)。
+
 宿主版本 2.2.0-beta.1 · 插件 API 1 · 2026-09-30
 
 [创作指南](CREATOR_GUIDE.md)（世界书／角色／主题／脚手架） · [整体架构](ARCHITECTURE.md) · [LAN 部署](LAN_DEPLOYMENT.md)

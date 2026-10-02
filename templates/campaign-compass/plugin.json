@@ -1,0 +1,23 @@
+{
+  "id": "campaign-compass",
+  "name": "剧本罗盘",
+  "version": "1.0.0",
+  "minimum_host": "2.4.0",
+  "api_version": 1,
+  "state_version": 1,
+  "description": "只读社区 UI 样板：通过 core.campaign/v1 显示已投影的场景、目标和已揭示线索。",
+  "authors": [],
+  "license": "",
+  "category": "社区样板",
+  "icon": "book",
+  "default_enabled": false,
+  "backend": null,
+  "frontend": "ui.js",
+  "ui": {"group": "campaign-compass", "label": "剧本罗盘", "slot": "main", "height": 520},
+  "requires": [],
+  "uses": ["core.campaign/v1"],
+  "provides": [],
+  "capabilities": ["read:room"],
+  "actions": [],
+  "signals": []
+}

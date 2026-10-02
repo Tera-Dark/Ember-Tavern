@@ -1,0 +1,89 @@
+{
+  "format": "ember.preset/v1",
+  "metadata": {
+    "id": "town-one-week",
+    "name": "小镇的一周",
+    "version": "1.0.0",
+    "description": "小镇准备一场周末晚宴。有人想守住传统，有人想让新来的人也有座位。你们的一周由几次谈话、一次失败的小制作，以及愿意兑现的承诺组成。",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "minimum_host": "2.4.0",
+  "plugin_api": 1,
+  "language": "zh-CN",
+  "play_mode": "slice-of-life",
+  "min_players": 1,
+  "max_players": 4,
+  "duration_minutes": 45,
+  "difficulty": "beginner",
+  "content_warnings": [
+    "关系与承诺话题；尊重拒绝与边界。"
+  ],
+  "rule_system": "ember-light/v1",
+  "rule_version": "1.1.0",
+  "profile": {
+    "checks": "narrative",
+    "style": "温暖但不替人物和解；倾听、关系与日常选择，不自动战斗或检定。"
+  },
+  "worldbook": {
+    "path": "world/worldbook.json",
+    "id": "town-one-week-world",
+    "version": "1.0.0",
+    "sha256": "98a77f74715ca18fbcb754bab19ca67a05aeba29e91a5898824405913f7ffbb7"
+  },
+  "scenario": {
+    "path": "story/scenario.json",
+    "id": "town-one-week-story",
+    "version": "1.0.0",
+    "sha256": "072aaeedbfe2606bd455b06f7b2546aa0544f760710ef5180e3e78931e4e2870"
+  },
+  "characters": [
+    {
+      "path": "characters/scout.json",
+      "id": "town-one-week-scout",
+      "version": "1.0.0",
+      "sha256": "f26901013edea3320ff7755b857da2a9e0f594fa41108d059929767119b73080"
+    },
+    {
+      "path": "characters/guard.json",
+      "id": "town-one-week-guard",
+      "version": "1.0.0",
+      "sha256": "4071c0c18bd9c241e10ca5355034f6f3a521f06d7c807ec97154d66e8e56edaf"
+    },
+    {
+      "path": "characters/scholar.json",
+      "id": "town-one-week-scholar",
+      "version": "1.0.0",
+      "sha256": "3aaa53a93f78ce95d98bb7a4a257bc47d779527338e9d7bcd2ab5391cd82c1f7"
+    },
+    {
+      "path": "characters/mediator.json",
+      "id": "town-one-week-mediator",
+      "version": "1.0.0",
+      "sha256": "639b732122b3b77abf32e30690be0ccb2cb3b397b99c6819f2803bc13ec5c209"
+    }
+  ],
+  "theme": null,
+  "plugins": [
+    {
+      "id": "ai-host",
+      "version": "1.0.0",
+      "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+      "required": true,
+      "enabled": true
+    }
+  ],
+  "documents": [
+    {
+      "path": "readme.md",
+      "sha256": "8a3c05c4c789fddedb4a35a300a50ceef4b4f783052eb37ff7547281a4dd1be8"
+    },
+    {
+      "path": "licenses/content.txt",
+      "sha256": "603d4c2b59048f1207812e1c369e6235fb737f1aa4f9223a70882ccfcb425ca7"
+    }
+  ]
+}

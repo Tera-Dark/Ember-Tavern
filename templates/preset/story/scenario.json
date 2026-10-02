@@ -1,0 +1,120 @@
+{
+  "format": "ember.scenario/v1",
+  "metadata": {
+    "id": "town-one-week-story",
+    "name": "小镇的一周 · 剧本",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [],
+    "license": "",
+    "tags": []
+  },
+  "rule_system": "ember-light/v1",
+  "objective": "听清不同人物的诉求，共同决定周末晚宴会是什么样子。",
+  "start_scene": "monday",
+  "scenes": [
+    {
+      "id": "monday",
+      "title": "周一 · 后院的座位",
+      "text": "阿澄打开书店的后门。桌椅有些旧，但足够围坐。她问：“你们希望这张桌子留给谁？”",
+      "gm_notes": "没有标准回答，不替玩家许诺。有人愿意分担时才揭示 promise；拒绝也可继续。",
+      "kind": "scene",
+      "clues": [
+        "promise"
+      ],
+      "transitions": [
+        {
+          "id": "workshop",
+          "label": "带着想法去准备晚宴",
+          "target": "workshop",
+          "requires_clues": [],
+          "gm_guidance": ""
+        },
+        {
+          "id": "quiet",
+          "label": "选择不办集体晚宴",
+          "target": "ending-room",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "workshop",
+      "title": "周三 · 做坏的小点心",
+      "text": "点心没有按预想成形，池远却带来一篮成熟的果子。你们可以重新尝试、邀请别人协助，或干脆接受朴素的方案。",
+      "gm_notes": "narrative 模式不自动提出检定，失败是剧情素材而非生命扣除。共同接受替代方案后揭示 recipe。",
+      "kind": "scene",
+      "clues": [
+        "recipe"
+      ],
+      "transitions": [
+        {
+          "id": "feast",
+          "label": "把不完美的准备带到周末",
+          "target": "feast",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "feast",
+      "title": "周日 · 灯下的一周",
+      "text": "晚风吹过后院。沐言站在门口等一个明确的邀请，池远把旧食谱放在桌边。每个人仍然可以决定如何参与。",
+      "gm_notes": "逐人询问，不代替关系承诺。满足承诺后可以一起收束，也可以保留各自的空间。",
+      "kind": "scene",
+      "clues": [],
+      "transitions": [
+        {
+          "id": "together",
+          "label": "兑现分担，给每个人留下位置",
+          "target": "ending-together",
+          "requires_clues": [
+            "promise"
+          ],
+          "gm_guidance": ""
+        },
+        {
+          "id": "room",
+          "label": "保留距离，让一周安静结束",
+          "target": "ending-room",
+          "requires_clues": [],
+          "gm_guidance": ""
+        }
+      ]
+    },
+    {
+      "id": "ending-together",
+      "title": "结局 · 下一周也有座位",
+      "text": "晚宴并不完美，却由大家共同完成。你们可以各自留下一个愿意继续的约定，也可以诚实说明自己暂时做不到的事。关系不被强行清零或圆满。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-room",
+      "title": "结局 · 给彼此留一点空间",
+      "text": "这周没有变成所有人期待的样子，但人们仍能选择下次如何相遇。每位角色说出一个仍愿意守住的边界。",
+      "gm_notes": "",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    }
+  ],
+  "clues": [
+    {
+      "id": "promise",
+      "title": "共同布置的承诺",
+      "text": "你们明确同意一起承担晚宴布置，而不是让某一个人默默做完。",
+      "gm_notes": ""
+    },
+    {
+      "id": "recipe",
+      "title": "不完美也可以分享",
+      "text": "一次小制作失败后，大家找到更朴素的方案：晚宴不必完美，也能让人有自己的位置。",
+      "gm_notes": ""
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import PresetLibrary from '../presets/PresetLibrary';
 import {BookOpen, Users, Palette, Code2, Download, Upload, ShieldCheck, ArrowRight, Check, FileJson, LockKeyhole, AlertCircle, Loader2, Eye, RotateCcw, Copy, Sparkles, Search} from 'lucide-react';
 import {api, downloadJSON, downloadFile, requestKey} from '../api.js';
 import {Modal, Button} from '../components/ui.jsx';
@@ -10,7 +11,7 @@ const TYPES = {
 };
 const REASONS = {rule: '规则优先', always: '常驻', keyword: '关键词', lexical: '相关度'};
 
-export function CreatorWorkbench({room, appearance, onImport, notify}) {
+export function CreatorWorkbench({room, appearance, onImport, notify, onPresetCreated}) {
   const [guide, setGuide] = useState(null);
   async function template(kind) {
     try {downloadJSON(await api('/creators/templates/' + kind), TYPES[kind].file); notify('模板已下载，修改后可在这里校验导入');}
@@ -32,6 +33,7 @@ export function CreatorWorkbench({room, appearance, onImport, notify}) {
     <div className="creator-lower"><section className="creator-plugin"><span className="eyebrow">FOR BUILDERS</span><h3><Code2 size={21}/>做一个模块，不必 fork 整间酒馆。</h3><p>纯 UI、Python 后端和骰盘桥接均有起步模板。地图、台本与 TTS 沿用版本化资源，关闭模块不会删除故事。</p><div className="creator-cli"><code>python scripts/creator.py init plugin-ui my-plugin --id my-plugin</code></div><div className="creator-plugin-footer"><span>静态校验 ≠ 安全审计 · Python 仍需显式信任</span><button className="text-button" onClick={openGuide}>创作与开发指南<ArrowRight size={13}/></button></div></section>
       <section className="creator-theme"><span className="eyebrow">YOUR PERSONAL TABLE</span><h3><Palette size={20}/>当前桌面</h3><b>{appearance.custom?.metadata.name || '余烬 · 默认主题'}</b><div className="theme-swatches">{['--bg', '--surface', '--gold', '--green', '--text'].map(token => <i key={token} style={{background: `var(${token})`}} title={token}/>)}</div><p>只保存在当前浏览器，不改变房间状态、规则或朋友的界面。主题缺少当前明暗配色时会使用默认配色。</p><Button className="outline compact" icon={RotateCcw} disabled={!appearance.custom} onClick={() => {appearance.reset(); notify('已恢复默认主题');}}>恢复默认主题</Button></section>
     </div>
+    {room.is_owner&&onPresetCreated&&<PresetLibrary compact notify={notify} onCreated={onPresetCreated}/>}
     <div className="creator-footer"><ShieldCheck size={19}/><div><b>能分享素材，不意味着自动信任代码。</b><p>世界书、角色与主题都是数据；插件清单独立校验。凭据永不写入作品，公开分享前确认原作者授权与主持秘密。</p></div></div>
     {guide !== null && <Modal title="标准创作与开发指南" subtitle="数据格式、创作 CLI、插件模板与验收边界。" wide onClose={() => setGuide(null)}><pre className="plugin-guide-text">{guide}</pre></Modal>}
   </div>;

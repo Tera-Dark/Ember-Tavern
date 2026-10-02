@@ -1,0 +1,97 @@
+{
+  "format": "ember.worldbook/v1",
+  "metadata": {
+    "id": "frontier-lost-caravan-world",
+    "name": "余烬边境：失联商队 · 世界书",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "world": {
+    "title": "余烬边境：失联商队",
+    "premise": "边境驿站收到一匹无人骑乘的黑马。邮袋里最后一张便笺指向石门山口。商队可能正在等待援助，但前往山口不只有正面冲突这一种方法。",
+    "tone": "有探索与危险，也有协商、迂回和撤退；失败仍可继续。",
+    "rule_system": "ember-light/v1",
+    "lore": [
+      {
+        "id": "outpost",
+        "title": "边境驿站",
+        "content": "驿站长米娅熟悉近三日的天气与出发名单。请她协助，比替她判断责任更有用。",
+        "keys": [
+          "驿站",
+          "米娅",
+          "名单"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "ridge",
+        "title": "石门高地",
+        "content": "高地有旧猎径，可观察山口与商队营地。攀爬有风险，也可以寻找更缓的路线。",
+        "keys": [
+          "高地",
+          "猎径",
+          "山口"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "envoy",
+        "title": "守门人若辛",
+        "content": "若辛并非嗜战者；他想确保山口居民能够得到补给。解释利益和交换承诺比恐吓更可靠。",
+        "keys": [
+          "若辛",
+          "山口",
+          "通行"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "camp",
+        "title": "营地的工具",
+        "content": "商队保留了绳索、地图和修车工具。缺失某件装备不应直接宣告无法救援。",
+        "keys": [
+          "营地",
+          "工具",
+          "绳索"
+        ],
+        "visibility": "public",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      },
+      {
+        "id": "secret",
+        "title": "旧隧道",
+        "content": "山口下方有旧排水隧道，出口通向安全侧坡。必须先在石门现场确认入口，不能无端由 AI 直接传送到终点。",
+        "keys": [
+          "隧道",
+          "排水",
+          "救援"
+        ],
+        "visibility": "gm",
+        "kind": "lore",
+        "activation": "keywords",
+        "priority": 0,
+        "enabled": true
+      }
+    ]
+  }
+}

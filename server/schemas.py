@@ -22,7 +22,8 @@ class RoomCreate(StrictModel):
     title: str = Field(min_length=1, max_length=60)
     preset: Literal['harbor', 'frontier', 'custom'] = 'harbor'
     premise: str = Field(default='', max_length=4000)
-    ai_mode: Literal['demo', 'live'] = 'demo'
+    ai_mode: Literal['demo', 'single', 'live'] = 'demo'
+    request_key: str | None = Field(default=None, min_length=8, max_length=80, pattern=r'^[a-zA-Z0-9_-]+$')
 
 class JoinRoom(StrictModel):
     code: str = Field(min_length=6, max_length=6)
@@ -57,7 +58,7 @@ class WorldUpdate(Revision, WorldData):
     pass
 
 class SettingsUpdate(Revision):
-    ai_mode: Literal['demo', 'live']
+    ai_mode: Literal['demo', 'single', 'live']
 
 class GMNote(Revision):
     text: str = Field(min_length=1, max_length=4000)

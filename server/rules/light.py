@@ -1,10 +1,14 @@
 """Authoritative light-rules adapter. Randomness never comes from the AI or browser."""
 import re
 import secrets
+import hashlib
+from pathlib import Path
 from fastapi import HTTPException
 from ..schemas import Decision
 
 RULE_ID = 'ember-light/v1'
+IMPLEMENTATION_VERSION = '1.1.0'
+IMPLEMENTATION_SHA256 = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 RULE_TEXT = '轻规则 v1：d20 + 属性修正 ≥ 难度。天然20大成功、天然1大失败。难度8–20。失败时，仅明确标注生命风险扣1生命，压力风险加1压力。生命0无法继续行动；压力上限6。自由掷骰不改变角色状态。'
 
 def parse_dice(expression):
@@ -58,11 +62,13 @@ class LightRules:
 
     def validate_decision(self, state, value):
         decision = Decision.model_validate(value.model_dump() if isinstance(value, Decision) else value)
+        if state.get('_preset_lock',{}).get('profile',{}).get('checks') == 'narrative' and decision.check is not None:
+            raise ValueError('当前叙事玩法不自动提出检定；提供者不能绕过预设政策')
         if (state.get('continuation') or {}).get('phase') == 'roll' and decision.check is not None:
             raise ValueError('已完成检定，主持提供者不能再次提出检定')
         return decision
 
     def contract(self):
-        return {'id': self.id, 'name': '余烬通用轻规则', 'description': self.description,
+        return {'id': self.id, 'implementation_version':IMPLEMENTATION_VERSION,'implementation_sha256':IMPLEMENTATION_SHA256, 'name': '余烬通用轻规则', 'description': self.description,
                 'dice': {'max_count': 20, 'min_sides': 2, 'max_sides': 100, 'max_modifier': 100},
                 'check_schema': Decision.model_json_schema()}

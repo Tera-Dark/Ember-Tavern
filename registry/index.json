@@ -52,9 +52,25 @@
       ],
       "download_url": null,
       "sha256": null
+    },
+    {
+      "id": "campaign-compass",
+      "version": "1.0.0",
+      "minimum_host": "2.4.0",
+      "template_path": "templates/campaign-compass",
+      "backend": false,
+      "review_status": "source-template-not-published",
+      "capabilities": [
+        "read:room"
+      ],
+      "uses": [
+        "core.campaign/v1"
+      ],
+      "download_url": null,
+      "sha256": null
     }
   ],
-  "host_version": "2.2.0-beta.1",
+  "host_version": "2.4.0-beta.1",
   "content_templates": [
     {
       "kind": "worldbook",
@@ -79,8 +95,51 @@
     "worldbook",
     "character",
     "theme",
+    "preset",
+    "scenario",
     "plugin-ui",
     "plugin-backend",
-    "plugin-dice"
+    "plugin-dice",
+    "plugin-campaign"
+  ],
+  "gameplay_templates": [
+    {
+      "kind": "preset",
+      "format": "ember.preset/v1",
+      "template_path": "templates/preset/preset.json",
+      "schema_path": "registry/preset.schema.json"
+    },
+    {
+      "kind": "scenario",
+      "format": "ember.scenario/v1",
+      "template_path": "templates/scenario/scenario.json",
+      "schema_path": "registry/scenario.schema.json"
+    }
+  ],
+  "preset_library": [
+    {
+      "id": "harbor-last-ferry",
+      "version": "1.0.0",
+      "source_path": "presets/harbor-last-ferry",
+      "status": "original-playtest-example",
+      "download_url": null,
+      "license": "UNLICENSED"
+    },
+    {
+      "id": "frontier-lost-caravan",
+      "version": "1.0.0",
+      "source_path": "presets/frontier-lost-caravan",
+      "status": "original-playtest-example",
+      "download_url": null,
+      "license": "UNLICENSED"
+    },
+    {
+      "id": "town-one-week",
+      "version": "1.0.0",
+      "source_path": "presets/town-one-week",
+      "status": "original-playtest-example",
+      "download_url": null,
+      "license": "UNLICENSED"
+    }
   ]
 }

@@ -52,6 +52,8 @@ def creator_catalog():
             'contracts': [{'kind': kind, 'format': CONTENT_FORMATS[kind],
                            'schema_url': f'/api/contracts/{kind}', 'template_url': f'/api/creators/templates/{kind}'}
                           for kind, model in CONTENT_MODELS.items()],
+            'gameplay_contracts':[{'kind':kind,'schema_url':f'/api/contracts/{kind}'} for kind in ('preset','scenario')],
+            'preset_guide_url':'/api/presets/guide',
             'plugin_schema_url': '/api/contracts/plugin',
             'core_resources': [{'name':name,'capability':cap,'owner':'@core'} for name,cap in CORE_CAPABILITIES.items()],
             'rule_systems': [engine.contract() for engine in ENGINES.values()],

@@ -1,4 +1,4 @@
-"""Gemini = setting/consistency advisor. OpenAI-compatible model = structured GM decision.
+"""Optional Gemini = setting/consistency advisor. OpenAI-compatible model = structured GM decision.
 Neither adapter is allowed to write game state or roll dice.
 """
 import json
@@ -17,7 +17,7 @@ class AIError(Exception):
 
 
 def model_status():
-    return {'live_ready':settings.live_ready, 'demo_enabled':settings.enable_demo,
+    return {'single_ready':settings.single_ready, 'live_ready':settings.live_ready, 'demo_enabled':settings.enable_demo,
             'knowledge':{'provider':'Gemini', 'model':settings.gemini_model or '尚未指定', 'configured':bool(settings.gemini_api_key and settings.gemini_model)},
             'decision':{'provider':'OpenAI 兼容接口', 'model':settings.decision_model or '尚未指定',
                         'configured':bool(settings.decision_api_key and settings.decision_model)}}
@@ -34,6 +34,8 @@ def demo_decision(state, context):
         else:
             narration = f"{name}的尝试遇到了阻碍。此刻没有得到想要的结果，但故事并未因此停住。\n\n检定{result['outcome']}；{result['consequence']}。你们可以换一种办法，或接受这次尝试的代价。"
         return Decision(narration=narration)
+    if state.get('_preset_lock',{}).get('profile',{}).get('checks') == 'narrative':
+        return Decision(narration=f"{name}的选择留在了这个场景中。你们可以继续表达人物的想法、询问同伴，或商量接下来要兑现的承诺。\n\n当前为叙事模式，不自动检定。是否揭示线索、进入下一场景或收束，由房主在剧本面板确认。")
     text = continuation['text']
     if any(word in text for word in ('休息','等待','商量','讨论')):
         return Decision(narration=f"{name}暂时放慢脚步。周围的声音变得清晰，时间仍在流逝。\n\n这次行动不需要检定。你们可以整理已有线索，确定下一步目标。")
@@ -85,6 +87,8 @@ async def structured_decision(context, knowledge):
               'continuation.phase=roll时必须尊重服务端roll结果且check必须为null。'
               'visibility=gm 和角色 gm_notes 是主持秘密，未经剧情揭示不能在公开 narration 或 facts 中泄露。'
               'kind=rule 是叙事约定，不能覆盖服务器 rules、权限或骰子。'
+              'campaign 是有限剧本当前节点，gm_notes / gm_guidance 和未揭示 clues 是主持秘密。不能自动公开、推进剧本节点或宣告已结局。'
+              'campaign.profile.checks=narrative 时 check 必须为 null。其它情况仍遵守可执行轻规则。'
               'facts只记录已经确认的简短事实，不把传闻变为事实。scene_title不必每轮更改。Schema: '
               + json.dumps(schema,ensure_ascii=False))
     body = {'model':settings.decision_model,'messages':[{'role':'system','content':system},
@@ -120,16 +124,23 @@ async def run_gm(room_id, state, mode):
         return decision, {'mode':'demo','label':'演示主持 · 规则脚本（未调用外部模型）',
                           'retrieval_count':len(context['retrieved']),'context_ids':[x['id'] for x in context['retrieved']], 'context_selection':selection,
                           'duration_ms':round((time.perf_counter()-start)*1000)}
-    if not settings.live_ready:
+    if mode not in ('single','live'):
+        raise AIError('不支持的主持模式，未调用外部模型。')
+    if mode == 'single' and not settings.single_ready:
+        raise AIError('单模型配置不完整：需要决策接口密钥和模型名称，不需要 Gemini。')
+    if mode == 'live' and not settings.live_ready:
         raise AIError('双模型配置不完整：需要 Gemini 密钥以及决策接口密钥和模型名称。')
     try:
-        knowledge = await gemini_knowledge(context)
+        knowledge = await gemini_knowledge(context) if mode == 'live' else ''
         middle = time.perf_counter()
         decision = await structured_decision(context, knowledge)
-        return decision, {'mode':'live','label':'双模型主持', 'knowledge':{'provider':'Gemini','model':settings.gemini_model,'duration_ms':round((middle-start)*1000)},
-                          'decision':{'provider':'OpenAI 兼容','model':settings.decision_model,'duration_ms':round((time.perf_counter()-middle)*1000)},
-                          'retrieval_count':len(context['retrieved']),'context_ids':[x['id'] for x in context['retrieved']], 'context_selection':selection,
-                          'duration_ms':round((time.perf_counter()-start)*1000)}
+        trace = {'mode':mode,'label':'真实单模型主持' if mode == 'single' else '双模型主持',
+                 'decision':{'provider':'OpenAI 兼容','model':settings.decision_model,'duration_ms':round((time.perf_counter()-middle)*1000)},
+                 'retrieval_count':len(context['retrieved']),'context_ids':[x['id'] for x in context['retrieved']], 'context_selection':selection,
+                 'duration_ms':round((time.perf_counter()-start)*1000)}
+        if mode == 'live':
+            trace['knowledge']={'provider':'Gemini','model':settings.gemini_model,'duration_ms':round((middle-start)*1000)}
+        return decision, trace
     except httpx.TimeoutException:
         raise AIError('模型调用超时。已提交的行动或骰子结果保留，可重试主持。')
     except httpx.HTTPError:

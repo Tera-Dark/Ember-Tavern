@@ -1,0 +1,89 @@
+{
+  "format": "ember.preset/v1",
+  "metadata": {
+    "id": "harbor-last-ferry",
+    "name": "雾港：最后一班渡船",
+    "version": "1.0.0",
+    "description": "灯塔今晚将熄灯。三位各怀心事的港口居民都想搭上最后一班渡船，而你们手中有一封被雨水打湿的邀请。决定该公开什么、保护谁，以及是否承担揭开真相的代价。",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "minimum_host": "2.4.0",
+  "plugin_api": 1,
+  "language": "zh-CN",
+  "play_mode": "investigation",
+  "min_players": 1,
+  "max_players": 4,
+  "duration_minutes": 60,
+  "difficulty": "beginner",
+  "content_warnings": [
+    "悬疑与受困处境；请先约定可接受内容。"
+  ],
+  "rule_system": "ember-light/v1",
+  "rule_version": "1.1.0",
+  "profile": {
+    "checks": "normal",
+    "style": "潮湿、克制的悬疑；保留谈判、调查和退出的选择。"
+  },
+  "worldbook": {
+    "path": "world/worldbook.json",
+    "id": "harbor-last-ferry-world",
+    "version": "1.0.0",
+    "sha256": "1f9545c5bf50693bcdfb5d4bd6b9133715ba84d79be0184f78ea7ac4159b721a"
+  },
+  "scenario": {
+    "path": "story/scenario.json",
+    "id": "harbor-last-ferry-story",
+    "version": "1.0.0",
+    "sha256": "d9ad3006ee81f2465276702e9eafb216a7a11210296988346ed694aa6325b8c0"
+  },
+  "characters": [
+    {
+      "path": "characters/scout.json",
+      "id": "harbor-last-ferry-scout",
+      "version": "1.0.0",
+      "sha256": "35666e446bd998616aded238005ee092e50aa6dec91bc62135ee48de883f9e80"
+    },
+    {
+      "path": "characters/guard.json",
+      "id": "harbor-last-ferry-guard",
+      "version": "1.0.0",
+      "sha256": "abc669d68da05e738eea0e88a3a63dddac26d89b0ec93390a7f11bc5989e0c8d"
+    },
+    {
+      "path": "characters/scholar.json",
+      "id": "harbor-last-ferry-scholar",
+      "version": "1.0.0",
+      "sha256": "2636aaa7b57612eb810d19214519bf5f0b6105d7abb1dcdb2f91b43849c0bb2c"
+    },
+    {
+      "path": "characters/mediator.json",
+      "id": "harbor-last-ferry-mediator",
+      "version": "1.0.0",
+      "sha256": "c1e2a8c846972cccb6e51107f77417c1c5f8a11eba35d41397045f981463d505"
+    }
+  ],
+  "theme": null,
+  "plugins": [
+    {
+      "id": "ai-host",
+      "version": "1.0.0",
+      "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+      "required": true,
+      "enabled": true
+    }
+  ],
+  "documents": [
+    {
+      "path": "readme.md",
+      "sha256": "39d7046cea9a25392b41aebfc6984f69c0deaa576dd10c157dabe9f33029e299"
+    },
+    {
+      "path": "licenses/content.txt",
+      "sha256": "603d4c2b59048f1207812e1c369e6235fb737f1aa4f9223a70882ccfcb425ca7"
+    }
+  ]
+}

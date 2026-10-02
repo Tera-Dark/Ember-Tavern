@@ -32,7 +32,11 @@ class Settings:
         return self.data_dir / 'tavern.sqlite3'
 
     @property
+    def single_ready(self):
+        return bool(self.decision_api_key and self.decision_model)
+
+    @property
     def live_ready(self):
-        return bool(self.gemini_api_key and self.gemini_model and self.decision_api_key and self.decision_model)
+        return bool(self.gemini_api_key and self.gemini_model and self.single_ready)
 
 settings = Settings()

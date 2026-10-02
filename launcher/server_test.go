@@ -72,3 +72,28 @@ func TestBootstrapAndCreate(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }
+
+func TestIndexRecoveryUsesExistingPrivateAPIProtection(t *testing.T) {
+	a := testAPI(t)
+	path := "/api/index-recovery/" + strings.Repeat("a", 32)
+	for _, tc := range []struct {
+		cookie, origin string
+		header         bool
+		code           int
+	}{
+		{"", "", true, 401}, {"test-nonce", "https://evil.example", true, 403}, {"test-nonce", "", false, 403},
+	} {
+		w := request(a, "POST", path, `{"confirm_stopped":true}`, "127.0.0.1:8765", tc.origin, tc.cookie, tc.header)
+		if w.Code != tc.code {
+			t.Fatal(w.Code, w.Body.String())
+		}
+	}
+	w := request(a, "POST", path, `{"confirm_stopped":false}`, "127.0.0.1:8765", "", "test-nonce", true)
+	if w.Code != 400 || !strings.Contains(w.Body.String(), "确认") {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	w = request(a, "GET", "/api/state", "", "127.0.0.1:8765", "", "test-nonce", false)
+	if !strings.Contains(w.Body.String(), `"index_recovery"`) || strings.Contains(w.Body.String(), `"record"`) {
+		t.Fatal("missing diagnostic or raw payload leaked", w.Body.String())
+	}
+}

@@ -23,3 +23,11 @@ python scripts/creator.py validate creations/my-dice
 CLI、安装器、运行时与 `registry/*.schema.json` 共用契约；跨字段与字节上限以运行时校验为准。插件最少申请能力，read:gm 也需明确 grant，Python 需代码审核／trust-backend；hash 不是安全认证。
 
 完整教程：[CREATOR_GUIDE](../docs/CREATOR_GUIDE.md)；模块生命周期／能力／资源：[PLUGIN_SDK](../docs/PLUGIN_SDK.md)。
+
+## M1 完整玩法组合
+
+- `preset/`：世界书＋剧本＋四张角色＋精确模块引用与说明。`creator.py init preset` / `lock-preset` / `package-preset`。
+- `scenario/`：有限场景、线索前置条件与结局；不包含可执行脚本。
+- `campaign-compass/`：独立只读 UI，用 core.campaign/v1 显示公开进度，单独安装，不放进预设 ZIP。
+
+完整教程：`docs/PRESET_AUTHORING.md`。模板不是已授权社区发行作品，填写署名／许可再分享。

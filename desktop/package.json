@@ -1,7 +1,7 @@
 {
   "name": "ember-tavern-desktop",
   "productName": "余烬桌面",
-  "version": "0.2.0-beta.1",
+  "version": "0.2.0-beta.3",
   "private": true,
   "description": "房主的余烬酒馆安装、房间与扩展管理器",
   "author": "Ember Tavern contributors",

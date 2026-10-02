@@ -1,0 +1,36 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "town-one-week-scout",
+    "name": "伊芙·风铃",
+    "version": "1.0.0",
+    "description": "",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": []
+  },
+  "rule_system": "ember-light/v1",
+  "character": {
+    "name": "伊芙·风铃",
+    "archetype": "信使 / 街巷向导",
+    "description": "先观察，再行动；愿意为同伴留下退路。",
+    "gm_notes": "尊重操控者的选择，不替玩家对白。",
+    "avatar": "feather",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {
+      "strength": 0,
+      "dexterity": 2,
+      "knowledge": 1,
+      "insight": 2,
+      "charisma": 0
+    },
+    "inventory": [
+      "麻绳",
+      "旧地图"
+    ]
+  }
+}
