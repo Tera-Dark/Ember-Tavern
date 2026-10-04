@@ -1,0 +1,124 @@
+{
+  "$defs": {
+    "DndAbilityScores": {
+      "additionalProperties": false,
+      "properties": {
+        "strength": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Strength",
+          "type": "integer"
+        },
+        "dexterity": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Dexterity",
+          "type": "integer"
+        },
+        "constitution": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Constitution",
+          "type": "integer"
+        },
+        "intelligence": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Intelligence",
+          "type": "integer"
+        },
+        "wisdom": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Wisdom",
+          "type": "integer"
+        },
+        "charisma": {
+          "default": 10,
+          "maximum": 20,
+          "minimum": 3,
+          "title": "Charisma",
+          "type": "integer"
+        }
+      },
+      "title": "DndAbilityScores",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A minimal, public combat sheet; it contains no SRD prose or class features.",
+  "properties": {
+    "level": {
+      "default": 1,
+      "maximum": 4,
+      "minimum": 1,
+      "title": "Level",
+      "type": "integer"
+    },
+    "ability_scores": {
+      "$ref": "#/$defs/DndAbilityScores"
+    },
+    "armor_class": {
+      "default": 10,
+      "maximum": 30,
+      "minimum": 5,
+      "title": "Armor Class",
+      "type": "integer"
+    },
+    "weapon_die": {
+      "default": 6,
+      "enum": [
+        4,
+        6,
+        8,
+        10,
+        12
+      ],
+      "title": "Weapon Die",
+      "type": "integer"
+    },
+    "weapon_ability": {
+      "default": "strength",
+      "enum": [
+        "strength",
+        "dexterity"
+      ],
+      "title": "Weapon Ability",
+      "type": "string"
+    },
+    "hit_die": {
+      "default": 8,
+      "enum": [
+        6,
+        8,
+        10,
+        12
+      ],
+      "title": "Hit Die",
+      "type": "integer"
+    },
+    "max_hit_points": {
+      "anyOf": [
+        {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Hit Points"
+    }
+  },
+  "title": "Dnd5eSheet",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:dnd5e-sheet:v1"
+}

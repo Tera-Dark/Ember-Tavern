@@ -1,0 +1,53 @@
+{
+  "format": "ember.worldbook/v1",
+  "metadata": {
+    "id": "ashen-canal-world",
+    "name": "灰烬水道：世界书",
+    "version": "1.0.0",
+    "description": "原创合作经营背景；资源和事件效果由适配器结算。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["水道", "村镇", "春播"]
+  },
+  "world": {
+    "title": "灰烬水道：八回合保卫春播",
+    "premise": "冬季落石冲开三段堤壁。山地的四个聚落需要在春播前共同规划修复工作，并用有限的共享仓储应对季节事件。",
+    "tone": "合作规划、资源权衡与有限期限；每个决定都可复盘。",
+    "rule_system": "ember-coop-settlement/v1",
+    "lore": [
+      {
+        "id": "the_canal",
+        "title": "灰烬水道",
+        "content": "一条绕过灰烬岭的旧水道养活了四个聚落。冬季的落石冲开三段堤壁，下一轮春播前必须修复，否则田地将失去灌溉。",
+        "keys": ["水道", "堤壁", "春播"],
+        "kind": "lore",
+        "visibility": "public",
+        "activation": "keywords",
+        "priority": 5,
+        "enabled": true
+      },
+      {
+        "id": "the_common_store",
+        "title": "公共仓房",
+        "content": "粮食、木料、石料与银币由各聚落共同登记。建设和修复订单先预留资源，房主结算后才会改变共享仓储。",
+        "keys": ["仓房", "资源", "订单"],
+        "kind": "lore",
+        "visibility": "public",
+        "activation": "keywords",
+        "priority": 4,
+        "enabled": true
+      },
+      {
+        "id": "the_weather",
+        "title": "山地天气",
+        "content": "季节性风暴、干旱或路过商队会改变当季的资源收入。事件由服务器随机选择，叙事文字不能改变结算数值。",
+        "keys": ["风暴", "干旱", "商队", "事件"],
+        "kind": "lore",
+        "visibility": "public",
+        "activation": "keywords",
+        "priority": 3,
+        "enabled": true
+      }
+    ]
+  }
+}

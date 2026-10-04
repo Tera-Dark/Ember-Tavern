@@ -118,6 +118,71 @@
 .member-confirm b { font-size:13px; }
 .invite-content .member-confirm p { display:block; font-size:11px; line-height:1.9; color:var(--muted); margin:12px 0; }
 .member-confirm > div { display:flex; justify-content:flex-end; gap:9px; }
+
+.registry-explorer { margin:24px 0; padding:22px; border:1px solid var(--border); border-radius:9px; background:var(--surface); }
+.registry-explorer .section-title { align-items:center; margin:0 0 12px; }
+.registry-explorer .section-title h2 { display:flex; gap:9px; align-items:center; font-size:18px; font-weight:500; }
+.registry-explorer .section-title h2 svg { color:var(--gold); }
+.registry-notice,.registry-integrity-note { margin:10px 0; color:var(--muted); font-size:10px; line-height:1.9; }
+.registry-notice span { display:block; margin-top:3px; color:var(--faint); overflow-wrap:anywhere; }
+.registry-filters { display:grid; grid-template-columns:minmax(180px,1fr) 170px 190px; gap:9px; margin:18px 0 10px; }
+.registry-filters label { display:flex; gap:8px; align-items:center; padding:0 11px; border:1px solid var(--border); border-radius:5px; background:var(--bg); color:var(--muted); }
+.registry-filters label input { min-width:0; width:100%; border:0; outline:0; background:transparent; color:var(--text); padding:10px 0; font-size:11px; }
+.registry-filters select { min-width:0; font-size:10px; }
+.registry-count { color:var(--faint); font-size:9px; margin:8px 0 14px; }
+.registry-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.registry-card { min-width:0; display:flex; flex-direction:column; gap:9px; padding:16px; border:1px solid var(--border); border-radius:7px; background:var(--bg); }
+.registry-card-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.registry-kind { display:flex; align-items:center; gap:5px; font-size:9px; color:var(--muted); }
+.registry-kind svg { color:var(--gold); }
+.registry-status { display:inline-flex; padding:4px 7px; border:1px solid var(--border); border-radius:20px; font-size:8px; color:var(--muted); white-space:nowrap; }
+.registry-status.warning { color:var(--gold); border-color:color-mix(in srgb,var(--gold) 55%,var(--border)); background:var(--gold-bg); }
+.registry-status.community { color:var(--green); border-color:color-mix(in srgb,var(--green) 45%,var(--border)); background:var(--green-bg); }
+.registry-status.recommended { color:var(--gold); border-color:var(--gold); background:var(--gold-bg); }
+.registry-card h3 { font-size:15px; font-weight:500; margin:0; overflow-wrap:anywhere; }
+.registry-identity { display:flex; gap:8px; align-items:center; color:var(--faint); font-size:9px; }
+.registry-identity code { color:var(--gold); overflow-wrap:anywhere; }
+.registry-description { min-height:38px; margin:0; color:var(--muted); font-size:10px; line-height:1.8; }
+.registry-facts { display:grid; gap:7px; margin:3px 0; }
+.registry-facts > div { display:grid; grid-template-columns:88px minmax(0,1fr); gap:8px; font-size:9px; line-height:1.7; }
+.registry-facts dt { color:var(--faint); }
+.registry-facts dd { min-width:0; margin:0; color:var(--muted); overflow-wrap:anywhere; }
+.registry-facts dd code { color:var(--gold); font-size:8px; }
+.registry-chip { display:inline-flex; margin:0 4px 4px 0; padding:2px 5px; border-radius:3px; background:var(--surface-2); color:var(--muted); font-size:8px; }
+.registry-pin { display:block; overflow-wrap:anywhere; }
+.registry-compatibility { display:grid; gap:4px; padding:8px 9px; border:1px solid var(--border); border-radius:4px; color:var(--muted); font-size:8px; line-height:1.7; }
+.registry-compatibility b { font-size:9px; font-weight:500; }
+.registry-compatibility small { color:var(--faint); font-size:8px; }
+.registry-compatibility.static-ok { border-color:color-mix(in srgb,var(--green) 35%,var(--border)); }
+.registry-compatibility.static-ok b { color:var(--green); }
+.registry-compatibility.static-warning { border-color:color-mix(in srgb,var(--gold) 45%,var(--border)); background:var(--gold-bg); }
+.registry-compatibility.static-warning b { color:var(--gold); }
+.registry-compatibility.pending { color:var(--faint); }
+.registry-warnings { padding:8px 10px; border-left:2px solid var(--gold); background:var(--gold-bg); color:var(--muted); font-size:9px; line-height:1.7; }
+.registry-warnings b { color:var(--gold); font-weight:500; }
+.registry-warnings ul { margin:4px 0 0; padding-left:15px; }
+.registry-card-footer { display:flex; flex-direction:column; gap:7px; margin-top:auto; padding-top:10px; border-top:1px solid var(--border); }
+.registry-hash { color:var(--faint); font-family:monospace; font-size:8px; overflow-wrap:anywhere; }
+.registry-links { display:flex; flex-wrap:wrap; gap:8px 13px; align-items:center; font-size:9px; }
+.registry-links > a,.registry-links details a { display:inline-flex; gap:4px; align-items:center; color:var(--gold); text-decoration:none; }
+.registry-links > a:hover,.registry-links details a:hover { text-decoration:underline; }
+.registry-links details { display:flex; gap:7px; align-items:center; }
+.registry-links details summary { cursor:pointer; color:var(--muted); }
+.registry-links details[open] { flex-basis:100%; flex-wrap:wrap; }
+.registry-no-download { color:var(--faint); font-size:8px; }
+.registry-empty { padding:18px; border:1px dashed var(--border); border-radius:5px; text-align:center; color:var(--muted); font-size:10px; }
+.registry-error { display:flex; gap:8px; align-items:center; padding:10px; border:1px solid color-mix(in srgb,var(--red) 40%,var(--border)); border-radius:5px; color:var(--red); font-size:10px; }
+.registry-error > span { flex:1; }
+.registry-integrity-note { padding-top:10px; border-top:1px solid var(--border); color:var(--faint); }
+@media(max-width:900px) { .registry-grid { grid-template-columns:1fr; } }
+@media(max-width:700px) {
+  .registry-explorer { margin:18px 0; padding:16px; }
+  .registry-explorer .section-title { flex-wrap:wrap; }
+  .registry-filters { grid-template-columns:1fr 1fr; }
+  .registry-filters label { grid-column:1/-1; }
+  .registry-card { padding:13px; }
+  .registry-facts > div { grid-template-columns:75px minmax(0,1fr); }
+}
 @media(max-width:1000px) {
   .creator-lower { grid-template-columns:1fr; }
   .creator-intro > .badge { display:none; }

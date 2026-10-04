@@ -1,0 +1,63 @@
+name: 玩法作品投稿
+description: 提交可玩的数据预设或场景，供目录审核；不是自动上架或认证。
+title: "[作品投稿] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请由作品作者或获授权代表提交。投稿不会自动发布、评测或获得“官方推荐”。目录校验只验证元数据、契约与哈希，不证明作品质量、许可真实性或完整规则覆盖。
+  - type: input
+    id: title
+    attributes:
+      label: 作品名与稳定 ID
+      description: "例：桥下余烬 / under-bridge-embers；ID 发布后不随显示名变化。"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 作品版本与源码／下载链接
+      description: "给出精确版本、公开源码位置；如尚未发布下载包请明确写明。"
+    validations:
+      required: true
+  - type: textarea
+    id: author-rights
+    attributes:
+      label: 作者署名与分发授权
+      description: "列出所有作者、适用许可证及版权／再分发权限；如采用 SRD 等第三方素材，说明来源、版本、署名和各自许可。UNLICENSED 不可作为公开下载作品。"
+    validations:
+      required: true
+  - type: textarea
+    id: play
+    attributes:
+      label: 可玩内容与开局说明
+      description: "玩法类型、玩家人数、时长、上手步骤、目标与至少一条可达结局／完成路径。"
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: 兼容性锁定
+      description: "宿主最低／实际测试版本、Plugin API、精确规则系统与规则版本；列出所有模块的 ID／版本／SHA-256（没有模块请写无）。"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 测试证据与已知限制
+      description: "描述实际测试环境、人数／轮次、复现步骤、已知问题与内容警告。未由真人或独立团队测试时请如实注明；自动校验不等于试玩。"
+    validations:
+      required: true
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 投稿前确认
+      value: |
+        - [ ] 我有权提交并按上述许可证分发全部内容。
+        - [ ] 我已运行 `python scripts/creator.py validate <作品目录>`，并记录输出。
+        - [ ] 我已运行 `python scripts/creator.py package-preset <作品目录> <新路径.zip>` 并提供归档 SHA-256（若申请发行包）。
+        - [ ] 我已运行 `python scripts/registry.py` 与相关测试；如本 PR 更新索引，包含了精确版本与证据。
+        - [ ] 我没有把模型提示、自述规则或 Schema 描述冒充可执行规则；系统支持范围按事实说明。
+        - [ ] 我理解宿主不会自动安装作品或模块，目录更新也不会改写既有房间的锁定版本。
+    validations:
+      required: true

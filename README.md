@@ -1,18 +1,20 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**当前开发：宿主 2.4.0-beta.1 · 余烬桌面 / 部署引擎 0.2.0-beta.3 · Plugin API v1**
+**源码版本元数据：宿主 / 网页 2.4.0-beta.1 · 余烬桌面 / 部署引擎 0.2.0-beta.3 · Plugin API v1**
+
+> 这些是当前开发源码标注，不表示已有同版本公开安装器。本仓库最近公开桌面 Release 仍为 `desktop-v0.2.0-beta.1`（对应旧宿主 2.3.0-beta.1）；M3 源码切片与 M4 目录／社区流程第一批增量均未随新 EXE 发布。下载落差和构建来源状态见 [M2 交付记录](docs/M2_DELIVERY.md)、[M3 交付记录](docs/M3_DELIVERY.md) 与 [M4 进度记录](docs/M4_DELIVERY.md)。
 
 项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
 
 只运行不需要 Node，已包含构建前端。多人同桌需访问**同一个服务器**，不要每人各起一个实例再互发邀请码。
 
-小宿主维护身份、房间、权限、通用轻规则、权威状态、事件与回档；地图、生成器、图标移动、旁白台本、TTS 和 AI 主持都是独立可开关模块。界面不是静态原型，实际操作会写数据库、同步到同伴并生成回档快照。
+小宿主维护身份、房间、权限、权威状态、事件与回档；规则目录含通用轻规则，以及标注为实验的两条有限规则子集。地图、生成器、图标移动、旁白台本、TTS 和 AI 主持是独立可开关模块。界面不是静态原型，实际操作会写数据库、同步到同伴并生成回档快照。
 
 目前可演示／测试：标准创作契约、世界／角色导入导出、个人配色包、主持秘密的服务端投影、有预算的 AI 上下文预览、邀请轮换／成员移除、双账号房间、分配角色、AI 演示主持、检定、属性、世界书、检索、分支回档、方格地图生成、多人拖动预览与提交、台本编辑、本地语音 SDK、社区插件安装／隔离。真实供应商联网与音频听感需要你在服务器配置自己的密钥；**不会让你把密钥发聊天。**
 
-本阶段：[M1 玩法预设交付](docs/M1_DELIVERY.md) · [预设／剧本作者教程](docs/PRESET_AUTHORING.md) · [设计决策](docs/PRESET_FORMAT_RFC.md)。三个原创样板、精确版本锁、原子新建房间、线索／结局和独立只读 HUD 已落地；正式再分发许可与真人反馈仍待确认。
+当前源码分支：[M4 社区生态进度](docs/M4_DELIVERY.md) · [M3 玩法竖向样板交付记录](docs/M3_DELIVERY.md) · [M2 状态 / 记忆 / 行动阶段快照](docs/M2_DELIVERY.md) · [M1 玩法预设交付](docs/M1_DELIVERY.md) · [预设／剧本作者教程](docs/PRESET_AUTHORING.md)。源码新增一个标注为实验的 SRD 5.2.1 有限 d20 战斗子集与一个原创合作 SLG-lite 经济样板；它们均不代表完整 5e 或完整 SLG。M4 当前只完成目录契约／离线校验、CI 与社区入口的第一批增量，不代表社区市场或最终验收。自动化只证明已编码合同，不证明 AI 叙事准确、安装包已发布或真人环境已验收。正式许可证仍待定；真人 / 朋友测试严格等 M4 完成后再安排。
 
-上一阶段：[M0 第一批交付](docs/M0_DELIVERY.md)。旧 beta.1 下载链接仍是旧 Release；本轮不覆盖旧 EXE。
+历史阶段：[M0 第一批交付](docs/M0_DELIVERY.md)。公开 beta.1 下载落后于当前源码；不覆盖旧 EXE，也不把源码构建称为公开发行。
 
 下一阶段：[开发计划](docs/DEVELOPMENT_PLAN.md) · [长期核心要求](docs/CORE_REQUIREMENTS.md) · [AI 跑团需求调研](docs/AI_RPG_DEMAND_RESEARCH.md) · [文档入口](docs/README.md)。
 
@@ -54,7 +56,10 @@ python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 1 --ws-max
 | 世界书 | ember.worldbook/v1 | 房主导入；160 条／384 KiB 世界数据；文字规则不替代可执行判定 |
 | 角色卡 | ember.character/v1 | 新角色、不携带账号或操控权；支持主持备注／命名空间扩展 |
 | 主题包 | ember.theme/v1 | 15 个颜色令牌、dark／light；不运行 CSS／脚本／URL |
+| 玩法预设／剧本 | ember.preset/v1、ember.scenario/v1 | 锁定内容、规则身份／实现版本与终态转场门槛；不执行包内代码 |
 | 插件 | Plugin API 1 | 共享清单校验、minimum_host、版本化资源、明确能力／信任 |
+
+当前受审阅规则目录：`ember-light/v1`、实验 `dnd5e-srd-5.2.1/v1` 与实验 `ember-coop-settlement/v1`。后两者只实现有限 5e 战斗与原创合作经济样板；范围与未支持内容见 [M3 交付记录](docs/M3_DELIVERY.md)，不能称为完整 5e 或 SLG。两个样板目前为 `UNLICENSED`，不应未获授权再分发。
 
 ```bash
 python scripts/creator.py init worldbook creations/my-world --id my-world --name "我的世界"
@@ -181,7 +186,7 @@ Dockerfile 带六模块、frame SDK、文档、模板和示例包，使用非 ro
 
 ## GitHub 生态
 
-实际代码结构、SDK、只读 UI／Python 模板、registry、CI、插件 Release 工作流、PR／Issue 模板和审核规范已经提供。项目发布仓库为 [Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern)。提供的是插件开发与发布入口，不代表已经拥有活跃插件市场；没有虚构社区用户或插件下载量。
+实际代码结构、创作 CLI、只读 UI／Python 模板、registry、CI、插件 Release 工作流和审核规范已经提供。M4 本轮补上目录索引合同与离线校验、投稿／兼容／维护 Issue 表单和 PR 准入项；当前仍是本地基础目录，不是活跃社区市场或在线自动分发，也没有虚构社区作者、试玩或下载量。项目发布仓库为 [Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern)。
 
 发布前选择许可证：`LICENSE.example` 只是 MIT 模板，不是已授予的项目许可证；仓库拥有者填写后再发布。步骤见 GITHUB_PUBLISH，贡献与安全见 CONTRIBUTING／SECURITY。
 
@@ -194,9 +199,9 @@ web/                    React 宿主、模块中心、通用 iframe 桥接
 static/                 已构建发行前端（直接运行用）
 templates/              worldbook、character、theme、只读UI／后端／骰盘模板
 plugin-packages/         示例发行 ZIP、实际 SHA256
-registry/               四个生成 Schema、作品／插件模板索引；不是在线商店
+registry/               十个生成 Schema、本地作品／插件索引；不是在线商店
 launcher/               Go + WebView2 桌面启动器、任务与事务更新
-scripts/                creator、run、plugins、backup、restore
+scripts/                creator、registry 校验、plugins、backup、restore
 .github/                CI、Release、Issue／PR 模板
 tests/                  自动测试、双浏览器内核／插件／创作隐私验收
 docs/                   架构／创作／LAN／路线图、SDK、测试报告、历史设计

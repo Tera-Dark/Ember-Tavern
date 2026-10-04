@@ -26,6 +26,10 @@ async def rollback(room_id:str,data:Rollback,user=Depends(current_user)):
                 if archived == 0:
                     raise HTTPException(422,'该节点已经是最新记录，无需回档')
                 state = load_state(target['snapshot_json'])
+                # Branch-bound coordination and summaries are caches/decisions,
+                # not canonical past: they must not leak from an abandoned future.
+                state['_memory_summary'] = None
+                state['_action_round'] = None
                 con.execute('UPDATE events SET active=0 WHERE room_id=? AND active=1 AND seq>?',(room_id,target['seq']))
                 con.execute('UPDATE rooms SET branch=branch+1 WHERE id=?',(room_id,))
                 append_event(con,room_id,'rewind',f"回到事件 #{target['seq']} 之后的状态。{archived} 条后续记录已封存。原因：{data.reason}",

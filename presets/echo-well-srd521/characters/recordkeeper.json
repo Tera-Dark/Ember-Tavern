@@ -1,0 +1,35 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "echo-well-recordkeeper",
+    "name": "药草记录者",
+    "version": "1.0.0",
+    "description": "记下水位、症状与物资的人；本模板没有施法能力。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "记录者"]
+  },
+  "rule_system": "dnd5e-srd-5.2.1/v1",
+  "character": {
+    "name": "药草记录者",
+    "archetype": "记录者（原创标签）",
+    "description": "习惯把每次水位变化写进小册子，也会照料队友的日常伤口。",
+    "gm_notes": "治疗物资没有专用结算规则；伤势恢复请使用有限休息命令或房主裁决。",
+    "avatar": "book",
+    "hp": 10,
+    "max_hp": 10,
+    "stress": 0,
+    "attributes": {"strength": -1, "dexterity": 1, "knowledge": 2, "insight": 2, "charisma": 1},
+    "inventory": ["记录册", "绷带", "干燥药草"],
+    "extensions": {
+      "dnd5e.srd-5.2.1/v1": {
+        "level": 1,
+        "ability_scores": {"strength": 9, "dexterity": 12, "constitution": 12, "intelligence": 15, "wisdom": 14, "charisma": 12},
+        "armor_class": 12,
+        "weapon_die": 4,
+        "weapon_ability": "dexterity",
+        "hit_die": 6
+      }
+    }
+  }
+}

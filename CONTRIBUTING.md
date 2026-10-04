@@ -1,6 +1,6 @@
 # 内容作者与模块开发者的贡献入口
 
-项目仓库：https://github.com/Tera-Dark/Ember-Tavern。当前为 2.2 测试基础，正式开源前由拥有者确定 LICENSE；贡献／示例不等于已授予所有素材许可。
+项目仓库：https://github.com/Tera-Dark/Ember-Tavern。当前开发源码元数据为宿主／网页 `2.4.0-beta.1`、桌面／部署引擎 `0.2.0-beta.3`、Plugin API `1`；最近公开桌面 Release 仍是旧 `desktop-v0.2.0-beta.1`／宿主 `2.3.0-beta.1`，没有经过核验的新安装包。M4 目录与投稿流程目前仍在建设中，状态见 [M4 进度记录](docs/M4_DELIVERY.md)。仓库正式 LICENSE 仍由拥有者确定；贡献／示例不等于已授予所有素材许可。
 
 ## 先选择正确的一层
 
@@ -33,6 +33,7 @@ python -m pip install -r requirements-lock.txt
 python -m pip install -r requirements-dev.txt
 npm ci --prefix web
 python scripts/creator.py schemas --check
+python scripts/registry.py
 python -m pytest -q
 npm run build --prefix web
 python -m compileall -q server plugins scripts templates
@@ -50,6 +51,6 @@ python tests/browser_foundation.py
 
 完整安装与执行见 README／TEST_REPORT。PR 说明测试命令、兼容／迁移与未验证平台／供应商；别把 MockTransport／speech stub 当付费联网／音频验收。
 
-CI 检查 Python 3.11／3.13、Schema 漂移、生产前端、三套双浏览器流程；实际执行状态以 Actions 为准。不会在 CI 自动下载／运行第三方 Python、不使用 pull_request_target 跑外部贡献代码、不注入模型密钥。
+CI 检查 Python 3.11／3.13、Schema 漂移、本地目录元数据与包散列、生产前端及四套双浏览器流程；实际执行状态以 Actions 为准。目录校验不联网、不导入或执行插件代码；不会在 CI 自动下载／运行第三方 Python、不使用 pull_request_target 跑外部贡献代码、不注入模型密钥。
 
 当前安装器拒绝覆盖已有包；升级按备份／关闭／停服／重审／迁移／重启进行，不靠改文件跳过 hash。贡献 PR 不自动上架或获得信任；公开生态发布见 GITHUB_PUBLISH 和 ROADMAP。

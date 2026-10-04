@@ -1,0 +1,85 @@
+{
+  "format": "ember.preset/v1",
+  "metadata": {
+    "id": "echo-well-srd521",
+    "name": "回声井：封住山脉的裂隙",
+    "version": "1.0.0",
+    "description": "一段小型合作冒险。追查山路异响，处理一次可谈判、可绕行或可战斗的遭遇，并决定如何封住旧水井。战斗只使用标注为实验的有限 SRD 5.2.1 规则切片。",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": [
+      "规则实验",
+      "合作冒险",
+      "SRD 5.2.1"
+    ]
+  },
+  "minimum_host": "2.4.0",
+  "plugin_api": 1,
+  "language": "zh-CN",
+  "play_mode": "adventure",
+  "min_players": 1,
+  "max_players": 4,
+  "duration_minutes": 90,
+  "difficulty": "beginner",
+  "content_warnings": [
+    "洞穴坍塌风险、轻度战斗；房主可跳过遭遇。"
+  ],
+  "rule_system": "dnd5e-srd-5.2.1/v1",
+  "rule_version": "0.1.0",
+  "profile": {
+    "checks": "normal",
+    "style": "保留交涉、绕行、撤退与战斗的选择；不替玩家决定是否承担危险。"
+  },
+  "worldbook": {
+    "path": "world/worldbook.json",
+    "id": "echo-well-world",
+    "version": "1.0.0",
+    "sha256": "3beba903e5018e53705e12111216a18bc74b547e89e4fdc8e0a86d091d817e5c"
+  },
+  "scenario": {
+    "path": "story/scenario.json",
+    "id": "echo-well-story",
+    "version": "1.0.0",
+    "sha256": "347fd37bee331cf008d85e226e0112b185265c96af2090d4d9c4378c1e1db217"
+  },
+  "characters": [
+    {
+      "path": "characters/warden.json",
+      "id": "echo-well-warden",
+      "version": "1.0.0",
+      "sha256": "1c910b8afecbee0d9965a81b86b5fd317267a7018b6d3e52ef7fd8f14b7a0be3"
+    },
+    {
+      "path": "characters/pathfinder.json",
+      "id": "echo-well-pathfinder",
+      "version": "1.0.0",
+      "sha256": "740efd676dc4a7e7f9ce629e2e5aab39f2b8efabdbf36383fbecbafe9ea9f650"
+    },
+    {
+      "path": "characters/recordkeeper.json",
+      "id": "echo-well-recordkeeper",
+      "version": "1.0.0",
+      "sha256": "da4f7cee32a00798e0518ecd22446ff9427c00d438d22fb40311569bd8118b1f"
+    },
+    {
+      "path": "characters/mediator.json",
+      "id": "echo-well-mediator",
+      "version": "1.0.0",
+      "sha256": "a466a018efd817e9e2d9f48302f6b1e7cd21c90367bfada25160b74c35d0a6ad"
+    }
+  ],
+  "theme": null,
+  "plugins": [],
+  "documents": [
+    {
+      "path": "readme.md",
+      "sha256": "ec1ea0958ce1dcc1f782a1bc79d12ad68f214bfa254f6653e683221972c04d4a"
+    },
+    {
+      "path": "licenses/srd-attribution.txt",
+      "sha256": "5080b4d38671c15a22585b642f416b74be624ee281dbc713fe88084149465d63"
+    }
+  ]
+}

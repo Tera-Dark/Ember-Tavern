@@ -153,7 +153,7 @@ def pack_room(room_id, user):
         archived_count = con.execute('SELECT COUNT(*) FROM events WHERE room_id=? AND active=0',(room_id,)).fetchone()[0]
         total = con.execute('SELECT COUNT(*) FROM events WHERE room_id=? AND active=1',(room_id,)).fetchone()[0]
         catalog = manager.catalog(room, state, con)
-        view = project_state(state, include_gm)
+        view = project_state(state, include_gm, user['id'])
         if not include_gm:
             for pid, namespace in view.get('_plugins', {}).items():
                 namespace['data'] = manager.public_data(room, state, pid, user, con)

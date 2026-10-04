@@ -11,14 +11,26 @@
       "sha256": "8cada982bf789729f15c2656172daae7e81c23e971e4038fe49e851461131df5",
       "download_url": "https://github.com/Tera-Dark/Ember-Tavern/releases/download/v2.0.0-preview.1/session-insights-1.0.0.zip",
       "backend": false,
-      "review_status": "example",
+      "review_status": "legacy-reference-only",
       "capabilities": [
         "read:room",
         "read:events"
       ],
       "minimum_host": "2.1.0",
       "template_path": "templates/session-insights",
-      "download_note": "既有版本的发行引用；本轮只核验仓库内 ZIP 的 SHA，未重新验收远程下载。"
+      "download_note": "历史下载引用；远程资产未重新核验，且该作品未声明再分发许可，不作为社区推荐或新发行依据。",
+      "license": "UNLICENSED",
+      "authors": [],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "api_version": 1,
+      "name": "会话观察板",
+      "description": "社区 UI 插件示例：观察轮次、角色生命与有效事件，不修改游戏数据。",
+      "category": "社区示例",
+      "requires": [],
+      "provides": []
     },
     {
       "id": "scene-notes",
@@ -27,13 +39,25 @@
       "sha256": "070e18d038a2886455abfc20e13592e7b03dbdd69250821e1c02bf1cccb1371e",
       "download_url": "https://github.com/Tera-Dark/Ember-Tavern/releases/download/v2.0.0-preview.1/scene-notes-1.0.0.zip",
       "backend": true,
-      "review_status": "example",
+      "review_status": "legacy-reference-only",
       "capabilities": [
         "read:room"
       ],
       "minimum_host": "2.1.0",
       "template_path": "templates/scene-notes",
-      "download_note": "既有版本的发行引用；本轮只核验仓库内 ZIP 的 SHA，未重新验收远程下载。"
+      "download_note": "历史下载引用；远程资产未重新核验，且该作品未声明再分发许可，不作为社区推荐或新发行依据。",
+      "license": "UNLICENSED",
+      "authors": [],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "api_version": 1,
+      "name": "场景便签",
+      "description": "Python SDK 示例：房主追加便签，成员阅读；独立 namespace、事件与回档。",
+      "category": "社区示例",
+      "requires": [],
+      "provides": []
     },
     {
       "id": "dice-tray",
@@ -51,7 +75,21 @@
         "core.rules/v1"
       ],
       "download_url": null,
-      "sha256": null
+      "sha256": null,
+      "package": null,
+      "license": "UNLICENSED",
+      "authors": [],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "download_note": null,
+      "api_version": 1,
+      "name": "桌面骰盘",
+      "description": "纯 UI 扩展示例：调用宿主权威骰子，不在浏览器生成随机结果。",
+      "category": "骰子",
+      "requires": [],
+      "provides": []
     },
     {
       "id": "campaign-compass",
@@ -67,7 +105,21 @@
         "core.campaign/v1"
       ],
       "download_url": null,
-      "sha256": null
+      "sha256": null,
+      "package": null,
+      "license": "UNLICENSED",
+      "authors": [],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "download_note": null,
+      "api_version": 1,
+      "name": "剧本罗盘",
+      "description": "只读社区 UI 样板：通过 core.campaign/v1 显示已投影的场景、目标和已揭示线索。",
+      "category": "社区样板",
+      "requires": [],
+      "provides": []
     }
   ],
   "host_version": "2.4.0-beta.1",
@@ -123,7 +175,41 @@
       "source_path": "presets/harbor-last-ferry",
       "status": "original-playtest-example",
       "download_url": null,
-      "license": "UNLICENSED"
+      "license": "UNLICENSED",
+      "package_hash": "5e80d816ce04371c09b6df60219ddf57a85f43a82f1b0198fb03f6f578cd1493",
+      "authors": [
+        "余烬示例创作者"
+      ],
+      "minimum_host": "2.4.0",
+      "plugin_api": 1,
+      "language": "zh-CN",
+      "play_mode": "investigation",
+      "min_players": 1,
+      "max_players": 4,
+      "duration_minutes": 60,
+      "difficulty": "beginner",
+      "content_warnings": [
+        "悬疑与受困处境；请先约定可接受内容。"
+      ],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "archive_sha256": null,
+      "rule_system": "ember-light/v1",
+      "rule_version": "1.1.0",
+      "plugins": [
+        {
+          "id": "ai-host",
+          "version": "1.0.0",
+          "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+          "required": true,
+          "enabled": true
+        }
+      ],
+      "name": "雾港：最后一班渡船",
+      "description": "灯塔今晚将熄灯。三位各怀心事的港口居民都想搭上最后一班渡船，而你们手中有一封被雨水打湿的邀请。决定该公开什么、保护谁，以及是否承担揭开真相的代价。",
+      "tags": []
     },
     {
       "id": "frontier-lost-caravan",
@@ -131,7 +217,41 @@
       "source_path": "presets/frontier-lost-caravan",
       "status": "original-playtest-example",
       "download_url": null,
-      "license": "UNLICENSED"
+      "license": "UNLICENSED",
+      "package_hash": "b47351b38d20ca2c3f472f89f5ec45d1bba95c470798fc270a45265fee5d5e47",
+      "authors": [
+        "余烬示例创作者"
+      ],
+      "minimum_host": "2.4.0",
+      "plugin_api": 1,
+      "language": "zh-CN",
+      "play_mode": "adventure",
+      "min_players": 1,
+      "max_players": 4,
+      "duration_minutes": 90,
+      "difficulty": "beginner",
+      "content_warnings": [
+        "悬疑与受困处境；请先约定可接受内容。"
+      ],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "archive_sha256": null,
+      "rule_system": "ember-light/v1",
+      "rule_version": "1.1.0",
+      "plugins": [
+        {
+          "id": "ai-host",
+          "version": "1.0.0",
+          "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+          "required": true,
+          "enabled": true
+        }
+      ],
+      "name": "余烬边境：失联商队",
+      "description": "边境驿站收到一匹无人骑乘的黑马。邮袋里最后一张便笺指向石门山口。商队可能正在等待援助，但前往山口不只有正面冲突这一种方法。",
+      "tags": []
     },
     {
       "id": "town-one-week",
@@ -139,7 +259,133 @@
       "source_path": "presets/town-one-week",
       "status": "original-playtest-example",
       "download_url": null,
-      "license": "UNLICENSED"
+      "license": "UNLICENSED",
+      "package_hash": "1d52fa5d392ef43dac177225b0fceb7c06a22d185c5bf57d83f68fa0f3fe0647",
+      "authors": [
+        "余烬示例创作者"
+      ],
+      "minimum_host": "2.4.0",
+      "plugin_api": 1,
+      "language": "zh-CN",
+      "play_mode": "slice-of-life",
+      "min_players": 1,
+      "max_players": 4,
+      "duration_minutes": 45,
+      "difficulty": "beginner",
+      "content_warnings": [
+        "关系与承诺话题；尊重拒绝与边界。"
+      ],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "archive_sha256": null,
+      "rule_system": "ember-light/v1",
+      "rule_version": "1.1.0",
+      "plugins": [
+        {
+          "id": "ai-host",
+          "version": "1.0.0",
+          "sha256": "bf0b23dd42c085d580877c5d219365180345f9a1c198735969e8def91a526853",
+          "required": true,
+          "enabled": true
+        }
+      ],
+      "name": "小镇的一周",
+      "description": "小镇准备一场周末晚宴。有人想守住传统，有人想让新来的人也有座位。你们的一周由几次谈话、一次失败的小制作，以及愿意兑现的承诺组成。",
+      "tags": []
+    },
+    {
+      "id": "echo-well-srd521",
+      "version": "1.0.0",
+      "source_path": "presets/echo-well-srd521",
+      "status": "experimental-playable-vertical-sample",
+      "download_url": null,
+      "license": "UNLICENSED",
+      "rule_system": "dnd5e-srd-5.2.1/v1",
+      "rule_version": "0.1.0",
+      "package_hash": "7e376462b397e914af3b76c5006b41b03b3105f0797e9e8c75433fa47434424a",
+      "authors": [
+        "余烬示例创作者"
+      ],
+      "minimum_host": "2.4.0",
+      "plugin_api": 1,
+      "language": "zh-CN",
+      "play_mode": "adventure",
+      "min_players": 1,
+      "max_players": 4,
+      "duration_minutes": 90,
+      "difficulty": "beginner",
+      "content_warnings": [
+        "洞穴坍塌风险、轻度战斗；房主可跳过遭遇。"
+      ],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "archive_sha256": null,
+      "plugins": [],
+      "name": "回声井：封住山脉的裂隙",
+      "description": "一段小型合作冒险。追查山路异响，处理一次可谈判、可绕行或可战斗的遭遇，并决定如何封住旧水井。战斗只使用标注为实验的有限 SRD 5.2.1 规则切片。",
+      "tags": [
+        "规则实验",
+        "合作冒险",
+        "SRD 5.2.1"
+      ]
+    },
+    {
+      "id": "ashen-canal-coop",
+      "version": "1.0.0",
+      "source_path": "presets/ashen-canal-coop",
+      "status": "experimental-playable-vertical-sample",
+      "download_url": null,
+      "license": "UNLICENSED",
+      "rule_system": "ember-coop-settlement/v1",
+      "rule_version": "0.1.0",
+      "package_hash": "41592911a678e5bf20be963ec05bb26a04148f1c24f58fef6b5bd0fa9a8a102c",
+      "authors": [
+        "余烬示例创作者"
+      ],
+      "minimum_host": "2.4.0",
+      "plugin_api": 1,
+      "language": "zh-CN",
+      "play_mode": "adventure",
+      "min_players": 1,
+      "max_players": 4,
+      "duration_minutes": 45,
+      "difficulty": "beginner",
+      "content_warnings": [
+        "资源短缺、季节性风暴与干旱事件。"
+      ],
+      "maintenance_status": "unknown",
+      "source_url": null,
+      "issue_url": null,
+      "evidence": [],
+      "archive_sha256": null,
+      "plugins": [],
+      "name": "灰烬水道：八回合保卫春播",
+      "description": "合作经营竖向样板：每回合规划一项订单，统筹食物、木材、石料和银币，在第八回合结算前修复三段水道。",
+      "tags": [
+        "合作经营",
+        "规则实验",
+        "轻量策略"
+      ]
+    }
+  ],
+  "core_schemas": [
+    {
+      "kind": "campaign-state",
+      "schema_path": "registry/campaign-state.schema.json"
+    },
+    {
+      "kind": "dnd5e-sheet",
+      "schema_path": "registry/dnd5e-sheet.schema.json",
+      "rule_system": "dnd5e-srd-5.2.1/v1"
+    },
+    {
+      "kind": "strategy-order",
+      "schema_path": "registry/strategy-order.schema.json",
+      "rule_system": "ember-coop-settlement/v1"
     }
   ]
 }

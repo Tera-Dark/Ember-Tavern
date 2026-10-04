@@ -1,12 +1,12 @@
 # 余烬桌面 · 房主使用指南
 
-**当前开发 beta.3 的完整玩法流程：**[M1 交付指南](M1_DELIVERY.md)；以下 beta.2 基础流程保留：见 [M0 交付指南](M0_DELIVERY.md)。旧 beta.1 Release 保留，不覆盖；这里原有安装 / 权限说明继续适用，新增开桌向导、复制恢复、单模型与构建来源见新指南。
+**版本分层（2026-10-03）：**当前开发源码元数据是桌面 / 部署引擎 `0.2.0-beta.3`、宿主 `2.4.0-beta.1`；当前 M2 工作尚未打包 / 发布。最新公开安装器仍为 `0.2.0-beta.1` / 宿主 `2.3.0-beta.1`，不能用它验收 M2。M2 源码状态见 [M2 交付记录](M2_DELIVERY.md)，当前公开安装器的基础开桌路径见 [M0 交付指南](M0_DELIVERY.md)，M1 玩法流程见 [M1 交付指南](M1_DELIVERY.md)。
 
-版本：桌面 / 部署引擎 `0.2.0-beta.1`，随包宿主 `2.3.0-beta.1`。这是测试版，面向一位房主与几位朋友的同桌冒险，不是商业托管平台。
+以下下载链接明确指向旧 beta.1 Release；历史安装 / 权限说明只适用于对应公开包。源码版本号不是可下载安装器，也不代表已发布。桌面测试版面向一位房主与同伴的同桌冒险，不是商业托管平台。
 
 ## 下载与安装
 
-Windows 10 / 11 **x64**。从 [GitHub 桌面版本 Release](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1) 下载：
+Windows 10 / 11 **x64**。当前可见下载是**旧版** [GitHub 桌面版本 Release `desktop-v0.2.0-beta.1`](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1)，不含当前 M2 源码改动：
 
 - `ember-desktop-0.2.0-beta.1-x64-setup.exe`：推荐，图形安装向导、选择目录、桌面 / 开始菜单快捷方式。
 - `ember-desktop-0.2.0-beta.1-x64-portable.exe`：便携启动入口；实例与凭据仍保存到用户数据目录，不是随 U 盘完整迁移的绿色数据包。

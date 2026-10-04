@@ -1,0 +1,83 @@
+{
+  "additionalProperties": false,
+  "description": "One cooperative order per member each planning turn.",
+  "properties": {
+    "action": {
+      "enum": [
+        "build",
+        "repair",
+        "trade"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "building": {
+      "anyOf": [
+        {
+          "enum": [
+            "farm",
+            "sawmill",
+            "quarry",
+            "market"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Building"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "enum": [
+            "food",
+            "timber",
+            "stone",
+            "coin"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source"
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "enum": [
+            "food",
+            "timber",
+            "stone",
+            "coin"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Destination"
+    },
+    "amount": {
+      "default": 2,
+      "maximum": 10,
+      "minimum": 2,
+      "title": "Amount",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "title": "StrategyOrder",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:strategy-order:v1"
+}

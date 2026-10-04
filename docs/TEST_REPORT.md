@@ -1,6 +1,6 @@
-# 2.2.0-beta.1 · 创作与小团体生态基础验证
+# 历史快照：2.2.0-beta.1 · 创作与小团体生态基础验证
 
-2026-09-30。针对实际 FastAPI／SQLite／WebSocket／React／sandbox iframe，不是静态页面原型。旧 2.0 验证记录不代表本轮平台／供应商验收。
+**报告日期：2026-09-30。**针对当时 FastAPI／SQLite／WebSocket／React／sandbox iframe 的历史自动化与浏览器验证，不是当前 M2 / M3 源码或当前下载包的验收。本文原有的 107 passed 和 2.2 版本信息仅对应该快照；当前 M2 / M3 测试、版本落差与未验收项见 [M2_DELIVERY.md](M2_DELIVERY.md) 与 [M3_DELIVERY.md](M3_DELIVERY.md)。真实朋友 / 环境测试遵守项目约束，推迟到 M4 完成后。
 
 ## 1. 环境与命令
 
@@ -101,4 +101,4 @@ python tests/browser_foundation.py --screenshots artifacts/browser-foundation
 4. 完整 D&D／CoC／路径／视线／先攻、图片美术主题与 PNG 聊天人格卡；本轮主题只为配色，ST 导入为明确子集。
 5. 模型绝不剧透、第三方 Python 任意代码沙箱、完整多来源版权账本／签名市场；不作这些保证。
 
-当前交付是你和几位朋友能继续实测的小宿主＋版本化创作／扩展基础。下一步见 ROADMAP，先实际跑一场再选需要加深的规则与模块。
+这是 2026-09-30 的历史交付快照，不表示当前源码已公开下载，也不构成现在安排朋友测试的依据。当前 M2 源码 / 自动测试见 [M2_DELIVERY.md](M2_DELIVERY.md)；真实朋友与环境测试只在 M4 完成后安排。

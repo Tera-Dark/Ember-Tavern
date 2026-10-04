@@ -1,0 +1,35 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "echo-well-pathfinder",
+    "name": "旧路探寻者",
+    "version": "1.0.0",
+    "description": "敏捷的山路探寻者；此角色卡未提供技能检定规则。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "探寻者"]
+  },
+  "rule_system": "dnd5e-srd-5.2.1/v1",
+  "character": {
+    "name": "旧路探寻者",
+    "archetype": "探寻者（原创标签）",
+    "description": "记得旧水道的维护路标，也擅长在狭窄石廊里寻找安全落脚处。",
+    "gm_notes": "这只是通用角色模板，不代表 5e 职业或背景。",
+    "avatar": "sword",
+    "hp": 11,
+    "max_hp": 11,
+    "stress": 0,
+    "attributes": {"strength": 0, "dexterity": 2, "knowledge": 1, "insight": 2, "charisma": 0},
+    "inventory": ["短弓", "粉笔", "水囊"],
+    "extensions": {
+      "dnd5e.srd-5.2.1/v1": {
+        "level": 1,
+        "ability_scores": {"strength": 10, "dexterity": 15, "constitution": 12, "intelligence": 12, "wisdom": 14, "charisma": 10},
+        "armor_class": 13,
+        "weapon_die": 6,
+        "weapon_ability": "dexterity",
+        "hit_die": 8
+      }
+    }
+  }
+}

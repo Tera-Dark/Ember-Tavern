@@ -185,6 +185,25 @@
           "title": "Requires Clues",
           "type": "array"
         },
+        "requires_rule_status": {
+          "anyOf": [
+            {
+              "enum": [
+                "completed",
+                "expired",
+                "victory",
+                "defeat",
+                "retreated"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requires Rule Status"
+        },
         "gm_guidance": {
           "default": "",
           "maxLength": 1500,
@@ -212,8 +231,12 @@
       "$ref": "#/$defs/Metadata"
     },
     "rule_system": {
-      "const": "ember-light/v1",
       "default": "ember-light/v1",
+      "enum": [
+        "ember-light/v1",
+        "dnd5e-srd-5.2.1/v1",
+        "ember-coop-settlement/v1"
+      ],
       "title": "Rule System",
       "type": "string"
     },

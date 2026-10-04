@@ -2,6 +2,8 @@ from typing import Literal
 from pydantic import Field, field_validator
 from .contracts.common import Contract
 from .contracts.content import Attributes, CharacterData, LoreEntry, WorldData
+from .contracts.campaign_state import CampaignState
+from .contracts.rules_m3 import Dnd5eSheet, DndEncounterSetup, DndTurnAction, DndRest, StrategyOrder
 import re
 
 Attribute = Literal['strength', 'dexterity', 'knowledge', 'insight', 'charisma']
@@ -35,6 +37,42 @@ class Revision(StrictModel):
 class Action(Revision):
     text: str = Field(min_length=1, max_length=2000)
     character_id: str = Field(min_length=1, max_length=40)
+    # Required by the new collection mode; optional for existing free-action clients.
+    branch: int | None = Field(default=None, ge=1)
+
+class BranchRevision(Revision):
+    branch: int = Field(ge=1)
+
+class CampaignStateUpdate(BranchRevision):
+    ledger: CampaignState
+
+class ActionModeUpdate(BranchRevision):
+    mode: Literal['free', 'round']
+
+class ActionRoundSettle(BranchRevision):
+    pass
+
+class MemorySummaryUpdate(BranchRevision):
+    text: str = Field(default='', max_length=4000)
+    source_event_ids: list[str] = Field(default_factory=list, max_length=50)
+
+class DndSheetUpdate(BranchRevision, Dnd5eSheet):
+    pass
+
+class DndEncounterStart(BranchRevision, DndEncounterSetup):
+    pass
+
+class DndActionRequest(BranchRevision, DndTurnAction):
+    pass
+
+class DndRestRequest(BranchRevision, DndRest):
+    pass
+
+class StrategyOrderRequest(BranchRevision, StrategyOrder):
+    pass
+
+class StrategySettleRequest(BranchRevision):
+    pass
 
 class Chat(StrictModel):
     text: str = Field(min_length=1, max_length=2000)
@@ -69,6 +107,8 @@ class CheckProposal(StrictModel):
     dc: int = Field(ge=8, le=20)
     reason: str = Field(min_length=1, max_length=200)
     risk: Literal['none', 'harm', 'stress'] = 'none'
+    # Used only when a collected team round contains more than one actor.
+    character_id: str | None = Field(default=None, min_length=1, max_length=40)
 
 class Decision(StrictModel):
     narration: str = Field(min_length=1, max_length=4000)

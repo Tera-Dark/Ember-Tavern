@@ -1,0 +1,26 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "ashen-canal-carpenter",
+    "name": "桥渠木匠",
+    "version": "1.0.0",
+    "description": "熟悉堤门、栈桥和木制水槽的维修。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "木匠"]
+  },
+  "rule_system": "ember-coop-settlement/v1",
+  "character": {
+    "name": "桥渠木匠",
+    "archetype": "木匠（原创标签）",
+    "description": "能估算维修工时与木料消耗；是否开工仍须提交有效订单。",
+    "gm_notes": "角色叙事能力不产生额外订单或资源。",
+    "avatar": "shield",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {"strength": 2, "dexterity": 1, "knowledge": 1, "insight": 0, "charisma": 0},
+    "inventory": ["木工锤", "量尺", "楔子"],
+    "extensions": {}
+  }
+}

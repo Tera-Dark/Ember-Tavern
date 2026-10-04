@@ -92,6 +92,7 @@ class Transition(Contract):
     label: str = Field(min_length=1, max_length=120)
     target: LOCAL_ID
     requires_clues: list[LOCAL_ID] = Field(default_factory=list, max_length=12)
+    requires_rule_status: Literal['completed', 'expired', 'victory', 'defeat', 'retreated'] | None = None
     gm_guidance: str = Field(default='', max_length=1500)
 
 

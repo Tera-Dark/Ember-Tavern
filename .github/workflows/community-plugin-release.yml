@@ -1,0 +1,98 @@
+name: Publish a community plugin release
+on:
+  workflow_call:
+    inputs:
+      plugin_path:
+        description: 'Plugin directory relative to the caller repository root'
+        required: true
+        type: string
+      release_tag:
+        description: 'Must be plugin-<id>-v<version>; the matching immutable tag must already exist'
+        required: true
+        type: string
+      sdk_ref:
+        description: 'Reviewed, immutable 40-character Ember-Tavern commit SHA'
+        required: true
+        type: string
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out submitted source as data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          path: submission
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out pinned author SDK
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Tera-Dark/Ember-Tavern
+          ref: ${{ inputs.sdk_ref }}
+          path: ember-sdk
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Install only the pinned SDK's declared Python dependencies
+        run: python -m pip install -r ember-sdk/requirements-lock.txt
+      - name: Validate manifest and publication declarations
+        env:
+          PLUGIN_PATH: ${{ inputs.plugin_path }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SDK_REF: ${{ inputs.sdk_ref }}
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_REF_TYPE:-}" == "tag" && "${GITHUB_REF:-}" == "refs/tags/$RELEASE_TAG" ]] || { echo "release workflow must run from its matching release tag" >&2; exit 2; }
+          tag_commit="$(git -C submission rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
+          [[ "$tag_commit" == "$GITHUB_SHA" ]] || { echo "release tag must point to the source commit that triggered this run" >&2; exit 2; }
+          [[ "$SDK_REF" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "sdk_ref must be an immutable 40-character commit SHA" >&2; exit 2; }
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path('submission').resolve()
+          raw = os.environ['PLUGIN_PATH']
+          relative = Path(raw)
+          if (not raw or raw.startswith('/') or '\\' in raw or ':' in raw
+                  or any(part in ('', '.', '..') for part in raw.split('/'))):
+              raise SystemExit('plugin_path must be a clean repository-relative path')
+          current = root
+          for part in relative.parts:
+              current = current / part
+              if current.is_symlink():
+                  raise SystemExit('plugin submissions may not contain symlinks')
+          source = current.resolve()
+          if root not in source.parents or not source.is_dir():
+              raise SystemExit('plugin_path must name a repository-local directory')
+          for entry in source.rglob('*'):
+              if entry.is_symlink():
+                  raise SystemExit(f'symlinks are not allowed: {entry.relative_to(root)}')
+          manifest_path = source / 'plugin.json'
+          if not manifest_path.is_file() or manifest_path.stat().st_size > 64 * 1024:
+              raise SystemExit('a bounded plugin.json is required')
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          if not manifest.get('authors') or not str(manifest.get('license', '')).strip() or str(manifest.get('license', '')).strip().upper() == 'UNLICENSED':
+              raise SystemExit('public plugin releases require author attribution and an explicit license')
+          expected_tag = f"plugin-{manifest['id']}-v{manifest['version']}"
+          if os.environ['RELEASE_TAG'] != expected_tag:
+              raise SystemExit(f"release tag must be exactly {expected_tag}")
+          PY
+          python ember-sdk/scripts/creator.py validate "submission/$PLUGIN_PATH"
+      - name: Build plugin archive and actual SHA-256
+        env:
+          PLUGIN_PATH: ${{ inputs.plugin_path }}
+        run: |
+          mkdir -p release
+          python ember-sdk/scripts/plugins.py package "submission/$PLUGIN_PATH" release/plugin.zip
+          cd release
+          sha256sum plugin.zip > plugin.zip.sha256
+      - name: Publish immutable release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: gh release create "$RELEASE_TAG" release/plugin.zip release/plugin.zip.sha256 --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes

@@ -1,0 +1,26 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "ashen-canal-quartermaster",
+    "name": "仓房记账人",
+    "version": "1.0.0",
+    "description": "管理公共仓房账册，帮助队伍比较不同订单的机会成本。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "仓储"]
+  },
+  "rule_system": "ember-coop-settlement/v1",
+  "character": {
+    "name": "仓房记账人",
+    "archetype": "记账人（原创标签）",
+    "description": "精于盘点、核对和记录每个聚落的库存。",
+    "gm_notes": "角色叙事能力不产生额外订单或资源。",
+    "avatar": "book",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {"strength": 0, "dexterity": 0, "knowledge": 2, "insight": 2, "charisma": 1},
+    "inventory": ["仓储账册", "木炭笔", "封蜡"],
+    "extensions": {}
+  }
+}

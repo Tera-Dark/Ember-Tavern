@@ -1,6 +1,6 @@
 # 创作指南：把一个世界交给下一张桌
 
-适用宿主 2.4.0-beta.1（原有内容 v1 兼容）· Plugin API 1
+适用当前源码宿主 2.4.0-beta.1（内容 v1、预设／剧本 v1）· Plugin API 1。源码含 M3 两条实验规则样板；M4 的本地目录浏览、离线准入校验与可复用作者工作流已实现；在线市场运营、真实社区作品发布和作者验收仍未完成。公开桌面 Release 仍为旧宿主版本，M2 / M3 自动化范围与下载边界见 [M2 交付记录](M2_DELIVERY.md) 和 [M3 交付记录](M3_DELIVERY.md)；M4 进度见 [M4 交付记录](M4_DELIVERY.md)。
 
 **新增玩法作者路径：**[玩法预设／世界书／剧本／模块组合实战](PRESET_AUTHORING.md)。数据组合、精确来源锁、原子新建房间与作者 CLI 已支持；不自动安装代码，不宣称完整 5e／SLG。
 
@@ -17,7 +17,7 @@
 - 导入角色生成新运行时 ID，**不会继承操控权**；房主另外分配。
 - 导出的世界书／角色卡包含主持秘密，只提供给房主。对外发布前手动清理秘密和个人信息。
 
-模板与 Schema 也可直接取：`GET /api/creators`、`/api/creators/templates/{worldbook|character|theme}`、`/api/contracts/{worldbook|character|theme|plugin}`。指南接口只读公开文档；不需要联网模型。
+模板与 Schema 也可直接取：`GET /api/creators`、`/api/creators/registry`（本地基础目录／兼容元数据）、`/api/creators/templates/{worldbook|character|theme}`、`/api/contracts/{worldbook|character|theme|plugin|registry-index}`。目录 API 只公开版本化元数据，不实时核验远程链接、不自动下载或安装；指南接口只读公开文档，不需要联网模型。
 
 ## 2. 命令行建立作品
 
@@ -72,7 +72,7 @@ python scripts/creator.py validate creations/my-world/worldbook.json
 
 最多 160 个条目，整本 `world` 紧凑 UTF-8 数据另限 384 KiB；文件上限 512 KiB。缺少／空 ID 的兼容条目会获得可复现 ID，但改了正文后生成 ID 也会变，正式作品请明确写稳定 ID。合并相同 ID 会替换该条目，所以多位作者尽量用作品前缀防碰撞。
 
-`kind=rule` 不能把 D&D／CoC 判定、JavaScript 表达式或新的属性算法“导入成可执行规则”。目前仅支持 `ember-light/v1`：d20 + 属性 ≥ 难度，天然 1／20，失败按标注风险扣生命或加压力。新系统需要规则 adapter／迁移／测试；不知道怎么做就先用文字约定和房主补述，不伪装完整规则支持。
+`kind=rule` 只是主持上下文中的文字约定，不能把 D&D／CoC 判定、JavaScript 表达式或新的属性算法“导入成可执行规则”。当前宿主审阅的规则身份有 `ember-light/v1`、实验 `dnd5e-srd-5.2.1/v1` 与实验 `ember-coop-settlement/v1`。后两项只覆盖有限战斗／合作经济循环，明确不支持的内容见 [M3 交付记录](M3_DELIVERY.md)；不要称为完整 5e 或 SLG。预设中的规则身份也不会单独启用代码；选相应锁定玩法预设新建房间，不能只改 worldbook 字段切换规则。尚未支持的规则请由房主裁决，不要以提示词冒充机械结算。
 
 ### 检查 AI 是否看到了该看的资料
 
@@ -101,7 +101,7 @@ CLI 返回格式来源、摘要与 warnings；它不会把 JSON 中的代码执�
 
 标准文件：`templates/character/character.json`；格式 `ember.character/v1`。
 
-- `rule_system` 固定当前 ember-light/v1。
+- `rule_system` 标识规则身份；标准角色卡当前可标记 `ember-light/v1`、`dnd5e-srd-5.2.1/v1` 或 `ember-coop-settlement/v1`。导入角色必须与房间当前规则匹配，不能通过角色卡切换规则；5e 数值通过专用规则工作台修改，通用档案页只编辑叙事字段。
 - `character` 包含 name、archetype、avatar、description、hp、max_hp、stress、attributes、inventory、gm_notes、extensions。
 - 生命 0–100、最大生命 1–100、hp ≤ max_hp；压力 0–6；五项属性 strength／dexterity／knowledge／insight／charisma 为 −3…5；背包最多 24 项。
 - description／背包默认共享；gm_notes 最多 2000 字符，仅房主／主持上下文。
@@ -147,7 +147,7 @@ python scripts/plugins.py install artifacts/my-dice.zip --sha256 <打包输出�
 
 刷新模块中心、房主启用即可看到导航。`validate`／`package` 只查结构与入口，不做代码审计、不执行后端、不授予信任。`read:gm` 也需要显式 grant；只读公共面板不要申请它。
 
-保留宿主资源：core.world/v1、core.characters/v1、core.rules/v1、core.events/v1、core.dice/v1。插件通过声明 uses 和对应 capability 使用，不能 provides core.*；未知核心资源拒绝／不可用，不能靠名称猜测内部状态。
+保留宿主资源：core.world/v1、core.characters/v1、core.rules/v1、core.events/v1、core.dice/v1、core.campaign-state/v1。M2 `core.campaign-state/v1` 只返回公开 Ledger、行动方式与公开轮次，不暴露 `gm` 条目或主持摘要。插件通过声明 `uses` 和对应 capability 使用，不能 `provides core.*`；未知核心资源拒绝／不可用，不能靠名称猜测内部状态。完整版本 / 状态边界见 [M2 交付记录](M2_DELIVERY.md)。
 
 ## 7. 扩展字段与版本
 
@@ -157,12 +157,62 @@ Schema 在 `registry/`，由契约生成：
 
 ```bash
 python scripts/creator.py schemas --check  # CI 检查漂移，不自动接受变化
-python scripts/creator.py schemas          # 审阅契约改动后更新四个 Schema
+python scripts/creator.py schemas          # 审阅契约改动后更新十个 Schema
+python scripts/registry.py                # 离线校验本地目录与精确包锁
 ```
 
 JSON Schema 能帮编辑器检查结构，但 hp ≤ max_hp、唯一条目 ID、总字节、版本可用性等以官方运行时／CLI 为准。破坏性内容／资源结构应发布新 `/vN`，不是偷偷在 `/v1` 下换格式。
 
-## 8. 发布前的清单
+M4 目录当前仍是仓库内基础索引，并非在线市场。`scripts/registry.py` 只读本地模板、插件 ZIP 和预设锁，不访问 URL、不解压到磁盘、不运行作品代码；其 `valid` 结果不代表许可证、作者身份、链接可用性或独立试玩已认证。社区投稿、兼容报告和维护／撤下请求入口见 [registry 说明](../registry/README.md) 与 GitHub Issue 模板。
+
+## 8. 作者 CI 与 GitHub Release
+
+三份可复用工作流位于 Ember-Tavern 仓库：[社区验证](../.github/workflows/community-validate.yml) 可在作者自己的仓库校验预设／剧本／世界书／角色卡／主题／模块；[预设 Release](../.github/workflows/community-preset-release.yml) 与[插件 Release](../.github/workflows/community-plugin-release.yml) 会在匹配的版本 tag 上构建归档并发布 ZIP 与对应的 SHA-256。它们只读取投稿为数据，不运行投稿中的插件代码；校验通过不等于安全审计、授权认证、在线可用性检查或真人试玩。
+
+调用方必须把**工作流路径和 `sdk_ref` 都固定到 Ember-Tavern 中经过审阅的 40 位 commit SHA**；建议用同一个 SHA。不要使用 `@main`、分支名或可移动 tag。以下 `<...>` 是占位符，需换成一个真实、不可变的 40 位十六进制 SHA，不能原样复制运行：
+
+```yaml
+name: Validate Ember work
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate-preset:
+    uses: Tera-Dark/Ember-Tavern/.github/workflows/community-validate.yml@<reviewed-40-hex-commit-sha>
+    with:
+      kind: preset
+      source_path: creations/my-preset
+      sdk_ref: <same-reviewed-40-hex-commit-sha>
+```
+
+发布工作流应由**已经存在且指向本次源码 commit 的版本 tag**触发；工作流会核对调用 ref、tag、清单 ID／版本一致，并拒绝源路径穿越或符号链接。作者仓库需要给 release job `contents: write` 权限；开启 tag protection，并只允许可信维护者触发发布：
+
+```yaml
+name: Release preset
+on:
+  push:
+    tags: ['preset-my-preset-v*']
+permissions:
+  contents: read
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: Tera-Dark/Ember-Tavern/.github/workflows/community-preset-release.yml@<reviewed-40-hex-commit-sha>
+    with:
+      preset_path: creations/my-preset
+      release_tag: ${{ github.ref_name }}
+      sdk_ref: <same-reviewed-40-hex-commit-sha>
+```
+
+插件版本 tag 使用 `plugin-<id>-v<version>`，改调用 `community-plugin-release.yml` 并传 `plugin_path`。工作流要求明确作者／许可，插件清单或预设及其组件锁通过 CLI 校验；发布出的 `.zip.sha256` 是对本次实际归档字节计算的，不是签名。要让发行资产保持不可变，版本号变更时创建新 tag／Release，不覆写旧资产。
+
+**Release 不会自动改 Ember-Tavern 的中央目录。** 发布后作者仍须按 [玩法作品投稿](../.github/ISSUE_TEMPLATE/preset-submission.yml)、[插件提案](../.github/ISSUE_TEMPLATE/plugin.yml) 以及 [目录维护／状态更正](../.github/ISSUE_TEMPLATE/registry-maintenance.yml) 的流程提交目录更新 PR。维护者会复核来源、许可、兼容锁、下载资产与所需证据；`python scripts/registry.py` 不联网下载远程资产。中央索引变更通过 CI 后也不表示获得真人试玩或官方推荐等级。
+
+## 9. 发布前的清单
 
 - 校验、导入一个空测试房、导出再校验；检查合并／替换、主持秘密和手机排版。
 - 填写原作者、来源、许可；确认修改／分享／再分发权，主题图片素材或规则原文也不例外。

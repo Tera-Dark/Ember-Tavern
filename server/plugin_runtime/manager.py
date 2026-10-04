@@ -158,6 +158,10 @@ class Manager:
         if name=='core.campaign/v1':
             from ..presets.scenario import view as campaign_view
             data={'campaign':campaign_view(state,False) if state.get('_scenario') else deepcopy(state.get('campaign'))}
+        elif name=='core.campaign-state/v1':
+            from ..campaign_state import ledger_view, action_round_view
+            data={'ledger':ledger_view(state,False),'action_mode':state.get('_action_mode','free'),
+                  'action_round':action_round_view(state)}
         elif name=='core.world/v1':data=deepcopy(state['world'])
         elif name=='core.characters/v1':data={'characters':ctx.characters()}
         elif name=='core.rules/v1':data=engine_for(state).contract()

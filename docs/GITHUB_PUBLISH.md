@@ -1,14 +1,14 @@
 # 维护者发布指南
 
-目标仓库：https://github.com/Tera-Dark/Ember-Tavern。仓库已经存在，不需要再次 git init 或改写 origin。本轮是 **2.2.0-beta.1 工作分支的本地基础验证**，不是宣称已合并、通过远程 Actions 或发布 Release。
+目标仓库：https://github.com/Tera-Dark/Ember-Tavern。仓库已经存在，不需要再次 git init 或改写 origin。**更新于 2026-10-03：**当前源码元数据是宿主 / 网页 `2.4.0-beta.1`、桌面 / 部署引擎 `0.2.0-beta.3`；M2 / M3 均是当前开发源码，未随新 Release 发行。最新公开桌面 Release 仍为 `desktop-v0.2.0-beta.1` / 宿主 `2.3.0-beta.1`。Release dispatch 返回 403，Windows artifact 下载返回 EOF，因此没有新 EXE / SHA / smoke provenance 或 Release；详见 [M2 交付记录](M2_DELIVERY.md) 和 [M3 交付记录](M3_DELIVERY.md)。
 
 Arena 已连接 GitHub 时直接使用 git／gh，不提供密码、PAT、OAuth token 或验证码到聊天／源码／远程 URL。连接失败请在 Arena 重新连接。自己电脑首次使用 gh，可在本机走 `gh auth login` 的官方流程，不分享凭据。
 
 ## 1. 合并前
 
-1. 仓库拥有者决定私有／公开与许可证；LICENSE.example 仅为可选择模板，没有正式 LICENSE 前不宣称已经授予开源使用权。内容包还要分别核对 metadata.authors／license，多来源导出仅是署名待复核草稿。
+1. 仓库拥有者决定私有／公开与许可证；LICENSE.example 仅为可选择模板，没有正式 LICENSE 前不宣称已经授予开源使用权。内容包还要分别核对 metadata.authors／license，多来源导出仅是署名待复核草稿。特别是 `presets/echo-well-srd521` 与 `presets/ashen-canal-coop` 当前标记 `UNLICENSED`，未确认再分发权前不得把它们打入公开内容发行。
 2. 审阅当前分支 diff，确认 .env、data、backups、creations、cache、浏览器运行 artifacts 和私人邀请／token 不在 Git／发行包；不硬编码供应商密钥。
-3. 运行 README／TEST_REPORT 的 Schema、pytest、build、compile 和三套浏览器。付费 key 必须为空、使用隔离 DATA_DIR，不对真实团本实例跑 QA。
+3. 以当前 [M2](M2_DELIVERY.md) / [M3](M3_DELIVERY.md) 交付记录和 CI 工作流为准运行 Schema、pytest、前端构建及发布所需检查；[TEST_REPORT.md](TEST_REPORT.md) 是 2026-09-30 的旧快照，不是当前验收规范。M3 当前已验证 schema、179 项后端测试、前端构建和 Python 编译，具体命令及边界见 M3 记录。付费 key 必须为空、使用隔离 DATA_DIR，不对真实团本实例跑 QA。
 4. 对隐私／规则／迁移变更审阅数据兼容性；对新资源审阅公开投影／能力／版本／冲突；回档不应恢复旧邀请和已退出成员。
 5. 将工作推送到**当前工作分支**并提 PR，检查真实 Actions／review。Arena 会话有固定工作分支，不在会话里换分支或直推 main；保留未覆盖验证边界。
 
@@ -22,9 +22,9 @@ gh pr checks <PR编号>
 
 由拥有者在合并与实际 CI 成功后选择 tag／发布权限。宿主版本应一致于 server/version.py、web/package.json／lock、launcher-manifest.json 与文档；发布前重新构建 static，不伪造启动器的 Windows 实机测试结果。
 
-GitHub Release 上传干净源码／static／模板／Schema／文档和锁定依赖；**不要**附运行 SQLite、.env、用户语音与完整私人备份。Docker／启动器实机还需分别验证。对版本升级说明备份与回退方案；2.2 主持秘密数据不要直接让旧宿主打开，回退需恢复升级前的完整备份。
+GitHub Release 上传干净源码／static／模板／Schema／文档和锁定依赖；**不要**附运行 SQLite、.env、用户语音与完整私人备份。Docker／启动器实机还需分别验证。对版本升级说明备份与回退方案；M1 / M2 / M3 状态与主持私有资料不要直接由不认识其 schema 的旧宿主打开；当前核心 `schema_version=4`。版本回退需恢复升级前的完整备份，不能直接把新版数据库交给旧宿主。即便未来发行，未获授权的 `UNLICENSED` 样板也不可作为官方再分发内容。
 
-历史启动器 URL 指向既有发行，不代表它现在包含本轮 2.2；先发布并实际验证对应宿主版本，再更新正式下载入口。
+历史启动器 URL 指向既有发行，不代表它包含当前 M2 源码；在新包实际构建、安装冒烟、SHA / 来源验证和不可变 Release 成功前，不更新正式下载入口，也不称源码已对公众可下载。
 
 ## 3. 插件发行
 

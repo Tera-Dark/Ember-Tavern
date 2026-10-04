@@ -1,0 +1,53 @@
+{
+  "format": "ember.worldbook/v1",
+  "metadata": {
+    "id": "echo-well-world",
+    "name": "回声井：世界书",
+    "version": "1.0.0",
+    "description": "原创地点、人物与剧情线索；不包含 SRD 原文。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["山路", "水井", "合作冒险"]
+  },
+  "world": {
+    "title": "回声井：封住山脉的裂隙",
+    "premise": "山腰旧水井发出规律回声，通往山下的灌渠水量正在减少。村庄请来一队伙伴检查阀门，在春季蓄水前控制裂缝。",
+    "tone": "探索、谈判和风险并存；允许修复、绕行、撤退或战斗。",
+    "rule_system": "dnd5e-srd-5.2.1/v1",
+    "lore": [
+      {
+        "id": "the_old_cistern",
+        "title": "旧水井",
+        "content": "山脊下的旧水井兼作水库泄压口。三天前，村民开始听到井底传来像敲击铁管的回声。井沿的水位没有下降，但通往山下灌渠的流量逐日减少。",
+        "keys": ["回声井", "水井", "水库"],
+        "kind": "lore",
+        "visibility": "public",
+        "activation": "keywords",
+        "priority": 5,
+        "enabled": true
+      },
+      {
+        "id": "mara_the_guide",
+        "title": "向导玛拉",
+        "content": "玛拉在山路上维护路标。她看见一头灰色洞居兽拖着黄铜阀轮进入旧井旁的裂口；她不想杀它，只希望村子恢复供水。她愿意提供一条不稳定但可通行的侧道。",
+        "keys": ["玛拉", "向导", "洞居兽"],
+        "kind": "lore",
+        "visibility": "public",
+        "activation": "keywords",
+        "priority": 4,
+        "enabled": true
+      },
+      {
+        "id": "sound_in_the_rock",
+        "title": "岩层中的节律",
+        "content": "敲击声每隔七下停一次。老石匠说这不是某种古代讯号，而是松动的阀轮碰到裂石时发出的节律。用绳索固定阀轮可以暂时降低风险。",
+        "keys": ["敲击", "节律", "阀轮", "线索"],
+        "kind": "lore",
+        "visibility": "public",
+        "activation": "keywords",
+        "priority": 3,
+        "enabled": true
+      }
+    ]
+  }
+}

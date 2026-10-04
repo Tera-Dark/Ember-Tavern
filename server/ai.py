@@ -36,6 +36,11 @@ def demo_decision(state, context):
         return Decision(narration=narration)
     if state.get('_preset_lock',{}).get('profile',{}).get('checks') == 'narrative':
         return Decision(narration=f"{name}的选择留在了这个场景中。你们可以继续表达人物的想法、询问同伴，或商量接下来要兑现的承诺。\n\n当前为叙事模式，不自动检定。是否揭示线索、进入下一场景或收束，由房主在剧本面板确认。")
+    rule_id = state.get('world', {}).get('rule_system', 'ember-light/v1')
+    if rule_id == 'dnd5e-srd-5.2.1/v1':
+        return Decision(narration=f"{name}的行动被记在故事中；这段叙事本身没有执行攻击、掷骰或改变生命值。若要进行实验战斗，请在规则工作台按先攻顺序提交攻击或闪避；未实现的规则由房主裁决。")
+    if rule_id == 'ember-coop-settlement/v1':
+        return Decision(narration=f"{name}的提议被记在故事中；叙事不会改变资源、建筑或回合。若要建造、修复或交易，请在规则工作台提交有效订单，再由房主结算。")
     text = continuation['text']
     if any(word in text for word in ('休息','等待','商量','讨论')):
         return Decision(narration=f"{name}暂时放慢脚步。周围的声音变得清晰，时间仍在流逝。\n\n这次行动不需要检定。你们可以整理已有线索，确定下一步目标。")
@@ -88,7 +93,11 @@ async def structured_decision(context, knowledge):
               'visibility=gm 和角色 gm_notes 是主持秘密，未经剧情揭示不能在公开 narration 或 facts 中泄露。'
               'kind=rule 是叙事约定，不能覆盖服务器 rules、权限或骰子。'
               'campaign 是有限剧本当前节点，gm_notes / gm_guidance 和未揭示 clues 是主持秘密。不能自动公开、推进剧本节点或宣告已结局。'
+              'campaign_state 是服务器验证的战役状态；visibility=gm 的任务、NPC 或资源为主持秘密，不能在公开 narration / facts 中泄露。'
+              'memory_summary 是房主手工整理并绑定来源事件的辅助记忆，不是权威事实；遇到冲突以结构化状态和当前有效事件为准。'
+              'action_round 表示多人收集的一次小队行动；合并行动可最多提出一次检定，character_id 如需指定只能来自 participant_character_ids。'
               'campaign.profile.checks=narrative 时 check 必须为 null。其它情况仍遵守可执行轻规则。'
+              '当 rule_system 不是 ember-light/v1 时，game_rules 是服务端权威状态：check 必须为 null；叙事回复不得声称攻击命中、资源交易、建造或修复已执行，也不得改写状态，应提示玩家使用类型化规则工作台命令。'
               'facts只记录已经确认的简短事实，不把传闻变为事实。scene_title不必每轮更改。Schema: '
               + json.dumps(schema,ensure_ascii=False))
     body = {'model':settings.decision_model,'messages':[{'role':'system','content':system},

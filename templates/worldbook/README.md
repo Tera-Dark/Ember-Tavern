@@ -7,7 +7,7 @@ python scripts/creator.py init worldbook creations/my-world --id my-world --name
 python scripts/creator.py validate creations/my-world/worldbook.json
 ```
 
-在宿主 2.2 的「创作工坊」下载／上传 JSON → 校验预览 → 房主确认导入。预览不会写剧情或调用 AI。
+当前源码宿主 `2.4.0-beta.1` 的「创作工坊」支持下载／上传 JSON → 校验预览 → 房主确认导入；预览不会写剧情或调用 AI。公开桌面 Release 仍为旧宿主 `2.3.0-beta.1`，其功能与当前源码不同，版本状态见 [M2 交付记录](../../docs/M2_DELIVERY.md)。
 
 ## 修改什么
 

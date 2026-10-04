@@ -19,6 +19,13 @@ class SelectedEntry(Contract):
     truncated: bool
 
 
+class MemorySelection(Contract):
+    included: bool = False
+    source_event_ids: list[Annotated[str, Field(max_length=80)]] = Field(default_factory=list, max_length=50)
+    chars: int = Field(default=0, ge=0, le=8000)
+    truncated: bool = False
+
+
 class ContextSelection(Contract):
     budget_chars: int = Field(ge=0, le=96000)
     used_chars: int = Field(ge=0, le=96000)
@@ -27,6 +34,7 @@ class ContextSelection(Contract):
     method: str = Field(max_length=160)
     context_chars: int = Field(ge=0, le=96000)
     context_budget_chars: int = Field(ge=0, le=96000)
+    memory_summary: MemorySelection = Field(default_factory=MemorySelection)
 
 
 class GMTrace(Contract):

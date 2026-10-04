@@ -23,6 +23,8 @@ from .routes.history import router as history_router
 from .routes.membership import router as membership_router
 from .routes.guests import router as guests_router
 from .presets.routes import router as presets_router
+from .routes.campaign import router as campaign_router
+from .routes.rules import router as rules_router
 from .presets.library import seed_bundled
 from .network import websocket_origin_allowed
 from .state import load_state
@@ -31,6 +33,7 @@ from .contracts.hosting import GMTrace
 from .http_limits import RequestBodyLimit
 from .version import HOST_VERSION
 from .hosting_modes import validate_hosting_mode, MODE_LABELS
+from .campaign_state import collect_action
 
 logger = logging.getLogger('ember')
 from .runtime import (locks, rate_windows, hub, throttle, get_room_member, check_revision,
@@ -63,18 +66,35 @@ async def complete_gm(room_id):
                 state['facts'].append(fact)
         state['facts'] = state['facts'][-100:]
         if decision.check:
-            check = decision.check.model_dump()
-            char = character(state,state['continuation']['character_id'])
+            check = decision.check.model_dump(exclude_none=True)
+            continuation = state['continuation']
+            requested_character = check.pop('character_id', None)
+            if continuation.get('action_mode') == 'round':
+                allowed = set(continuation.get('participants', []))
+                target_id = requested_character or continuation['character_id']
+                if target_id not in allowed:
+                    raise ValueError('主持检定角色必须来自本轮已提交行动的参与角色')
+            else:
+                target_id = continuation['character_id']
+                if requested_character and requested_character != target_id:
+                    raise ValueError('单角色行动的检定不能更换操控角色')
+            char = character(state, target_id)
+            continuation['character_id'] = target_id
             state['pending_check'] = dict(check,id=uid(),character_id=char['id'],character_name=char['name'],
                                           modifier=char['attributes'][check['attribute']])
+        action_round = state.get('_action_round')
+        if action_round and action_round.get('status') == 'resolving':
+            action_round['status'] = 'waiting_check' if decision.check else 'completed'
         with connection() as con:
             append_event(con,room_id,'gm',decision.narration,state,payload=trace)
     except AIError as exc:
+        state['awaiting_gm'] = True
         state['gm_error'] = str(exc)
         with connection() as con:
             append_event(con,room_id,'error',str(exc),state,payload={'label':'模型请求失败 · 未降级为模拟回复'})
     except Exception:
         logger.exception('GM pipeline error in room %s', room_id)
+        state['awaiting_gm'] = True
         state['gm_error'] = '主持处理遇到内部错误。已提交数据保留，房主可重试或补述。'
         with connection() as con:
             append_event(con,room_id,'error',state['gm_error'],state,payload={'label':'服务器错误'})
@@ -97,7 +117,8 @@ async def lifespan(app):
 
 app = FastAPI(title='余烬酒馆 API',version=HOST_VERSION,lifespan=lifespan)
 app.add_middleware(RequestBodyLimit)
-for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router, membership_router, guests_router, presets_router):
+for router in (auth_router, rooms_router, dossiers_router, history_router, extension_router, content_router,
+               membership_router, guests_router, presets_router, campaign_router, rules_router):
     app.include_router(router)
 
 
@@ -126,6 +147,7 @@ def models():
 @app.post('/api/rooms/{room_id}/actions')
 async def action(room_id:str,data:Action,user=Depends(current_user)):
     throttle(('action',user['id']),12,60)
+    round_submission = False
     async with game_lock(room_id):
         duplicate = False
         with connection() as con:
@@ -134,6 +156,11 @@ async def action(room_id:str,data:Action,user=Depends(current_user)):
             if not duplicate:
                 check_revision(room,data.expected_revision)
                 state = load_state(room['state_json'])
+                mode = state.get('_action_mode', 'free')
+                if mode == 'round' and data.branch != room['branch']:
+                    raise HTTPException(409,'小队轮次需要当前时间线分支号；请刷新房间后重试')
+                if data.branch is not None and data.branch != room['branch']:
+                    raise HTTPException(409,'时间线已变化，请刷新房间后重试')
                 char = authorize_character(con,room,user,state,data.character_id)
                 if state['pending_check']:
                     raise HTTPException(409,'请先完成待处理检定，或由房主取消检定')
@@ -141,15 +168,22 @@ async def action(room_id:str,data:Action,user=Depends(current_user)):
                     raise HTTPException(409,'上一轮主持未完成，请由房主重试或补述')
                 if char['hp'] <= 0:
                     raise HTTPException(422,'该角色生命为0，请先由房主处理恢复或救援')
-                state['turn'] += 1
-                state['awaiting_gm'] = True
-                state['gm_error'] = None
-                state['continuation'] = {'phase':'action','text':data.text,'character_id':char['id']}
-                append_event(con,room_id,'action',data.text,state,user,char['id'],{'character_name':char['name']})
+                if mode == 'round':
+                    current = collect_action(state,room,con,user,char,data.text)
+                    append_event(con,room_id,'action_intent',data.text,state,user,char['id'],
+                                 {'character_name':char['name'],'round_id':current['id'],'round':current['number']})
+                    round_submission = True
+                else:
+                    state['turn'] += 1
+                    state['awaiting_gm'] = True
+                    state['gm_error'] = None
+                    state['continuation'] = {'phase':'action','text':data.text,'character_id':char['id']}
+                    append_event(con,room_id,'action',data.text,state,user,char['id'],{'character_name':char['name']})
                 save_receipt(con,room_id,user,data.request_key)
         if not duplicate:
             await hub.broadcast(room_id)
-            await complete_gm(room_id)
+            if not round_submission:
+                await complete_gm(room_id)
     return await finish(room_id,user)
 
 
@@ -170,6 +204,8 @@ async def roll_check(room_id:str,check_id:str,data:Revision,user=Depends(current
                 state['awaiting_gm'] = True
                 state['gm_error'] = None
                 state['continuation'] = dict(state['continuation'],phase='roll',roll=result)
+                if (state.get('_action_round') or {}).get('status') == 'waiting_check':
+                    state['_action_round']['status'] = 'resolving'
                 text = f"{char['name']} 的{ATTR_NAMES[result['attribute']]}检定：{result['rolls'][0]} {result['modifier']:+d} = {result['total']}，难度 {result['dc']}，{result['outcome']}。{result['consequence']}。"
                 append_event(con,room_id,'dice',text,state,user,char['id'],result)
                 save_receipt(con,room_id,user,data.request_key)
@@ -243,6 +279,8 @@ async def gm_note(room_id:str,data:GMNote,user=Depends(current_user)):
                     state['scene']['title'] = data.scene_title
                 state['awaiting_gm'] = False
                 state['gm_error'] = None
+                if state.get('_action_round') and state['_action_round'].get('status') in ('resolving', 'waiting_check'):
+                    state['_action_round']['status'] = 'completed'
                 append_event(con,room_id,'gm_note',data.text,state,user,payload={'label':'房主补述 · 人工裁定'})
                 save_receipt(con,room_id,user,data.request_key)
     return await finish(room_id,user)
@@ -259,6 +297,8 @@ async def cancel_check(room_id:str,data:Revision,user=Depends(current_user)):
                 if not state['pending_check']:
                     raise HTTPException(422,'没有待处理检定')
                 state['pending_check'] = None
+                if (state.get('_action_round') or {}).get('status') == 'waiting_check':
+                    state['_action_round']['status'] = 'completed'
                 append_event(con,room_id,'system','房主取消了本次待处理检定。',state,user)
                 save_receipt(con,room_id,user,data.request_key)
     return await finish(room_id,user)

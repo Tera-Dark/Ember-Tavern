@@ -24,6 +24,9 @@ async def add_character(room_id:str,data:CharacterInput,user=Depends(current_use
                     raise HTTPException(422,'首版每房间最多12个角色')
                 char = data.model_dump(exclude={'expected_revision','request_key'}) | {'id':uid()}
                 state['characters'].append(char)
+                engine = engine_for(state)
+                if hasattr(engine, 'add_character'):
+                    engine.add_character(state, char)
                 append_event(con,room_id,'character',f"房主创建了角色「{char['name']}」。",state,user,char['id'])
                 save_receipt(con,room_id,user,data.request_key)
     return await finish(room_id,user)
@@ -40,7 +43,18 @@ async def update_character(room_id:str,character_id:str,data:CharacterInput,user
                 char = character(state,character_id)
                 if state['pending_check'] and state['pending_check']['character_id'] == character_id:
                     raise HTTPException(409,'该角色正在等待检定，先完成或取消检定再修改属性')
-                char.update(data.model_dump(exclude={'expected_revision','request_key'}))
+                engine = engine_for(state)
+                previous_max_hp = char['max_hp']
+                updates = data.model_dump(exclude={'expected_revision','request_key'})
+                if engine.id == 'dnd5e-srd-5.2.1/v1':
+                    if updates['hp'] != char['hp'] or updates['max_hp'] != char['max_hp'] or updates['extensions'] != char.get('extensions', {}):
+                        raise HTTPException(409,'5e 生命与规则角色卡请在规则工作台修改；此页面只编辑叙事档案')
+                char.update(updates)
+                if hasattr(engine, 'update_character_card'):
+                    extension_id = getattr(engine, 'extension_id', None)
+                    if extension_id and updates['max_hp'] != previous_max_hp:
+                        char.setdefault('extensions', {}).setdefault(extension_id, {})['max_hit_points'] = updates['max_hp']
+                    engine.update_character_card(state, char)
                 append_event(con,room_id,'character',f"房主更新了「{char['name']}」的角色记录。",state,user,character_id)
                 save_receipt(con,room_id,user,data.request_key)
     return await finish(room_id,user)
@@ -59,6 +73,9 @@ async def delete_character(room_id:str,character_id:str,data:Revision,user=Depen
                     raise HTTPException(422,'请至少保留一个角色')
                 if (state['pending_check'] and state['pending_check']['character_id']==character_id) or (state['awaiting_gm'] and state['continuation'] and state['continuation']['character_id']==character_id):
                     raise HTTPException(409,'请先完成该角色的主持或检定，再移除角色')
+                engine = engine_for(state)
+                if hasattr(engine, 'remove_character'):
+                    engine.remove_character(state, character_id)
                 state['characters'] = [c for c in state['characters'] if c['id']!=character_id]
                 con.execute('DELETE FROM assignments WHERE room_id=? AND character_id=?',(room_id,character_id))
                 append_event(con,room_id,'character',f"房主移除了角色「{char['name']}」。",state,user,character_id)
@@ -102,6 +119,8 @@ async def update_world(room_id:str,data:WorldUpdate,user=Depends(current_user)):
                 if len({x['id'] for x in lore}) != len(lore):
                     raise HTTPException(422,'世界书条目ID不能重复')
                 world = data.model_dump(exclude={'expected_revision', 'request_key'}) | {'lore': lore}
+                if world['rule_system'] != engine_for(state).id:
+                    raise HTTPException(409, '不能在进行中的房间内切换规则；请从对应规则预设新建房间')
                 try:
                     state['world'] = WorldData.model_validate(world).model_dump(mode='json')
                 except ValidationError as exc:

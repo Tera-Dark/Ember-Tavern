@@ -1,0 +1,58 @@
+name: 兼容性／升级报告
+description: 报告目录作品与当前宿主、规则、插件组合的兼容情况。
+title: "[兼容性] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        报告前请隐藏玩家个人信息、登录凭据、API 密钥和私密房间内容。请勿附带数据库或完整生产日志。
+  - type: dropdown
+    id: report-kind
+    attributes:
+      label: 报告类型
+      options:
+        - 无法安装／导入数据作品
+        - 兼容性标记不准确
+        - 新版本回归
+        - 旧房间／锁定内容疑似被升级改写
+        - 规则系统实现或版本不符
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: artifact
+    attributes:
+      label: 作品 ID、版本与 package hash
+      description: 可从目录条目或预览详情复制；若没有目录条目请提供源码提交号。
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 宿主／浏览器／操作系统的精确版本
+      description: 同时写明 Plugin API、规则 ID／版本及相关插件的精确版本与 SHA-256。
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: 预期行为、实际行为与最小复现步骤
+      description: 请区分构建、结构校验、自动化测试和真人试玩的结果。
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: 影响程度
+      options:
+        - 阻止开局或数据丢失风险
+        - 主要玩法不可用
+        - 有临时绕过方案
+        - 文案／展示或其他低影响问题
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 可公开的证据与临时绕过方案
+      description: 精简、脱敏的日志片段或截图；不要上传存档、个人数据或密钥。
