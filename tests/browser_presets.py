@@ -44,7 +44,7 @@ async def run(base,output):
             rid=host.url.rsplit('/',1)[1]
             async def state(headers=oh):
                 response=await hc.request.get(base+'/api/rooms/'+rid,headers=headers);assert response.ok,await response.text();return await response.json()
-            initial=await state();assert len(initial['state']['characters'])==4 and initial['state']['schema_version']==2
+            initial=await state();assert len(initial['state']['characters'])==4 and initial['state']['schema_version']==4
             assert initial['state']['_preset_lock']['preset']['id']=='harbor-last-ferry'
             await pc.request.post(base+'/api/rooms/join',headers=ph,data={'code':initial['code']})
             await player.goto(base+'/room/'+rid)
