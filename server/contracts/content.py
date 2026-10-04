@@ -6,7 +6,7 @@ from pydantic import Field, field_validator, model_validator
 
 from .common import Contract, Extensible, Metadata
 
-RULE_SYSTEM = Literal['ember-light/v1']
+RULE_SYSTEM = Literal['ember-light/v1', 'dnd5e-srd-5.2.1/v1', 'ember-coop-settlement/v1']
 COLOR = Annotated[str, Field(pattern=r'^#[0-9a-fA-F]{6}$')]
 MAX_WORLD_BYTES = 384 * 1024
 

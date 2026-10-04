@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from ..db import uid
 from ..domain import initial_state
 from ..rules import engine_for, contract_hash
+from ..state import migrate_state
 from .library import compatibility
 
 
@@ -30,6 +31,7 @@ def compose(package,manager):
                                    'contract_sha256':contract_hash(engine)},
                            'plugins':deepcopy(ready['plugins']),'profile':deepcopy(m['profile'])}
     if package.theme: state['_preset_theme']=deepcopy(package.theme)
+    state = migrate_state(state)
     # Explicitly disable undeclared modules. The package grants no installation,
     # Python trust or high-risk capability; readiness uses existing approvals.
     flags={pid:False for pid in manager.items}

@@ -26,6 +26,7 @@ jobs:
       - name: Shared contracts and runtime regressions
         run: |
           python scripts/creator.py schemas --check
+          python scripts/registry.py
           python -m pytest -q
           python -m compileall -q server plugins scripts templates
       - name: Reproducible release frontend

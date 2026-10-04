@@ -1,0 +1,52 @@
+name: 目录维护／状态更正
+description: 申请维护、兼容性更正、归档／下架，或报告许可与署名问题。
+title: "[目录维护] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        目录条目不是安全背书。若问题涉及凭据泄露或可被利用的漏洞，请使用仓库 Security 页面私下报告，不要在公开 issue 粘贴利用细节。
+  - type: dropdown
+    id: action
+    attributes:
+      label: 请求的维护动作
+      options:
+        - 更新版本、下载链接或 SHA-256
+        - 更正宿主／规则／模块兼容信息
+        - 标记维护停滞或不兼容
+        - 作者申请归档／撤下作品
+        - 许可、署名或素材来源争议
+        - 举报失效链接／无法取得作品
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: entry
+    attributes:
+      label: 作品／插件 ID、版本与目录位置
+      description: 请提供精确版本；如涉及包完整性，请包含 SHA-256。
+    validations:
+      required: true
+  - type: textarea
+    id: reporter
+    attributes:
+      label: 你与作品的关系及可联系的维护者
+      description: 作者本人、获授权代表、兼容性报告者或其他；无需公开个人敏感信息。
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 事实依据与期望的目录状态
+      description: 说明复现、官方兼容性证据、许可文本或作者撤下请求。请勿推断未经核实的作者身份。
+    validations:
+      required: true
+  - type: checkboxes
+    id: handling
+    attributes:
+      label: 处理原则
+      options:
+        - label: 我理解维护状态与推荐等级需要审阅证据，提交此 issue 不会自动修改目录。
+          required: true
+        - label: 我已移除密钥、账号、私人通信及无关个人信息。
+          required: true

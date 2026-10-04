@@ -1,0 +1,212 @@
+{
+  "$defs": {
+    "NPCRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,39}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "default": "",
+          "maxLength": 80,
+          "title": "Role",
+          "type": "string"
+        },
+        "summary": {
+          "default": "",
+          "maxLength": 600,
+          "title": "Summary",
+          "type": "string"
+        },
+        "status": {
+          "default": "unknown",
+          "enum": [
+            "unknown",
+            "present",
+            "missing",
+            "deceased",
+            "ally",
+            "neutral",
+            "hostile"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "relationship": {
+          "default": 0,
+          "maximum": 5,
+          "minimum": -5,
+          "title": "Relationship",
+          "type": "integer"
+        },
+        "visibility": {
+          "default": "public",
+          "enum": [
+            "public",
+            "gm"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "NPCRecord",
+      "type": "object"
+    },
+    "QuestRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,39}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "summary": {
+          "default": "",
+          "maxLength": 600,
+          "title": "Summary",
+          "type": "string"
+        },
+        "status": {
+          "default": "proposed",
+          "enum": [
+            "proposed",
+            "active",
+            "paused",
+            "completed",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "visibility": {
+          "default": "public",
+          "enum": [
+            "public",
+            "gm"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "QuestRecord",
+      "type": "object"
+    },
+    "ResourceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,39}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "maximum": 1000000,
+          "minimum": -1000000,
+          "title": "Value",
+          "type": "integer"
+        },
+        "minimum": {
+          "default": 0,
+          "maximum": 1000000,
+          "minimum": -1000000,
+          "title": "Minimum",
+          "type": "integer"
+        },
+        "maximum": {
+          "default": 1000,
+          "maximum": 1000000,
+          "minimum": -1000000,
+          "title": "Maximum",
+          "type": "integer"
+        },
+        "unit": {
+          "default": "",
+          "maxLength": 24,
+          "title": "Unit",
+          "type": "string"
+        },
+        "visibility": {
+          "default": "public",
+          "enum": [
+            "public",
+            "gm"
+          ],
+          "title": "Visibility",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "value"
+      ],
+      "title": "ResourceRecord",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "ember.campaign-state/v1",
+      "default": "ember.campaign-state/v1",
+      "title": "Format",
+      "type": "string"
+    },
+    "quests": {
+      "items": {
+        "$ref": "#/$defs/QuestRecord"
+      },
+      "maxItems": 64,
+      "title": "Quests",
+      "type": "array"
+    },
+    "npcs": {
+      "items": {
+        "$ref": "#/$defs/NPCRecord"
+      },
+      "maxItems": 64,
+      "title": "Npcs",
+      "type": "array"
+    },
+    "resources": {
+      "items": {
+        "$ref": "#/$defs/ResourceRecord"
+      },
+      "maxItems": 64,
+      "title": "Resources",
+      "type": "array"
+    }
+  },
+  "title": "CampaignState",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:campaign-state:v1"
+}

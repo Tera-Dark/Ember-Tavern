@@ -106,12 +106,43 @@ def model_context(room_id, state, action_text):
         view['inventory'] = char.get('inventory', [])[:8] if char['id'] == current_id else []
         characters.append(view)
     with connection() as con:
-        recent = con.execute("SELECT id,type,actor_name,text FROM events WHERE room_id=? AND active=1 AND type IN ('action','gm','prologue','gm_note','dice') ORDER BY seq DESC LIMIT 10", (room_id,)).fetchall()
+        room_row = con.execute('SELECT branch FROM rooms WHERE id=?', (room_id,)).fetchone()
+        current_branch = room_row['branch'] if room_row else None
+        recent = con.execute("SELECT id,type,actor_name,text FROM events WHERE room_id=? AND active=1 AND type IN ('action','action_intent','gm','prologue','gm_note','dice') ORDER BY seq DESC LIMIT 10", (room_id,)).fetchall()
+        memory_summary = state.get('_memory_summary')
+        memory_valid = bool(memory_summary and memory_summary.get('branch') == current_branch)
+        if memory_valid:
+            source_ids = memory_summary.get('source_event_ids', [])
+            if not source_ids:
+                memory_valid = False
+            else:
+                placeholders = ','.join('?' for _ in source_ids)
+                active_sources = con.execute(f"SELECT COUNT(*) FROM events WHERE room_id=? AND active=1 AND id IN ({placeholders})",
+                                             (room_id, *source_ids)).fetchone()[0]
+                memory_valid = active_sources == len(source_ids)
+    from .campaign_state import ledger_context
+    engine = engine_for(state)
     context = {'world': {key: state['world'][key] for key in ('title', 'premise', 'tone')},
                'scene': {'title': state['scene']['title'], 'text': state['scene']['text'][:1200]},
-               'rule_system': engine_for(state).id, 'rules': engine_for(state).description,
-               'characters': characters, 'facts': state['facts'][-8:], 'retrieved': [], 'recent_events': [],
-               'continuation': state['continuation']}
+               'rule_system': engine.id, 'rules': engine.description,
+               'characters': characters, 'facts': state['facts'][-8:], 'campaign_state': ledger_context(state),
+               'retrieved': [], 'recent_events': [], 'continuation': state['continuation']}
+    if getattr(engine, 'status', 'implemented') == 'experimental':
+        game_rules = engine.project_state(state)
+        game_rules.pop('implementation_sha256', None)
+        if engine.id == 'dnd5e-srd-5.2.1/v1' and game_rules.get('encounter'):
+            game_rules['encounter']['log'] = game_rules['encounter'].get('log', [])[-6:]
+        elif engine.id == 'ember-coop-settlement/v1':
+            game_rules['settlements'] = game_rules.get('settlements', [])[-2:]
+        context['game_rules'] = game_rules
+    action_round = state.get('_action_round')
+    if action_round and action_round.get('status') == 'resolving' and action_round.get('branch') == current_branch:
+        context['action_round'] = {'number': action_round.get('number'),
+                                   'participant_character_ids': [item['character_id'] for item in action_round.get('submissions', [])],
+                                   'submitted_count': len(action_round.get('submissions', [])),
+                                   'required_count': len(action_round.get('required', [])),
+                                   'missing_character_ids': [item['character_id'] for item in action_round.get('required', [])
+                                                             if item['character_id'] not in {s['character_id'] for s in action_round.get('submissions', [])}]}
     from .presets.scenario import model_brief
     brief = model_brief(state)
     if brief:
@@ -134,10 +165,35 @@ def model_context(room_id, state, action_text):
         context['campaign']['objective'] = context['campaign']['objective'][:200]
         context['campaign']['clues'] = context['campaign']['clues'][:2]
         context['campaign']['transitions'] = context['campaign']['transitions'][:2]
+    if encoded_chars(context) > total_budget - 1200:
+        for key in ('quests', 'npcs', 'resources'):
+            context['campaign_state'][key] = context['campaign_state'][key][:3]
+        for item in context['campaign_state']['quests']:
+            item['summary'] = item['summary'][:60]
+        for item in context['campaign_state']['npcs']:
+            item['summary'] = item['summary'][:60]
     for row in recent[:2]:
         context['recent_events'].insert(0, {'id': row['id'], 'type': row['type'], 'actor': row['actor_name'], 'text': row['text'][:500]})
     if encoded_chars(context) > total_budget:
         raise ValueError('核心行动与角色信息超过主持上下文预算，请增大 CONTEXT_MAX_CHARS')
+
+    memory_selection = {'included': False, 'source_event_ids': [], 'chars': 0, 'truncated': False}
+    if memory_valid:
+        source_ids = memory_summary['source_event_ids']
+        memory_limit = max(0, min(8000, settings.memory_summary_context_chars))
+        record = {'text': memory_summary.get('text', ''), 'source_event_ids': source_ids,
+                  'source_seq_max': memory_summary.get('source_seq_max')}
+        available = max(0, total_budget - encoded_chars(context) - 700)
+        record['text'] = record['text'][:min(memory_limit, available)]
+        candidate = dict(context, memory_summary=record)
+        while record['text'] and encoded_chars(candidate) > total_budget:
+            record['text'] = record['text'][:-max(1, (encoded_chars(candidate) - total_budget) // 2)]
+            candidate = dict(context, memory_summary=record)
+        if record['text']:
+            context['memory_summary'] = record
+            memory_selection = {'included': True, 'source_event_ids': source_ids,
+                                'chars': len(record['text']), 'truncated': len(record['text']) < len(memory_summary.get('text', ''))}
+
     lore_budget = max(0, min(settings.lore_context_chars, total_budget - encoded_chars(context) - 300))
     selected, selection = select_lore(state, action_text, lore_budget)
     # Account for separators as well as each entry; never exceed the global cap.
@@ -159,6 +215,7 @@ def model_context(room_id, state, action_text):
         context['recent_events'].insert(0, record)
         if encoded_chars(context) > total_budget:
             context['recent_events'].pop(0)
+    selection['memory_summary'] = memory_selection
     selection['context_chars'] = encoded_chars(context)
     selection['context_budget_chars'] = total_budget
     included = {item['id'] for item in context['retrieved']}

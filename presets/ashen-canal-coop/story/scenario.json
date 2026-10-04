@@ -1,0 +1,125 @@
+{
+  "format": "ember.scenario/v1",
+  "metadata": {
+    "id": "ashen-canal-story",
+    "name": "灰烬水道：八回合保卫春播",
+    "version": "1.0.0",
+    "description": "叙事主持场景与规则状态分离：水道是否修成由适配器判定，场景转场不会自动改变资源。",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": [
+      "合作经营",
+      "村镇",
+      "春播"
+    ]
+  },
+  "rule_system": "ember-coop-settlement/v1",
+  "objective": "在第八回合结算结束前修复三段水道；若期限结束仍未完成，本季目标失败并明确结束。",
+  "start_scene": "council",
+  "scenes": [
+    {
+      "id": "council",
+      "title": "仓房议事",
+      "text": "春播季将在八个结算周期后开始。公共仓房里有一张画着三段破损水道的地图，各聚落代表等着队伍提出第一项计划。",
+      "gm_notes": "先查看服务器规则工作台中的资源和目标，再提交订单。",
+      "kind": "scene",
+      "clues": [
+        "stone-shortage",
+        "quarry-plan"
+      ],
+      "transitions": [
+        {
+          "id": "go-worksite",
+          "label": "前往第一段水道并开始规划",
+          "target": "worksite",
+          "requires_clues": [],
+          "gm_guidance": "叙事进入施工阶段。"
+        },
+        {
+          "id": "pause",
+          "label": "暂缓施工，结束本次会商",
+          "target": "ending-paused",
+          "requires_clues": [],
+          "gm_guidance": "规则目标仍保留为未完成。"
+        }
+      ]
+    },
+    {
+      "id": "worksite",
+      "title": "三段堤壁",
+      "text": "队伍可以继续规划建设、交易或修复。只有类型化订单会改变规则状态；每回合至少有一个订单后，房主统一结算。",
+      "gm_notes": "当规则状态显示 completed 或 expired 时，房主可推进到相应结局；这一转场目前不是自动触发的。",
+      "kind": "scene",
+      "clues": [
+        "settlement-record"
+      ],
+      "transitions": [
+        {
+          "id": "spring",
+          "label": "规则状态显示三段全部修复后，庆祝春播",
+          "target": "ending-spring",
+          "requires_clues": [],
+          "gm_guidance": "只能在适配器状态为 completed 时使用此转场。",
+          "requires_rule_status": "completed"
+        },
+        {
+          "id": "winter",
+          "label": "第八回合结算后仍未完成，结束本季计划",
+          "target": "ending-winter",
+          "requires_clues": [],
+          "gm_guidance": "只能在适配器状态为 expired 时使用此转场。",
+          "requires_rule_status": "expired"
+        }
+      ]
+    },
+    {
+      "id": "ending-spring",
+      "title": "春水抵达田埂",
+      "text": "三段堤壁全部修复，水流抵达四个聚落的田埂。合作经营目标完成。",
+      "gm_notes": "适配器的 completed 状态是目标完成依据。",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-winter",
+      "title": "推迟春播",
+      "text": "第八回合结算后仍有堤壁未修复，聚落决定推迟春播并在下一季重新规划。",
+      "gm_notes": "适配器的 expired 状态是期限结束依据。",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-paused",
+      "title": "暂缓施工",
+      "text": "各聚落把仓储账册收好，结束本次会商。水道尚未修复。",
+      "gm_notes": "叙事会商结束；规则状态仍会显示本局目标尚未完成。",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    }
+  ],
+  "clues": [
+    {
+      "id": "stone-shortage",
+      "title": "石料缺口",
+      "text": "现有石料不足以直接修复第一段水道。",
+      "gm_notes": "按规则面板显示的初始资源判断。"
+    },
+    {
+      "id": "quarry-plan",
+      "title": "采石场计划",
+      "text": "先建采石场能够增加后续回合的石料产量。",
+      "gm_notes": "建造订单当回合即可开始生产。"
+    },
+    {
+      "id": "settlement-record",
+      "title": "回合结算记录",
+      "text": "订单、生产和随机事件会写入服务器回合结算记录。",
+      "gm_notes": "以规则状态为准，不以叙事文本为准。"
+    }
+  ]
+}

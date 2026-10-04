@@ -40,7 +40,7 @@ export default function PresetLibrary({onCreated,notify,canImport=true,compact=f
   });}
   return <section className={'preset-library '+(compact?'compact':'')}>
     <div className="section-title"><div><span className="eyebrow">A COMPOSITION, NOT A PROMPT</span><h2><Package size={21}/>玩法预设库</h2></div><Button className="outline compact" icon={RefreshCw} disabled={busy} onClick={()=>work(refresh)}>刷新预设库</Button></div>
-    <p className="preset-intro">选世界、剧本、角色和已审阅模块的一套组合。当前支持轻规则和叙事模式，不是完整 D&D／SLG。版本固定在新房间，不自动覆盖旧冒险。</p>
+    <p className="preset-intro">选世界、剧本、角色和已审阅规则的一套组合。除通用轻规则外，M3 提供一条 SRD 5.2.1 有限战斗切片与一条原创合作 SLG-lite 经济实验；两者都不是完整 D&D 或完整 SLG。规则身份与版本固定在新房间，不自动覆盖旧冒险。</p>
     {error&&<div className="info-box warning" role="alert"><AlertCircle size={18}/><p>{error}</p></div>}
     <div className="gameplay-grid">{entries.map(entry=><button type="button" key={entry.package_hash} className={'gameplay-card '+(selected===entry.package_hash?'selected':'')} onClick={()=>{setSelected(entry.package_hash);setTitle(entry.name);}}>
       <span className="badge">{modes[entry.play_mode]||'待检查作品'}</span><h3>{entry.name}</h3><small>v{entry.version} · {entry.source==='bundled'?'内置原创样板':'本机作品'}</small><p>{entry.description||'作品说明待完善'}</p>

@@ -1,0 +1,87 @@
+{
+  "format": "ember.scenario/v1",
+  "metadata": {
+    "id": "echo-well-story",
+    "name": "回声井：封住山脉的裂隙",
+    "version": "1.0.0",
+    "description": "房主主持的有限冒险。叙事转场是手动工具，不自动执行检定或改变战斗结果。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["短篇", "山路", "洞穴"]
+  },
+  "rule_system": "dnd5e-srd-5.2.1/v1",
+  "objective": "调查规律回声，随后修复阀轮、暂时固定后封井，或安全撤退；抵达任一结局即可结束本次冒险。",
+  "start_scene": "ridge",
+  "scenes": [
+    {
+      "id": "ridge",
+      "title": "山脊的回声",
+      "text": "黄昏时，山路上的石标正在微微震动。向导玛拉指向旧井旁一道新裂开的岩缝。远处的村庄已经开始限水。",
+      "gm_notes": "让玩家先决定调查、询问或撤退。记录出现的黄铜刮痕和敲击节律。",
+      "kind": "scene",
+      "clues": ["well-marks", "seven-beats"],
+      "transitions": [
+        {"id": "enter-gallery", "label": "沿裂缝进入侧廊", "target": "upper-gallery", "requires_clues": [], "gm_guidance": "队伍准备好后进入。"},
+        {"id": "withdraw-early", "label": "带着线索回村求援并结束远征", "target": "ending-withdrawal", "requires_clues": [], "gm_guidance": "允许玩家选择安全撤退。"}
+      ]
+    },
+    {
+      "id": "upper-gallery",
+      "title": "旧石廊",
+      "text": "低矮石廊两侧留有老水道的标记。前方的洞居兽守着黄铜阀轮；它受惊却没有立即扑上来。队伍可以交涉、用固定阀轮的办法绕行、撤退，或由房主手动开启一次实验遭遇。",
+      "gm_notes": "战斗不是强制路线。若房主使用规则工作台，敌人数据由房主明确输入，系统不提供怪物目录。",
+      "kind": "scene",
+      "clues": ["valve-can-be-braced", "young-creatures"],
+      "transitions": [
+        {"id": "reach-core", "label": "前往井底阀室", "target": "cistern-core", "requires_clues": [], "gm_guidance": "接受谈判结果、绕行或战斗后的前进。"},
+        {"id": "withdraw-gallery", "label": "撤回村庄并结束远征", "target": "ending-withdrawal", "requires_clues": [], "gm_guidance": "保留已经结算的生命变化。"}
+      ]
+    },
+    {
+      "id": "cistern-core",
+      "title": "井底阀室",
+      "text": "旧阀门半卡在裂开的石槽中。把阀轮重新装回去，可以恢复灌渠供水；不动它也能封上洞口，但水库会留待以后检修。",
+      "gm_notes": "请玩家选择一种结局。此场景没有自动物品或技能检定。",
+      "kind": "scene",
+      "clues": ["maintenance-ladder"],
+      "transitions": [
+        {"id": "repair-valve", "label": "修复阀轮并封住裂口", "target": "ending-repaired", "requires_clues": [], "gm_guidance": "结束冒险并说明灌渠恢复。"},
+        {"id": "brace-valve", "label": "固定阀门后安全撤出", "target": "ending-sealed", "requires_clues": [], "gm_guidance": "结束冒险；水库日后仍需检修。"}
+      ]
+    },
+    {
+      "id": "ending-repaired",
+      "title": "水声归来",
+      "text": "阀轮重新咬合。井底回声消失，灌渠恢复了稳定的水流。",
+      "gm_notes": "目标完成。",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-sealed",
+      "title": "暂时封井",
+      "text": "楔子卡住阀轮，洞口被安全封闭。村庄恢复有限供水，日后仍需要检修水库。",
+      "gm_notes": "本次远征结束，留下未来检修任务。",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    },
+    {
+      "id": "ending-withdrawal",
+      "title": "带回线索",
+      "text": "队伍把线索和伤员带回村庄。村民稳住了灌渠，但井底仍需一次后续远征。",
+      "gm_notes": "本次远征以撤退结束；不把未完成目标写成已修复。",
+      "kind": "ending",
+      "clues": [],
+      "transitions": []
+    }
+  ],
+  "clues": [
+    {"id": "well-marks", "title": "阀门刮痕", "text": "黄铜碎屑沿着井沿的外侧划过。", "gm_notes": "这是阀轮松动的迹象。"},
+    {"id": "seven-beats", "title": "岩层节律", "text": "敲击声每隔七下停顿一次。", "gm_notes": "不需要触发掷骰。"},
+    {"id": "valve-can-be-braced", "title": "可以固定阀轮", "text": "绳索和木楔能暂时稳住松动的阀轮。", "gm_notes": "给玩家提供非战斗方案。"},
+    {"id": "young-creatures", "title": "受惊的守护者", "text": "洞居兽正在保护巢穴里的幼兽，并非主动猎杀入侵者。", "gm_notes": "交涉或绕行都是有效选择。"},
+    {"id": "maintenance-ladder", "title": "维护梯", "text": "井壁上有一条通向地面的旧维护梯。", "gm_notes": "确保撤退路线清楚。"}
+  ]
+}

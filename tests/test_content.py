@@ -296,6 +296,8 @@ def test_old_core_state_and_snapshots_migrate_without_inferring_secrets(client):
     r = room(client, h)
     state = current_state(r)
     state.pop('schema_version')
+    for key in ('_campaign_state', '_action_mode', '_action_round', '_memory_summary'):
+        state.pop(key, None)
     state['world'].pop('rule_system')
     for entry in state['world']['lore']:
         for field in ('kind', 'visibility', 'activation', 'keys', 'enabled', 'priority'):
@@ -305,11 +307,20 @@ def test_old_core_state_and_snapshots_migrate_without_inferring_secrets(client):
     with connection() as con:
         con.execute('UPDATE rooms SET state_json=? WHERE id=?', (dump(state), r['id']))
     migrated = read(client, r, h)['state']
-    assert migrated['schema_version'] == 1 and migrated['world']['rule_system'] == 'ember-light/v1'
+    assert migrated['schema_version'] == 4 and migrated['world']['rule_system'] == 'ember-light/v1'
+    assert migrated['action_mode'] == 'free' and migrated['action_round'] is None
+    assert migrated['campaign_state'] == {'format':'ember.campaign-state/v1','quests':[],'npcs':[],'resources':[]}
     assert all(entry['visibility'] == 'public' for entry in migrated['world']['lore'])
-    assert migrate_state(migrated) == migrated
+    with connection() as con:
+        raw = json.loads(con.execute('SELECT state_json FROM rooms WHERE id=?', (r['id'],)).fetchone()[0])
+    normalized = migrate_state(raw)
+    assert normalized['schema_version'] == 4
+    assert normalized['_campaign_state']['format'] == 'ember.campaign-state/v1'
+    assert normalized['_action_mode'] == 'free' and normalized['_action_round'] is None
+    assert normalized['_memory_summary'] is None
+    assert migrate_state(normalized) == normalized
     with pytest.raises(ValueError, match='版本'):
-        migrate_state(dict(migrated, schema_version=99))
+        migrate_state(dict(normalized, schema_version=99))
 
 
 def test_all_gm_providers_validated_by_authoritative_rule_adapter(client, monkeypatch):

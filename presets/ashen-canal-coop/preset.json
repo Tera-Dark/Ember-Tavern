@@ -1,0 +1,81 @@
+{
+  "format": "ember.preset/v1",
+  "metadata": {
+    "id": "ashen-canal-coop",
+    "name": "灰烬水道：八回合保卫春播",
+    "version": "1.0.0",
+    "description": "合作经营竖向样板：每回合规划一项订单，统筹食物、木材、石料和银币，在第八回合结算前修复三段水道。",
+    "authors": [
+      "余烬示例创作者"
+    ],
+    "license": "UNLICENSED",
+    "tags": [
+      "合作经营",
+      "规则实验",
+      "轻量策略"
+    ]
+  },
+  "minimum_host": "2.4.0",
+  "plugin_api": 1,
+  "language": "zh-CN",
+  "play_mode": "adventure",
+  "min_players": 1,
+  "max_players": 4,
+  "duration_minutes": 45,
+  "difficulty": "beginner",
+  "content_warnings": [
+    "资源短缺、季节性风暴与干旱事件。"
+  ],
+  "rule_system": "ember-coop-settlement/v1",
+  "rule_version": "0.1.0",
+  "profile": {
+    "checks": "normal",
+    "style": "玩家共同决定建设优先级；每位成员每回合一个订单，由房主统一结算。"
+  },
+  "worldbook": {
+    "path": "world/worldbook.json",
+    "id": "ashen-canal-world",
+    "version": "1.0.0",
+    "sha256": "eeb98b3c6bac0cc8ede9cb103b9b9e2224d31864f18bfb3cd6f830071a2d7008"
+  },
+  "scenario": {
+    "path": "story/scenario.json",
+    "id": "ashen-canal-story",
+    "version": "1.0.0",
+    "sha256": "5dc195f62964e8c3ff60977fa954aa375e3097eb2c602d734125d7d13c08a124"
+  },
+  "characters": [
+    {
+      "path": "characters/quartermaster.json",
+      "id": "ashen-canal-quartermaster",
+      "version": "1.0.0",
+      "sha256": "29eb05228aa0a859d413f990e3e0f061dfc3f84415c814a23cd36e835503b4e8"
+    },
+    {
+      "path": "characters/carpenter.json",
+      "id": "ashen-canal-carpenter",
+      "version": "1.0.0",
+      "sha256": "ef3dec80d1522dfa6bab82bc685cd6205c56536d28d09d901452968b2493bf35"
+    },
+    {
+      "path": "characters/mason.json",
+      "id": "ashen-canal-mason",
+      "version": "1.0.0",
+      "sha256": "0444bf3e56fc703333b3d3121961a439b47f55c7110956e1b473193413d88a95"
+    },
+    {
+      "path": "characters/messenger.json",
+      "id": "ashen-canal-messenger",
+      "version": "1.0.0",
+      "sha256": "0e3fd8c99c6090208ee81109c2354605bdcf9d3604d36aaedf975e249a7fc23d"
+    }
+  ],
+  "theme": null,
+  "plugins": [],
+  "documents": [
+    {
+      "path": "readme.md",
+      "sha256": "12ae3d7fa5aa30bab6080f208c7dc2c11ac0355e05bdb331101fd9ea7d417ac4"
+    }
+  ]
+}

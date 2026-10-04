@@ -4,13 +4,14 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from ..auth import current_user
 from ..config import ROOT
 from ..contracts.common import Contract
 from ..contracts.content import CONTENT_MODELS, CharacterData, WorldData
 from ..contracts.catalog import schema_for, CONTENT_FORMATS
+from ..contracts.registry import RegistryIndex
 from ..contracts.resources import CORE_CAPABILITIES
 from ..db import append_event, connection, dump, now, uid
 from ..domain import character
@@ -53,11 +54,74 @@ def creator_catalog():
                            'schema_url': f'/api/contracts/{kind}', 'template_url': f'/api/creators/templates/{kind}'}
                           for kind, model in CONTENT_MODELS.items()],
             'gameplay_contracts':[{'kind':kind,'schema_url':f'/api/contracts/{kind}'} for kind in ('preset','scenario')],
-            'preset_guide_url':'/api/presets/guide',
-            'plugin_schema_url': '/api/contracts/plugin',
+            'preset_guide_url':'/api/presets/guide', 'registry_url':'/api/creators/registry',
+            'plugin_schema_url': '/api/contracts/plugin', 'registry_schema_url':'/api/contracts/registry-index',
             'core_resources': [{'name':name,'capability':cap,'owner':'@core'} for name,cap in CORE_CAPABILITIES.items()],
             'rule_systems': [engine.contract() for engine in ENGINES.values()],
             'guide_url': '/api/creators/guide', 'cli': 'python scripts/creator.py'}
+
+
+def _registry_version_key(value: str):
+    # Plugin and registry minimum_host contracts intentionally compare numeric bases,
+    # not beta/prerelease labels (for example, 2.4.0-beta.1 is treated as 2.4.0).
+    return tuple(int(part) for part in value.split('-', 1)[0].split('.'))
+
+
+def _registry_runtime_compatibility(index: RegistryIndex):
+    current = _registry_version_key(HOST_VERSION)
+    plugin_ids = {item.id for item in index.plugins}
+    plugins = {}
+    for item in index.plugins:
+        required_not_listed = [dependency for dependency in item.requires if dependency not in plugin_ids]
+        host_ok = current >= _registry_version_key(item.minimum_host)
+        api_ok = item.api_version == index.plugin_api_version
+        plugins[f'{item.id}@{item.version}'] = {
+            'host_supported': host_ok,
+            'plugin_api_supported': api_ok,
+            'required_modules_not_in_directory': required_not_listed,
+            'static_compatible': host_ok and api_ok,
+            'local_installation_checked': False,
+        }
+    presets = {}
+    for item in index.preset_library:
+        engine = ENGINES.get(item.rule_system)
+        engine_contract = engine.contract() if engine else None
+        host_ok = current >= _registry_version_key(item.minimum_host)
+        api_ok = item.plugin_api == index.plugin_api_version
+        rule_ok = bool(engine_contract and engine_contract.get('implementation_version') == item.rule_version)
+        presets[f'{item.id}@{item.version}'] = {
+            'host_supported': host_ok,
+            'plugin_api_supported': api_ok,
+            'rule_implementation_supported': rule_ok,
+            'required_plugin_pins': len(item.plugins),
+            'static_compatible': host_ok and api_ok and rule_ok,
+            'local_plugin_pins_checked': False,
+        }
+    return {
+        'host_version': HOST_VERSION,
+        'host_version_policy': 'numeric-base; beta/prerelease labels are ignored',
+        'plugins': plugins,
+        'presets': presets,
+    }
+
+
+@router.get('/api/creators/registry')
+def creator_registry():
+    path = ROOT / 'registry/index.json'
+    try:
+        if path.is_symlink() or path.stat().st_size > 2 * 1024 * 1024:
+            raise ValueError('目录索引不能是链接或超过 2 MiB')
+        data = RegistryIndex.model_validate(json.loads(path.read_text(encoding='utf-8')))
+    except (OSError, json.JSONDecodeError, ValidationError, ValueError, RecursionError) as exc:
+        raise HTTPException(503, '本地作品目录暂不可用；请检查索引与 CI 校验结果。') from exc
+    return {
+        'index': data.model_dump(mode='json'),
+        'compatibility': _registry_runtime_compatibility(data),
+        'source': 'repository-local',
+        'online_verified': False,
+        'auto_install': False,
+        'notice': '此目录是本机源码索引；远程链接未实时核验。下载作品前请审阅来源、许可、版本锁与证据；目录更新不会自动修改旧房间。',
+    }
 
 
 @router.get('/api/contracts/{kind}')
@@ -91,12 +155,17 @@ def validate_content(data: Preview, user=Depends(current_user)):
 def import_effects(state, kind, document, mode):
     if kind == 'theme':
         raise HTTPException(422, '主题是个人界面偏好，请校验后在本机应用，不写入剧情')
+    active_rule = engine_for(state).id
     if kind == 'character':
         if mode != 'merge':
             raise HTTPException(422, '角色卡只能添加新角色，不能覆盖现有角色或权限')
+        if document['rule_system'] != active_rule:
+            raise HTTPException(409, '角色卡规则系统与本房间锁定规则不同；请在对应规则预设的新房间中使用')
         if len(state['characters']) >= 12:
             raise HTTPException(422, '每个房间最多 12 个角色')
         return {'operation': 'add-character', 'added': 1, 'unassigned': True}
+    if document['world']['rule_system'] != active_rule:
+        raise HTTPException(409, '不能通过导入世界书切换本房间规则；请从对应规则预设新建房间')
     existing = {entry['id'] for entry in state['world']['lore']}
     incoming = {entry['id'] for entry in document['world']['lore']}
     try:
@@ -145,6 +214,9 @@ async def import_room(room_id: str, data: Import, user=Depends(current_user)):
                 else:
                     char_id = uid()
                     char = parsed['document']['character'] | {'id': char_id}
+                    engine = engine_for(state)
+                    if hasattr(engine, 'add_character'):
+                        engine.add_character(state, char)
                     state['characters'].append(char)
                     message = f"房主导入了角色「{char['name']}」，等待分配操控者。"
                     event_type = 'character'

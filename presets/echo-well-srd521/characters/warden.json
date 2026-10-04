@@ -1,0 +1,35 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "echo-well-warden",
+    "name": "石桥守望者",
+    "version": "1.0.0",
+    "description": "前排守望者；此角色卡未给出职业、技能或职业特性。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "守望者"]
+  },
+  "rule_system": "dnd5e-srd-5.2.1/v1",
+  "character": {
+    "name": "石桥守望者",
+    "archetype": "守望者（原创标签）",
+    "description": "曾经维护山路石桥，熟悉绳结、门闩和危险地形。遇见受惊的生物时，倾向先留下退路。",
+    "gm_notes": "这只是通用角色模板，不代表 5e 职业或背景。",
+    "avatar": "shield",
+    "hp": 14,
+    "max_hp": 14,
+    "stress": 0,
+    "attributes": {"strength": 2, "dexterity": 1, "knowledge": 0, "insight": 1, "charisma": 0},
+    "inventory": ["麻绳", "木楔", "旅行斗篷"],
+    "extensions": {
+      "dnd5e.srd-5.2.1/v1": {
+        "level": 1,
+        "ability_scores": {"strength": 15, "dexterity": 12, "constitution": 14, "intelligence": 10, "wisdom": 11, "charisma": 10},
+        "armor_class": 16,
+        "weapon_die": 8,
+        "weapon_ability": "strength",
+        "hit_die": 10
+      }
+    }
+  }
+}

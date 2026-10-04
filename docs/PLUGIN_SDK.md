@@ -1,8 +1,8 @@
 # 余烬酒馆 Plugin SDK v1
 
-**M1 新只读资源：**`core.campaign/v1`（能力 read:room）返回当前目标／场景／已揭示线索的公开投影，不含 GM 指引和未来图。示例 `templates/campaign-compass`，创作与版本锁教程见 [PRESET_AUTHORING.md](PRESET_AUTHORING.md)。
+**M1 / M2 新只读资源：**`core.campaign/v1` 返回当前剧本公开进度；M2 新增 `core.campaign-state/v1`（能力 `read:room`），返回公开任务／NPC／资源、行动模式与轮次，不包含 GM Ledger 项、主持记忆摘要或来源。示例 `templates/campaign-compass`；M2 Schema / API 与公开下载边界见 [M2_DELIVERY.md](M2_DELIVERY.md)。
 
-宿主版本 2.2.0-beta.1 · 插件 API 1 · 2026-09-30
+当前源码元数据：宿主 / 网页 2.4.0-beta.1 · Plugin API 1 · 文档更新 2026-10-03。M4 目录索引／离线校验仍在建设；公开 Release 仍是旧版，不能用源码元数据推断已发行。详见 [M4 进度记录](M4_DELIVERY.md)。
 
 [创作指南](CREATOR_GUIDE.md)（世界书／角色／主题／脚手架） · [整体架构](ARCHITECTURE.md) · [LAN 部署](LAN_DEPLOYMENT.md)
 
@@ -137,7 +137,7 @@ class Extension(Plugin):
 - `on_event(ctx,event,data)`：同步小型钩子，不做付费网络调用；返回新 data 或 None。异常隔离并记 `_plugin_faults`，不阻止内核事件。
 - `signal(ctx,name,payload)`：服务端校验瞬态数据／角色，返回待广播 payload；默认拒绝。
 - `public_data(ctx,data)`：默认返回共享数据。私密 namespace 必须按 ctx.is_owner 投影，并测试 REST／历史／UI 资源；投影异常返回空，不能回退原始数据。可信 Python 能读取原始服务器资料，不是能力沙箱。
-- `gm(ctx,state,mode)`：仅给声明 hooks:["gm"]、model:gm 的提供者；所有提供者返回的 Decision 和 `server/contracts/hosting.py` GMTrace 都由宿主校验后再应用。trace 只允许有界 mode／label／retrieval_count／duration_ms／knowledge／decision／context_ids／context_selection，禁止任意 prompt/debug dump；秘密诊断仅房主可见。空 label 用清单名称。mode 应诚实对应房间 demo／live，演示不可暗中收费。规则执行仍在内核；文本规则不能改判定。
+- `gm(ctx,state,mode)`：仅给声明 hooks:["gm"]、model:gm 的提供者；所有提供者返回的 Decision 和 `server/contracts/hosting.py` GMTrace 都由宿主校验后再应用。trace 只允许有界 mode／label／retrieval_count／duration_ms／knowledge／decision／context_ids／context_selection；记忆摘要诊断只给房主来源 ID、字符数、截断状态，不给玩家或普通插件。禁止任意 prompt/debug dump。空 label 用清单名称。mode 应诚实对应房间 demo／live，演示不可暗中收费。规则执行仍在内核；文本规则不能改判定。
 
 ### 状态与并发
 
@@ -163,9 +163,12 @@ class Extension(Plugin):
 
 ## 5. 资源契约
 
+`GET /api/rules` 是公开只读的宿主规则目录；当前列出 `ember-light/v1` 与两条标为实验的 M3 子集（`dnd5e-srd-5.2.1/v1`、`ember-coop-settlement/v1`）。目录只列出经审阅的宿主代码适配器，不提供插件安装／注册接口；插件的 `Result` 不能修改规则状态。各规则的版本、范围和未支持项见 [M3 交付记录](M3_DELIVERY.md)，不表示完整 5e / SLG。
+
 | 名称 | 提供者 | 主要数据 |
 | --- | --- | --- |
 | core.world/v1 | @core | 公共世界设定；需 read:room |
+| core.campaign-state/v1 | @core | 公开战役 Ledger、行动模式与轮次；GM 内容和主持摘要不包含；需 read:room |
 | core.characters/v1 | @core | 公共角色＋当前分配；需 read:room |
 | core.rules/v1 | @core | 权威规则 ID／描述／dice 限制／Decision schema；需 read:room |
 | core.events/v1 | @core | 最近 30 条当前分支事件，隐藏秘密证据；需 read:events |
@@ -178,7 +181,7 @@ class Extension(Plugin):
 
 `core.*` 命名空间保留；插件不能提供／替换，使用还需对应清单权限，未知契约不读取内部数据。宿主资源表在 contracts/resources.py，creator catalog 可查询。其他资源仍由可信提供者负责公开投影和字段语义；uses 不是通用私有资源 ACL。共享 resources 只应输出公共数据，不要将 owner-only namespace 自动映射成可被所有插件读取的资源；细粒度资源等级见后续路线图。破坏性变更用 /vN。
 
-地图生成是程序网格／模型结构化布局，不是图像生成。可走格只有 `.` 和 `=`。移动检查整数格、边界、障碍、角色控制权；不做路径可达性、视线、距离消耗、先攻或完整战棋。
+地图生成是程序网格／模型结构化布局，不是图像生成。可走格只有 `.` 和 `=`。地图插件移动检查整数格、边界、障碍、角色控制权；不做路径可达性、视线或距离消耗。M3 有独立的有限 5e 先攻样板，但它未接入地图坐标，也不是完整战棋。
 
 ## 6. 安装、审核与发布
 
@@ -197,4 +200,4 @@ python scripts/plugins.py install ui-bundle.zip --sha256 <SHA256> --grant-capabi
 
 直接放入 `data/plugins/<id>` 也能发现，但后台／高风险 UI 未授权时被阻止。UI 热安装无需宿主构建；后端执行环境、依赖更新和彻底卸载建议停服，避免进行中的调用。升级当前采用「备份 → 关模块 → 停服 → 移出旧目录并重新审核安装 → 迁移测试 → 启动」，尚无浏览器一键更新器。
 
-`.github/workflows/plugin-release.yml` 给 tag `plugin-session-insights-v*` 打包示例 ZIP 和 SHA256 并发布 Release；项目仓库为 https://github.com/Tera-Dark/Ember-Tavern；后续 tag 推送由仓库拥有者授权完成。`registry/index.json` 是可发布清单，download_url 只在实际 Release 发布后填写，不伪造在线市场。
+`.github/workflows/plugin-release.yml` 给 tag `plugin-session-insights-v*` 打包示例 ZIP 和 SHA256 并发布 Release；项目仓库为 https://github.com/Tera-Dark/Ember-Tavern；后续 tag 推送由仓库拥有者授权完成。`registry/index.json` 目前是本地基础目录，不是自动安装商店；公开 metadata 可从 `GET /api/creators/registry` 读取，作者按模板更新后运行 `python scripts/registry.py` 与 `python scripts/creator.py schemas --check`。下载 URL 只在实际 Release 发布后填写；本地 validator 不联网核验远程可用性／下载哈希，不执行插件代码，也不把审核证据自动变成官方背书。

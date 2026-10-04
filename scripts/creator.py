@@ -10,7 +10,7 @@ import tempfile
 
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 from server.config import ROOT,settings
-from server.contracts.catalog import CONTENT_FORMATS,AUTHOR_MODELS,schema_for
+from server.contracts.catalog import CONTENT_FORMATS,AUTHOR_MODELS,CORE_MODELS,schema_for
 from server.contracts.common import Metadata
 from server.contracts.presets import Scenario
 from server.contracts.plugin import validate_manifest
@@ -152,7 +152,7 @@ def package_preset(folder,output):
 
 def schemas(check=False):
     changed=[]
-    for kind in (*AUTHOR_MODELS,'plugin'):
+    for kind in (*AUTHOR_MODELS, *CORE_MODELS, 'plugin'):
         path=ROOT/'registry'/f'{kind}.schema.json';value=json.dumps(schema_for(kind),ensure_ascii=False,indent=2)+'\n'
         if not path.exists() or path.read_text(encoding='utf-8')!=value:
             changed.append(path.relative_to(ROOT).as_posix())

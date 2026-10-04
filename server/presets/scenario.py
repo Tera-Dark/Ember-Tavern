@@ -13,6 +13,12 @@ def scene_for(value):
     return next(scene for scene in value['document']['scenes'] if scene['id']==value['current_scene'])
 
 
+def _rule_status_ready(state,edge):
+    required=edge.get('requires_rule_status')
+    if required is None: return True
+    return (state.get('_rule_state') or {}).get('status')==required
+
+
 def view(state,include_gm=False):
     value=state.get('_scenario')
     if not value: return None
@@ -30,7 +36,10 @@ def view(state,include_gm=False):
     if include_gm:
         result['gm_notes']=scene['gm_notes']
         result['clues']=[{**deepcopy(clues[cid]),'revealed':cid in revealed} for cid in scene['clues']]
-        result['transitions']=[{**deepcopy(edge),'ready':set(edge['requires_clues'])<=revealed} for edge in scene['transitions']]
+        result['transitions']=[{**deepcopy(edge),
+                                'rule_status_ready':_rule_status_ready(state,edge),
+                                'ready':set(edge['requires_clues'])<=revealed and _rule_status_ready(state,edge)}
+                               for edge in scene['transitions']]
         result['lock']=deepcopy(lock)
     return result
 
@@ -62,6 +71,9 @@ def advance(state,scene_id,transition_id):
     if not edge: raise HTTPException(422,'只能使用当前场景中已声明的推进路线')
     if not set(edge['requires_clues'])<=set(value['revealed_clues']):
         raise HTTPException(422,'仍缺少这条路线要求的已揭示线索；文字叙事不能绕过前置条件')
+    required_status=edge.get('requires_rule_status')
+    if required_status and not _rule_status_ready(state,edge):
+        raise HTTPException(409,f'此结局要求服务端规则状态为 {required_status}；当前规则目标尚未到达该状态')
     target=next(scene for scene in value['document']['scenes'] if scene['id']==edge['target'])
     value['current_scene']=target['id']
     state['scene']={'title':target['title'],'text':target['text']}

@@ -1,0 +1,26 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "ashen-canal-messenger",
+    "name": "山路信使",
+    "version": "1.0.0",
+    "description": "在聚落和工地之间传递消息，协调合作分工。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "信使"]
+  },
+  "rule_system": "ember-coop-settlement/v1",
+  "character": {
+    "name": "山路信使",
+    "archetype": "信使（原创标签）",
+    "description": "熟悉山路上的补给点与临时歇脚处。",
+    "gm_notes": "角色叙事能力不产生额外订单或资源。",
+    "avatar": "feather",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {"strength": 0, "dexterity": 2, "knowledge": 1, "insight": 1, "charisma": 1},
+    "inventory": ["信袋", "干粮", "路标旗"],
+    "extensions": {}
+  }
+}

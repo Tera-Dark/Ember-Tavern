@@ -64,7 +64,8 @@ def advance(client,headers,room,edge):
 def test_catalog_is_public_metadata_not_future_scenes_or_gm_secrets(client,host):
     assert client.get('/api/presets').status_code==401
     result=client.get('/api/presets',headers=host).json()
-    assert len(result['entries'])==3
+    assert len(result['entries'])==5
+    assert {item['rule_system'] for item in result['entries']} >= {'dnd5e-srd-5.2.1/v1','ember-coop-settlement/v1'}
     assert 'hbr-secret-m1' not in json.dumps(result)
     for entry in result['entries']:
         assert entry['compatibility']['can_create'] and entry['default_ai_mode']=='demo' and entry['data_only']

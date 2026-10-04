@@ -1,0 +1,767 @@
+{
+  "$defs": {
+    "ContentTemplate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "worldbook",
+            "character",
+            "theme"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "format": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Format",
+          "type": "string"
+        },
+        "template_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Template Path",
+          "type": "string"
+        },
+        "schema_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Schema Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "format",
+        "template_path",
+        "schema_path"
+      ],
+      "title": "ContentTemplate",
+      "type": "object"
+    },
+    "CoreSchemaEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "pattern": "^[a-z][a-z0-9-]{1,47}$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "schema_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Schema Path",
+          "type": "string"
+        },
+        "rule_system": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule System"
+        }
+      },
+      "required": [
+        "kind",
+        "schema_path"
+      ],
+      "title": "CoreSchemaEntry",
+      "type": "object"
+    },
+    "GameplayTemplate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "preset",
+            "scenario"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "format": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Format",
+          "type": "string"
+        },
+        "template_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Template Path",
+          "type": "string"
+        },
+        "schema_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Schema Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "format",
+        "template_path",
+        "schema_path"
+      ],
+      "title": "GameplayTemplate",
+      "type": "object"
+    },
+    "PluginRegistryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Description",
+          "type": "string"
+        },
+        "category": {
+          "default": "扩展",
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Category",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "package": {
+          "anyOf": [
+            {
+              "maxLength": 180,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "相对于仓库 plugin-packages/ 的发行 ZIP 路径",
+          "title": "Package"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "本地发行 ZIP 的 SHA-256；不会通过网络下载 URL 来复核",
+          "title": "Sha256"
+        },
+        "download_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 9,
+              "pattern": "^https://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "公开下载地址；目录 CI 不访问或验证在线可用性",
+          "title": "Download Url"
+        },
+        "backend": {
+          "title": "Backend",
+          "type": "boolean"
+        },
+        "api_version": {
+          "const": 1,
+          "title": "Api Version",
+          "type": "integer"
+        },
+        "review_status": {
+          "enum": [
+            "example",
+            "source-template-not-published",
+            "legacy-reference-only",
+            "community-submitted",
+            "community-playtested",
+            "official-recommended",
+            "incompatible",
+            "archived",
+            "original-playtest-example",
+            "experimental-playable-vertical-sample"
+          ],
+          "title": "Review Status",
+          "type": "string"
+        },
+        "capabilities": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "requires": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9-]{2,47}$",
+            "type": "string"
+          },
+          "maxItems": 40,
+          "title": "Requires",
+          "type": "array"
+        },
+        "uses": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9.-]{1,70}/v[1-9][0-9]*$",
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Uses",
+          "type": "array"
+        },
+        "provides": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9.-]{1,70}/v[1-9][0-9]*$",
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Provides",
+          "type": "array"
+        },
+        "minimum_host": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Minimum Host",
+          "type": "string"
+        },
+        "template_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Template Path",
+          "type": "string"
+        },
+        "license": {
+          "default": "UNLICENSED",
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "License",
+          "type": "string"
+        },
+        "authors": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Authors",
+          "type": "array"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 9,
+              "pattern": "^https://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "maintenance_status": {
+          "default": "unknown",
+          "enum": [
+            "active",
+            "maintenance-needed",
+            "unmaintained",
+            "unknown",
+            "archived"
+          ],
+          "title": "Maintenance Status",
+          "type": "string"
+        },
+        "issue_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 9,
+              "pattern": "^https://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issue Url"
+        },
+        "download_note": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Download Note"
+        },
+        "evidence": {
+          "items": {
+            "maxLength": 2048,
+            "minLength": 9,
+            "pattern": "^https://[^\\s]+$",
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version",
+        "backend",
+        "api_version",
+        "review_status",
+        "minimum_host",
+        "template_path"
+      ],
+      "title": "PluginRegistryEntry",
+      "type": "object"
+    },
+    "PresetRegistryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Description",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 24,
+          "title": "Tags",
+          "type": "array"
+        },
+        "version": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "package_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Package Hash",
+          "type": "string"
+        },
+        "source_path": {
+          "maxLength": 180,
+          "minLength": 1,
+          "title": "Source Path",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "example",
+            "source-template-not-published",
+            "legacy-reference-only",
+            "community-submitted",
+            "community-playtested",
+            "official-recommended",
+            "incompatible",
+            "archived",
+            "original-playtest-example",
+            "experimental-playable-vertical-sample"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "download_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 9,
+              "pattern": "^https://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "公开预设归档地址；目录 CI 不联网验证",
+          "title": "Download Url"
+        },
+        "archive_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "发布者声明的归档 SHA-256；当前目录校验不会下载归档",
+          "title": "Archive Sha256"
+        },
+        "license": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "License",
+          "type": "string"
+        },
+        "authors": {
+          "items": {
+            "maxLength": 80,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Authors",
+          "type": "array"
+        },
+        "rule_system": {
+          "pattern": "^[a-z][a-z0-9.-]{1,50}/v[1-9][0-9]*$",
+          "title": "Rule System",
+          "type": "string"
+        },
+        "rule_version": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Rule Version",
+          "type": "string"
+        },
+        "minimum_host": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Minimum Host",
+          "type": "string"
+        },
+        "plugin_api": {
+          "const": 1,
+          "default": 1,
+          "title": "Plugin Api",
+          "type": "integer"
+        },
+        "language": {
+          "default": "zh-CN",
+          "maxLength": 32,
+          "minLength": 2,
+          "title": "Language",
+          "type": "string"
+        },
+        "play_mode": {
+          "enum": [
+            "investigation",
+            "adventure",
+            "slice-of-life"
+          ],
+          "title": "Play Mode",
+          "type": "string"
+        },
+        "min_players": {
+          "maximum": 12,
+          "minimum": 1,
+          "title": "Min Players",
+          "type": "integer"
+        },
+        "max_players": {
+          "maximum": 12,
+          "minimum": 1,
+          "title": "Max Players",
+          "type": "integer"
+        },
+        "duration_minutes": {
+          "maximum": 600,
+          "minimum": 10,
+          "title": "Duration Minutes",
+          "type": "integer"
+        },
+        "difficulty": {
+          "enum": [
+            "beginner",
+            "standard"
+          ],
+          "title": "Difficulty",
+          "type": "string"
+        },
+        "content_warnings": {
+          "items": {
+            "maxLength": 120,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Content Warnings",
+          "type": "array"
+        },
+        "plugins": {
+          "items": {
+            "$ref": "#/$defs/RegistryPluginPin"
+          },
+          "maxItems": 24,
+          "title": "Plugins",
+          "type": "array"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 9,
+              "pattern": "^https://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        },
+        "maintenance_status": {
+          "default": "unknown",
+          "enum": [
+            "active",
+            "maintenance-needed",
+            "unmaintained",
+            "unknown",
+            "archived"
+          ],
+          "title": "Maintenance Status",
+          "type": "string"
+        },
+        "issue_url": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "minLength": 9,
+              "pattern": "^https://[^\\s]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Issue Url"
+        },
+        "evidence": {
+          "items": {
+            "maxLength": 2048,
+            "minLength": 9,
+            "pattern": "^https://[^\\s]+$",
+            "type": "string"
+          },
+          "maxItems": 12,
+          "title": "Evidence",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version",
+        "package_hash",
+        "source_path",
+        "status",
+        "license",
+        "rule_system",
+        "rule_version",
+        "minimum_host",
+        "play_mode",
+        "min_players",
+        "max_players",
+        "duration_minutes",
+        "difficulty"
+      ],
+      "title": "PresetRegistryEntry",
+      "type": "object"
+    },
+    "RegistryPluginPin": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9-]{2,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "version": {
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "version",
+        "sha256"
+      ],
+      "title": "RegistryPluginPin",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Repository-local discovery index; never installs packages or code.",
+  "properties": {
+    "registry_version": {
+      "const": 1,
+      "title": "Registry Version",
+      "type": "integer"
+    },
+    "plugin_api_version": {
+      "const": 1,
+      "title": "Plugin Api Version",
+      "type": "integer"
+    },
+    "github_repository": {
+      "maxLength": 2048,
+      "minLength": 9,
+      "pattern": "^https://[^\\s]+$",
+      "title": "Github Repository",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "local-foundation-catalog",
+        "community-catalog"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "plugins": {
+      "items": {
+        "$ref": "#/$defs/PluginRegistryEntry"
+      },
+      "maxItems": 256,
+      "title": "Plugins",
+      "type": "array"
+    },
+    "host_version": {
+      "maxLength": 40,
+      "pattern": "^[0-9]+[.][0-9]+[.][0-9]+(?:-[0-9A-Za-z.-]+)?$",
+      "title": "Host Version",
+      "type": "string"
+    },
+    "content_templates": {
+      "items": {
+        "$ref": "#/$defs/ContentTemplate"
+      },
+      "maxItems": 16,
+      "title": "Content Templates",
+      "type": "array"
+    },
+    "scaffold_kinds": {
+      "items": {
+        "maxLength": 40,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 32,
+      "title": "Scaffold Kinds",
+      "type": "array"
+    },
+    "gameplay_templates": {
+      "items": {
+        "$ref": "#/$defs/GameplayTemplate"
+      },
+      "maxItems": 16,
+      "title": "Gameplay Templates",
+      "type": "array"
+    },
+    "preset_library": {
+      "items": {
+        "$ref": "#/$defs/PresetRegistryEntry"
+      },
+      "maxItems": 512,
+      "title": "Preset Library",
+      "type": "array"
+    },
+    "core_schemas": {
+      "items": {
+        "$ref": "#/$defs/CoreSchemaEntry"
+      },
+      "maxItems": 64,
+      "title": "Core Schemas",
+      "type": "array"
+    }
+  },
+  "required": [
+    "registry_version",
+    "plugin_api_version",
+    "github_repository",
+    "status",
+    "host_version"
+  ],
+  "title": "RegistryIndex",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:registry-index:v1"
+}

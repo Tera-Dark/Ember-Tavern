@@ -1,6 +1,6 @@
 # 标准创作起步模板
 
-宿主 2.2.0-beta.1／Plugin API 1。世界、角色、主题是**数据**，插件代码与信任单独处理。
+当前源码元数据：宿主 / 网页 2.4.0-beta.1、桌面 / 部署引擎 0.2.0-beta.3、Plugin API 1。公开桌面 Release 仍是旧版 0.2.0-beta.1 / 宿主 2.3.0-beta.1；本轮 M2 改动尚未随二进制发布，详情见 [M2 交付记录](../docs/M2_DELIVERY.md)。世界、角色、主题是**数据**，插件代码与信任单独处理。
 
 | 目录 | CLI init 类型 | 文件／行为 |
 | --- | --- | --- |
@@ -25,6 +25,8 @@ CLI、安装器、运行时与 `registry/*.schema.json` 共用契约；跨字段
 完整教程：[CREATOR_GUIDE](../docs/CREATOR_GUIDE.md)；模块生命周期／能力／资源：[PLUGIN_SDK](../docs/PLUGIN_SDK.md)。
 
 ## M1 完整玩法组合
+
+以下是源码中的作者模板与流程；公开旧版桌面包不含当前分支的 M2 能力。
 
 - `preset/`：世界书＋剧本＋四张角色＋精确模块引用与说明。`creator.py init preset` / `lock-preset` / `package-preset`。
 - `scenario/`：有限场景、线索前置条件与结局；不包含可执行脚本。

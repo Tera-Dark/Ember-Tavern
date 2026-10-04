@@ -1,0 +1,26 @@
+{
+  "format": "ember.character/v1",
+  "metadata": {
+    "id": "ashen-canal-mason",
+    "name": "堤壁石匠",
+    "version": "1.0.0",
+    "description": "负责判断石料规格与水道裂口的修补次序。",
+    "authors": ["余烬示例创作者"],
+    "license": "UNLICENSED",
+    "tags": ["预设角色", "石匠"]
+  },
+  "rule_system": "ember-coop-settlement/v1",
+  "character": {
+    "name": "堤壁石匠",
+    "archetype": "石匠（原创标签）",
+    "description": "维护三段堤壁的草图，能解释采石场投资对长期资源的影响。",
+    "gm_notes": "角色叙事能力不产生额外订单或资源。",
+    "avatar": "sword",
+    "hp": 12,
+    "max_hp": 12,
+    "stress": 0,
+    "attributes": {"strength": 2, "dexterity": 0, "knowledge": 2, "insight": 1, "charisma": 0},
+    "inventory": ["石匠锤", "水平尺", "麻绳"],
+    "extensions": {}
+  }
+}

@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import PresetLibrary from '../presets/PresetLibrary';
+import RegistryExplorer from './RegistryExplorer.jsx';
 import {BookOpen, Users, Palette, Code2, Download, Upload, ShieldCheck, ArrowRight, Check, FileJson, LockKeyhole, AlertCircle, Loader2, Eye, RotateCcw, Copy, Sparkles, Search} from 'lucide-react';
 import {api, downloadJSON, downloadFile, requestKey} from '../api.js';
 import {Modal, Button} from '../components/ui.jsx';
@@ -24,6 +25,7 @@ export function CreatorWorkbench({room, appearance, onImport, notify, onPresetCr
   return <div className="page-scroll creator-workbench">
     <section className="creator-intro"><div className="creator-emblem"><FileJson size={30} strokeWidth={1.3}/></div><div><span className="eyebrow">CREATE ONCE. BRING TO ANOTHER TABLE.</span><h2>把一个世界，交给下一张桌。</h2><p>创作不必从读源码开始。使用同一套模板、契约与校验器，先完成你的第一个作品。</p></div><span className="badge amber">创作契约 v1</span></section>
     <div className="creator-steps"><span><b>01</b>领取标准模板</span><ArrowRight size={14}/><span><b>02</b>填写、校验与预览</span><ArrowRight size={14}/><span><b>03</b>确认后应用</span><div><ShieldCheck size={15}/>预览不会写入剧情或调用 AI</div></div>
+    <RegistryExplorer/>
     <div className="creator-grid">{Object.entries(TYPES).map(([kind, type]) => <article className="creator-card" key={kind}>
       <div className="creator-card-heading"><span><type.icon size={23} strokeWidth={1.5}/></span><small>DATA CONTRACT / V1</small></div><h3>{type.name}</h3><code>{type.format}</code><p>{type.description}</p><div className="creator-card-note"><Check size={13}/>{type.note}</div>
       <div className="creator-card-actions"><Button className="outline compact" icon={Download} onClick={() => template(kind)}>下载模板</Button><Button className="primary compact" icon={Upload} disabled={kind !== 'theme' && !room.is_owner} onClick={() => onImport(kind)}>校验并{kind === 'theme' ? '应用' : '导入'}</Button></div>
