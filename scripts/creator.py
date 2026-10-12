@@ -16,7 +16,7 @@ from server.contracts.presets import Scenario
 from server.contracts.plugin import validate_manifest
 from server.content.imports import ContentError,MAX_CONTENT_BYTES,normalize
 from server.presets.codec import (load_folder,parse_archive,parse_envelope,archive_bytes,digest,validate_model,safe_path,PresetError,MAX_ARCHIVE)
-from server.plugin_runtime.integrity import package_hash
+from server.package_integrity import package_hash
 
 PLUGIN_TEMPLATES={'plugin-ui':'session-insights','plugin-backend':'scene-notes','plugin-dice':'dice-tray','plugin-campaign':'campaign-compass'}
 KINDS=tuple(AUTHOR_MODELS)+tuple(PLUGIN_TEMPLATES)
@@ -161,6 +161,48 @@ def schemas(check=False):
     return {'schema_drift':changed if check else [],'generated':changed if not check else []}
 
 
+def release_check(path,kind=None,tag=None):
+    """One publication preflight shared by local authors and reusable CI.
+
+    Declarations are checked, never treated as proof of ownership or review.
+    Python / JavaScript submission code is only read as package data.
+    """
+    path=Path(path)
+    result=validate(path,kind)
+    actual=result['kind']
+    blockers=[]
+    def rights(metadata,label):
+        if not metadata.get('authors'):blockers.append(label+'：需要真实作者署名')
+        license=str(metadata.get('license','')).strip()
+        if not license or license.upper() in ('UNLICENSED','UNSPECIFIED','NONE'):
+            blockers.append(label+'：需要明确再分发许可')
+    if actual=='preset':
+        if path.suffix=='.zip':package=parse_archive(path.read_bytes())
+        elif path.is_file() and path.name!='preset.json':package=parse_envelope(json.loads(path.read_text(encoding='utf-8-sig')))
+        else:package=load_folder(path if path.is_dir() else path.parent)
+        metadata=package.manifest['metadata'];rights(metadata,'预设')
+        components=[('世界书',package.worldbook),('剧本',package.scenario),*[(f'角色 {i+1}',value) for i,value in enumerate(package.characters)]]
+        if package.theme:components.append(('主题',package.theme))
+        for label,value in components:rights(value['metadata'],label)
+        prefix='preset'
+    elif actual=='plugin':
+        folder=path if path.is_dir() else path.parent
+        metadata=validate_manifest(json.loads((folder/'plugin.json').read_text(encoding='utf-8-sig')),folder)
+        rights(metadata,'插件');prefix='plugin'
+    else:
+        document=json.loads(path.read_text(encoding='utf-8-sig'))
+        # validate() has already normalized / validated the native contract.
+        if document.get('format') not in (*CONTENT_FORMATS.values(),'ember.scenario/v1'):
+            raise ValueError('兼容导入格式不能直接作为标准作品发行；请先转换为原生格式')
+        metadata=document['metadata'];rights(metadata,actual);prefix=actual
+    expected=f"{prefix}-{metadata['id']}-v{metadata['version']}"
+    if tag is not None and tag!=expected:blockers.append('发行标签必须为 '+expected)
+    if blockers:raise ValueError('发布前检查未通过：'+'；'.join(blockers))
+    return {'publication_ready':True,'kind':actual,'id':metadata['id'],'version':metadata['version'],
+            'expected_tag':expected,'package_hash':result.get('package_hash'),'code_executed':False,
+            'notice':'只核对契约、版本锁与许可声明；不认证版权、作者身份、代码安全或真人试玩。'}
+
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description='余烬创作工具（不执行插件代码）');commands=parser.add_subparsers(dest='command',required=True)
     init=commands.add_parser('init');init.add_argument('kind',choices=KINDS);init.add_argument('output');init.add_argument('--id',required=True);init.add_argument('--name')
@@ -169,6 +211,7 @@ if __name__=='__main__':
     lock=commands.add_parser('lock-preset');lock.add_argument('path');lock.add_argument('--refresh-plugins',action='store_true')
     pack=commands.add_parser('package-preset');pack.add_argument('path');pack.add_argument('output')
     pins=commands.add_parser('plugin-pins');pins.add_argument('--id')
+    release=commands.add_parser('release-check');release.add_argument('path');release.add_argument('--kind',choices=tuple(AUTHOR_MODELS));release.add_argument('--tag')
     args=parser.parse_args()
     try:
         if args.command=='init':result=scaffold(args.kind,args.output,args.id,args.name)
@@ -176,6 +219,7 @@ if __name__=='__main__':
         elif args.command=='schemas':result=schemas(args.check)
         elif args.command=='lock-preset':result=lock_preset(args.path,args.refresh_plugins)
         elif args.command=='package-preset':result=package_preset(args.path,args.output)
+        elif args.command=='release-check':result=release_check(args.path,args.kind,args.tag)
         else:result={'pins':plugin_pins(args.id),'code_executed':False,'notice':'散列不是授权；安装代码和能力仍需独立审阅。'}
         print(json.dumps(result,ensure_ascii=False,indent=2))
     except (ValueError,OSError,RecursionError,KeyError) as exc:

@@ -13,6 +13,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -51,29 +53,114 @@ func Resolve(channel string) (Release, error) {
 	if channel != "release" {
 		return Release{}, errors.New("未知更新通道")
 	}
-	var releases []struct {
-		Tag   string `json:"tag_name"`
-		Draft bool   `json:"draft"`
-	}
-	if e := fetchJSON("https://api.github.com/repos/"+Repository+"/releases?per_page=20", &releases); e != nil {
+	tags, e := ReleaseTags()
+	if e != nil {
 		return Release{}, e
 	}
-	for _, r := range releases {
-		if r.Draft || !strings.HasPrefix(r.Tag, "v") || strings.HasPrefix(r.Tag, "plugin-") {
-			continue
-		}
-		var commit struct {
-			SHA string `json:"sha"`
-		}
-		if e := fetchJSON("https://api.github.com/repos/"+Repository+"/commits/"+url.PathEscape(r.Tag), &commit); e != nil {
-			return Release{}, e
-		}
-		if len(commit.SHA) != 40 {
-			return Release{}, errors.New("版本提交无效")
-		}
-		return Release{Version: r.Tag, Commit: commit.SHA, Source: "release", URL: "https://codeload.github.com/" + Repository + "/zip/" + commit.SHA}, nil
+	if len(tags) == 0 {
+		return Release{}, errors.New("GitHub 暂无已发布版本")
 	}
-	return Release{}, errors.New("暂时没有可安装的应用版本，请选择最新源码通道")
+	return ResolveTag(tags[0].Tag)
+}
+
+var commitPattern = regexp.MustCompile(`^[a-f0-9]{40}$`)
+
+func validReleaseTag(tag string) bool {
+	version := strings.TrimPrefix(tag, "desktop-v")
+	if version == tag {
+		version = strings.TrimPrefix(tag, "v")
+		if version == tag {
+			return false
+		}
+	}
+	_, e := parseVersion(version)
+	return e == nil && len(tag) <= 80
+}
+
+type ReleaseTag struct {
+	Tag         string `json:"tag"`
+	Version     string `json:"version"`
+	PublishedAt string `json:"published_at"`
+}
+
+// List all pages: /latest excludes the beta releases used by this project.
+func ReleaseTags() ([]ReleaseTag, error) {
+	result := []ReleaseTag{}
+	for page := 1; page <= 20; page++ {
+		var rows []struct {
+			Tag       string `json:"tag_name"`
+			Draft     bool   `json:"draft"`
+			Published string `json:"published_at"`
+		}
+		if e := fetchJSON(fmt.Sprintf("https://api.github.com/repos/%s/releases?per_page=100&page=%d", Repository, page), &rows); e != nil {
+			return nil, e
+		}
+		for _, r := range rows {
+			if r.Draft || !validReleaseTag(r.Tag) {
+				continue
+			}
+			v := strings.TrimPrefix(strings.TrimPrefix(r.Tag, "desktop-"), "v")
+			result = append(result, ReleaseTag{Tag: r.Tag, Version: v, PublishedAt: r.Published})
+		}
+		if len(rows) < 100 {
+			// Desktop and host have independent version sequences. Desktop
+			// releases are the supported integrated product; legacy host tags follow.
+			sort.SliceStable(result, func(i, j int) bool {
+				a, b := result[i], result[j]
+				ad, bd := strings.HasPrefix(a.Tag, "desktop-"), strings.HasPrefix(b.Tag, "desktop-")
+				if ad != bd {
+					return ad
+				}
+				ge, _ := versionAtLeast(a.Version, b.Version)
+				eq, _ := versionAtLeast(b.Version, a.Version)
+				if ge && !eq {
+					return true
+				}
+				if eq && ge {
+					return a.PublishedAt > b.PublishedAt
+				}
+				return false
+			})
+			return result, nil
+		}
+	}
+	return nil, errors.New("版本目录超过查询上限，请稍后重试或联系维护者")
+}
+func ResolveTag(tag string) (Release, error) {
+	if !validReleaseTag(tag) {
+		return Release{}, errors.New("无效发行版本")
+	}
+	var published struct {
+		Tag       string `json:"tag_name"`
+		Draft     bool   `json:"draft"`
+		Published string `json:"published_at"`
+	}
+	if e := fetchJSON("https://api.github.com/repos/"+Repository+"/releases/tags/"+url.PathEscape(tag), &published); e != nil {
+		return Release{}, e
+	}
+	if published.Draft || published.Tag != tag {
+		return Release{}, errors.New("版本尚未公开发布")
+	}
+	var commit struct {
+		SHA string `json:"sha"`
+	}
+	if e := fetchJSON("https://api.github.com/repos/"+Repository+"/commits/"+url.PathEscape(tag), &commit); e != nil {
+		return Release{}, e
+	}
+	if !commitPattern.MatchString(commit.SHA) {
+		return Release{}, errors.New("版本提交无效")
+	}
+	var manifest struct {
+		Format  string `json:"format"`
+		Version string `json:"app_version"`
+	}
+	if e := fetchJSON("https://raw.githubusercontent.com/"+Repository+"/"+commit.SHA+"/launcher-manifest.json", &manifest); e != nil {
+		return Release{}, e
+	}
+	if _, e := parseVersion(manifest.Version); e != nil || manifest.Format != "ember-deploy/v1" {
+		return Release{}, errors.New("版本缺少有效宿主部署清单")
+	}
+	return Release{Version: manifest.Version, Commit: commit.SHA, Source: "release", Tag: tag, PublishedAt: published.Published, URL: "https://codeload.github.com/" + Repository + "/zip/" + commit.SHA}, nil
 }
 func (m *Manager) Check(id string) (Release, error) {
 	m.mu.Lock()
@@ -85,19 +172,57 @@ func (m *Manager) Check(id string) (Release, error) {
 	channel := i.Channel
 	m.mu.Unlock()
 	if channel == "bundled" {
-		var manifest struct {
-			Version string `json:"app_version"`
-		}
-		b, e := os.ReadFile(filepath.Join(m.config.BundledSource, "launcher-manifest.json"))
-		if e != nil {
-			return Release{}, e
-		}
-		if e = json.Unmarshal(b, &manifest); e != nil {
-			return Release{}, e
-		}
-		return Release{Version: manifest.Version, Commit: m.config.BundledCommit, Source: "bundled"}, nil
+		channel = "release"
 	}
-	return Resolve(channel)
+	r, e := m.resolveCached(channel)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	u := &UpdateStatus{CheckedAt: timestamp()}
+	if e != nil {
+		u.Error = e.Error()
+	} else {
+		u.Latest = &r
+		current := m.instances[id]
+		newer := r.Commit != current.Commit
+		if channel != "main" {
+			ge, err := versionAtLeast(strings.TrimPrefix(r.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+			if err == nil {
+				newer = ge && newer
+			}
+		}
+		u.Suppressed = current.IgnoredUpdate == r.Commit
+		u.Available = newer && !u.Suppressed && current.Commit != ""
+	}
+	m.updates[id] = u
+	return r, e
+}
+
+type releaseCache struct {
+	release Release
+	at      time.Time
+	err     error
+}
+
+func (m *Manager) resolveCached(channel string) (Release, error) {
+	// A shared cache prevents a 24-instance desktop from exhausting GitHub's
+	// unauthenticated quota at every startup. Failures remain retryable.
+	m.remoteMu.Lock()
+	defer m.remoteMu.Unlock()
+	if cached, ok := m.remoteCache[channel]; ok {
+		age := 5 * time.Minute
+		if cached.err != nil {
+			age = 30 * time.Second
+		}
+		if time.Since(cached.at) < age {
+			return cached.release, cached.err
+		}
+	}
+	r, e := Resolve(channel)
+	if m.remoteCache == nil {
+		m.remoteCache = map[string]releaseCache{}
+	}
+	m.remoteCache[channel] = releaseCache{release: r, at: time.Now(), err: e}
+	return r, e
 }
 func Download(url, path, expected string, max int64, progress func(int64, int64)) error {
 	if !strings.HasPrefix(url, "https://") {

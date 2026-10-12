@@ -8,6 +8,7 @@
 - [ ] 没有把本地源码样板或未经验证的旧下载引用表述成已发行、推荐或安全审计通过。
 - [ ] “试玩／推荐”有可核验独立证据；纯自动化校验不冒充真人试玩。
 - [ ] 运行 `python scripts/registry.py`；改动 Schema 时运行 `python scripts/creator.py schemas --check`。
+- [ ] 新公开发行投稿附锁定 submission / provenance；维护者独立运行 `community.py verify-release`，附审核记录与 `stage` 草稿。维护操作绑定原索引 SHA256；模拟数据不作为真实发行证据。
 - [ ] 目录更新不改写已有房间的精确作品／插件锁；没有静默升级或覆盖。
 
 ## 安全、权限与迁移

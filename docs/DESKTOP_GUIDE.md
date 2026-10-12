@@ -1,15 +1,13 @@
 # 余烬桌面 · 房主使用指南
 
-**版本分层（2026-10-03）：**当前开发源码元数据是桌面 / 部署引擎 `0.2.0-beta.3`、宿主 `2.4.0-beta.1`；当前 M2 工作尚未打包 / 发布。最新公开安装器仍为 `0.2.0-beta.1` / 宿主 `2.3.0-beta.1`，不能用它验收 M2。M2 源码状态见 [M2 交付记录](M2_DELIVERY.md)，当前公开安装器的基础开桌路径见 [M0 交付指南](M0_DELIVERY.md)，M1 玩法流程见 [M1 交付指南](M1_DELIVERY.md)。
-
-以下下载链接明确指向旧 beta.1 Release；历史安装 / 权限说明只适用于对应公开包。源码版本号不是可下载安装器，也不代表已发布。桌面测试版面向一位房主与同伴的同桌冒险，不是商业托管平台。
+**版本分层（2026-10-12）：**当前桌面 / 引擎源码 `0.2.0-beta.4`、宿主 `2.4.0-beta.1`。最新公开桌面是 beta.3（来源 `34c9cff`），尚无本次 beta.4 更新底座。测试本次功能见 [源码试用](SNAPSHOT_TESTING.md)，更新 / 回退语义见 [更新指南](UPDATE_GUIDE.md)。
 
 ## 下载与安装
 
-Windows 10 / 11 **x64**。当前可见下载是**旧版** [GitHub 桌面版本 Release `desktop-v0.2.0-beta.1`](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1)，不含当前 M2 源码改动：
+Windows 10 / 11 **x64**。当前可见下载是**旧版** [GitHub 桌面版本 Release `desktop-v0.2.0-beta.3`](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.3)，不含当前 M2 源码改动：
 
-- `ember-desktop-0.2.0-beta.1-x64-setup.exe`：推荐，图形安装向导、选择目录、桌面 / 开始菜单快捷方式。
-- `ember-desktop-0.2.0-beta.1-x64-portable.exe`：便携启动入口；实例与凭据仍保存到用户数据目录，不是随 U 盘完整迁移的绿色数据包。
+- `ember-desktop-0.2.0-beta.3-x64-setup.exe`：推荐，图形安装向导、选择目录、桌面 / 开始菜单快捷方式。
+- `ember-desktop-0.2.0-beta.3-x64-portable.exe`：便携启动入口；实例与凭据仍保存到用户数据目录，不是随 U 盘完整迁移的绿色数据包。
 - 对应 `.sha256`：对照 `Get-FileHash <文件> -Algorithm SHA256`。
 - `desktop-smoke.json`：本次发行构建的原生 Electron 自动化报告。
 
@@ -42,7 +40,7 @@ Windows 10 / 11 **x64**。当前可见下载是**旧版** [GitHub 桌面版本 R
 - **API 与配置**：保存 Gemini 知识模型、OpenAI-compatible 决策模型、兼容服务端 TTS 的地址 / 模型 / 密钥 / voice。密钥不回显；留空保留，点「清除此密钥」才删除。保存后重新启动实例生效。
 - 默认新房间使用无外部模型调用的 **演示主持**。准备好供应商设置后，在冒险桌「主持设置」启用真实双模型。配置存在不代表供应商连通、余额可用或模型 / voice 支持；未替你验证付费调用。
 - AI 地图 / 服务端 TTS 的显式生成可能独立收费；没有内置费用硬额度。供应商预算、发给同伴的邀请和插件信任由房主控制。
-- **实例概览**：启动、停止、检查随包版本、备份后更新到当前桌面包附带的本体、打开数据目录、配置名称 / 端口 / LAN。连接设置在停机时保存。
+- **实例概览**：启动、停止、检查 GitHub 最新本体、备份后更新到 GitHub 发行版或切换指定版本、打开数据目录、配置名称 / 端口 / LAN。连接设置在停机时保存。
 
 当前没有任意 GitHub 地址的一键插件执行、未审核在线商店或完整 D&D / CoC / 战棋规则。主题 / 地图 / 声音 / 骰子等模块化接口与模板已保留。
 
@@ -81,3 +79,7 @@ npm run package:win --prefix desktop
 Linux 开发 QA：`node desktop/scripts/preview.mjs` 在 `0.0.0.0:8765` 提供桌面布局和真实部署引擎的 **隔离开发预览**，数据在被 Git 忽略的 `artifacts/desktop-preview`。仅在受控开发环境使用：没有生产管理认证，不可当作 LAN 管理服务部署；禁止系统文件对话框 / shell / 嵌入游戏操作。`python tests/browser_desktop.py` 用真实 Chromium 验证创建环境、开桌与浏览器同伴；指定 `EMBER_CHROMIUM_PATH` 可复用现有浏览器。
 
 原生 CI 在 Windows 构建 NSIS 与 portable，安装 NSIS 后执行真实 Electron 冒烟并上传报告。报告中的宿主环境使用 CI 已装 Python / 依赖，**不覆盖新电脑首次官方下载流程、签名、真实网卡 / 防火墙和付费供应商验收**。发行需测试成功后显式 `[desktop-release]` 标记；同一个版本标签不可悄悄替换二进制。
+
+## 更新与版本管理
+
+从桌面 / 部署引擎 `0.2.0-beta.4` 源码起，标题栏新增“更新与版本”。启动时及每六小时检查 GitHub 发行版，支持点击更新、安装版与便携版切换历史版本、主动回退后消除同一新版提示。本体切换自动备份和预检，按版本保留数据快照。详情及旧包迁移边界见 [UPDATE_GUIDE.md](UPDATE_GUIDE.md)。当前是源码 / 本地开发构建，未发布新的公开安装包。

@@ -1,0 +1,6 @@
+{
+  "format": "ember.author-sdk-source/v1",
+  "version": "0.2.0",
+  "plugin_api": 1,
+  "python_minimum": "3.11"
+}

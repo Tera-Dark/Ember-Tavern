@@ -5,14 +5,18 @@ import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {EngineClient,HostController,allowedExternal,trustedFrame,id} from './core';
 import {importPreset} from './preset-import';
+import {DesktopUpdates,launchInstall} from './updates';
 import type {RPCMethod,BuildInfo} from '../types';
 
 let window:BrowserWindow;let engine:EngineClient;let controller:HostController;let rendererURL='';let closing=false;
+let updates:DesktopUpdates;
+let updateTimer:ReturnType<typeof setInterval>;
+let desktopInstalling=false;
 const games=new Map<number,{instanceId:string;origin:string}>();
 if(!app.requestSingleInstanceLock())app.quit();
 app.on('second-instance',()=>{window?.show();window?.focus()});
 app.on('window-all-closed',()=>app.quit());
-app.on('before-quit',event=>{if(closing)return;event.preventDefault();closing=true;Promise.resolve(engine?.stop()).finally(()=>{for(const item of BrowserWindow.getAllWindows())item.destroy();app.quit();});});
+app.on('before-quit',event=>{if(closing)return;event.preventDefault();closing=true;clearInterval(updateTimer);Promise.resolve(engine?.stop()).finally(()=>{for(const item of BrowserWindow.getAllWindows())item.destroy();app.quit();});});
 
 async function openGame(instanceId:string,roomId:string){
   const instance=await controller.instance(id(instanceId));await controller.hostSession(instanceId);
@@ -36,6 +40,7 @@ app.whenReady().then(async()=>{
   engine=new EngineClient({exe:join(resources,'bin',process.platform==='win32'?'ember-engine.exe':'ember-engine'),root,host:join(resources,'host'),commit,build,testPython:process.env.EMBER_DESKTOP_TEST_MODE==='1'?process.env.EMBER_DESKTOP_TEST_PYTHON:undefined});
   try{await engine.start();}catch(error){if(process.env.EMBER_DESKTOP_TEST_MODE==='1')console.error('ENGINE_START_FAILED',String(error));else dialog.showErrorBox('余烬桌面无法启动',String(error));app.quit();return;}
   controller=new HostController(engine,{encode:value=>{if(!safeStorage.isEncryptionAvailable()||(process.platform==='linux'&&safeStorage.getSelectedStorageBackend()==='basic_text'))throw new Error('系统凭据加密不可用；不会明文保存房主密码');return safeStorage.encryptString(value).toString('base64');},decode:value=>safeStorage.decryptString(Buffer.from(value,'base64'))});
+  updates=new DesktopUpdates({root,version:app.getVersion(),executable:process.execPath,portable:process.env.PORTABLE_EXECUTABLE_FILE,packaged:app.isPackaged});
   window=new BrowserWindow({width:1380,height:920,minWidth:1020,minHeight:720,title:'余烬桌面',backgroundColor:'#131713',autoHideMenuBar:true,webPreferences:{preload:join(__dirname,'preload.cjs'),sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true}});
   rendererURL=pathToFileURL(join(__dirname,'renderer','index.html')).href;
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
@@ -46,6 +51,31 @@ app.whenReady().then(async()=>{
     if(!trustedFrame(event.sender.id,window.webContents.id,event.senderFrame?.url||'',rendererURL,event.senderFrame===event.sender.mainFrame))throw new Error('桌面请求被拒绝');
     if(!args||typeof args!=='object'||Array.isArray(args)||JSON.stringify(args).length>40000)throw new Error('请求格式错误');
     try{
+      if(method==='state')return {...await controller.state(),desktop_updates:updates.snapshot()};
+      if(desktopInstalling&&method!=='window')throw new Error('正在切换桌面版本，请等待重新启动');
+      if(method==='desktopUpdateCheck')return updates.check();
+      if(method==='desktopUpdateInstall'){
+        if(typeof args.tag!=='string')throw new Error('请选择发行版本');
+        if(['downloading','ready','installing'].includes(updates.snapshot().phase))throw new Error('已有版本切换任务');
+        const current=await controller.state();if(current.tasks.some(item=>item.status==='running'))throw new Error('请等待实例安装／更新任务完成，再切换桌面版本');
+        void (async()=>{
+          let stopped=false;
+          try{
+            const downloaded=await updates.download(args.tag);
+            desktopInstalling=true;
+            const latest=await controller.state();if(latest.tasks.some(item=>item.status==='running'))throw new Error('实例正在执行任务，安装包已保留，请完成任务后重试');
+            await engine.stop();
+            stopped=true;
+            await updates.markApplying(downloaded.release,latest.instances.filter(item=>item.status==='running').map(item=>item.id));
+            await launchInstall({path:downloaded.path,executable:process.execPath,portable:process.env.PORTABLE_EXECUTABLE_FILE,root});
+            app.quit();
+          }catch(error:any){
+            if(stopped)await engine.start().catch(()=>{});
+            desktopInstalling=false;updates.failed(error.message||'桌面版本切换失败');
+          }
+        })();
+        return {started:true};
+      }
       if(method==='openGame'){await openGame(args.instanceId,args.roomId);return {opened:true};}
       if(method==='window'){if(args.action==='minimize')window.minimize();else if(args.action==='close')window.close();return {};}
       if(method==='clipboard'){if(typeof args.text!=='string'||args.text.length>5000)throw new Error('文字过长');clipboard.writeText(args.text);return {copied:true};}
@@ -62,5 +92,17 @@ app.whenReady().then(async()=>{
     }catch(error){throw new Error(error instanceof Error?error.message:'操作失败');}
   });
   await window.loadURL(rendererURL);
+  void updates.resumeInstances().then(async ids=>{
+    for(const instanceId of ids)await engine.request('/api/instances/'+id(instanceId)+'/start','POST',{}).catch(()=>{});
+  }).catch(()=>{});
+  if(process.env.EMBER_DESKTOP_TEST_MODE!=='1'){
+    const checkAll=async()=>{
+      await updates.check();
+      const state=await controller.state();
+      for(const instance of state.instances)if(instance.commit)await engine.request('/api/instances/'+instance.id+'/check','POST',{}).catch(()=>{});
+    };
+    void checkAll().catch(()=>{});
+    updateTimer=setInterval(()=>void checkAll().catch(()=>{}),6*60*60*1000);updateTimer.unref();
+  }
   if(process.env.EMBER_DESKTOP_TEST_MODE==='1')await window.webContents.executeJavaScript('window.__desktopSmoke = true');
 }).catch(error=>{if(!closing){if(process.env.EMBER_DESKTOP_TEST_MODE==='1')console.error('DESKTOP_START_FAILED',String(error));else dialog.showErrorBox('余烬桌面',String(error));}app.quit()});

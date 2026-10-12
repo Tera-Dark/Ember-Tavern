@@ -131,6 +131,15 @@ func (a *API) Handler() http.Handler {
 		var task engine.Task
 		var err error
 		switch action {
+		case "switch-version":
+			var v struct {
+				Tag string `json:"tag"`
+			}
+			if e := decode(r, &v); e != nil {
+				failure(w, e)
+				return
+			}
+			task, err = a.Manager.SwitchVersion(id, v.Tag)
 		case "install":
 			task, err = a.Manager.Install(id, true)
 		case "start":
@@ -192,6 +201,14 @@ func (a *API) Handler() http.Handler {
 			return
 		}
 		answer(w, 202, task)
+	})
+	mux.HandleFunc("GET /api/releases", func(w http.ResponseWriter, r *http.Request) {
+		rows, e := engine.ReleaseTags()
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, rows)
 	})
 	mux.HandleFunc("GET /api/instances/{id}/settings", func(w http.ResponseWriter, r *http.Request) {
 		result, e := a.Manager.Settings(r.PathValue("id"))

@@ -1,0 +1,90 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "ember.community-release/v1",
+      "default": "ember.community-release/v1",
+      "title": "Format",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "plugin",
+        "preset"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]{2,47}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "version": {
+      "maxLength": 32,
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Version",
+      "type": "string"
+    },
+    "repository": {
+      "maxLength": 240,
+      "title": "Repository",
+      "type": "string"
+    },
+    "source_commit": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Source Commit",
+      "type": "string"
+    },
+    "sdk_commit": {
+      "pattern": "^[a-f0-9]{40}$",
+      "title": "Sdk Commit",
+      "type": "string"
+    },
+    "tag": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Tag",
+      "type": "string"
+    },
+    "archive_name": {
+      "pattern": "^[a-z0-9][a-z0-9_.-]{0,99}\\.zip$",
+      "title": "Archive Name",
+      "type": "string"
+    },
+    "archive_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Archive Sha256",
+      "type": "string"
+    },
+    "archive_bytes": {
+      "exclusiveMinimum": 0,
+      "maximum": 8388608,
+      "title": "Archive Bytes",
+      "type": "integer"
+    },
+    "package_hash": {
+      "description": "预设内容锁；插件为规范归档路径 / 字节的审计指纹，不授予运行时信任",
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Package Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "version",
+    "repository",
+    "source_commit",
+    "sdk_commit",
+    "tag",
+    "archive_name",
+    "archive_sha256",
+    "archive_bytes",
+    "package_hash"
+  ],
+  "title": "CommunityRelease",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:community-release:v1"
+}

@@ -21,6 +21,11 @@ body:
     validations:
       required: true
   - type: textarea
+    id: release-materials
+    attributes:
+      label: 锁定投稿材料与发行来源
+      description: "若申请公开包目录准入，请附 community.py prepare 生成的 SUBMISSION.md / submission.json，以及同一 Release 的 ZIP、SHA256、release-provenance.json 链接；说明精确作品提交与 SDK 提交。未发行时如实注明，不要伪造线上核验。维护者独立运行 verify-release。"
+  - type: textarea
     id: author-rights
     attributes:
       label: 作者署名与分发授权

@@ -1,0 +1,124 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "ember.registry-review/v1",
+      "default": "ember.registry-review/v1",
+      "title": "Format",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "plugin",
+        "preset"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z][a-z0-9-]{2,47}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "version": {
+      "maxLength": 32,
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "title": "Version",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "approve-catalog-entry",
+        "reject",
+        "needs-changes",
+        "archive",
+        "maintenance-needed",
+        "incompatible"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "reviewer": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Reviewer",
+      "type": "string"
+    },
+    "reason": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    },
+    "reviewed_at": {
+      "maxLength": 40,
+      "minLength": 20,
+      "title": "Reviewed At",
+      "type": "string"
+    },
+    "input_sha256": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Input Sha256",
+      "type": "string"
+    },
+    "verification_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Verification Sha256"
+    },
+    "expected_index_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expected Index Sha256"
+    },
+    "resulting_index_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[a-f0-9]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resulting Index Sha256"
+    },
+    "scope": {
+      "const": "metadata-and-release-only",
+      "default": "metadata-and-release-only",
+      "title": "Scope",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "id",
+    "version",
+    "decision",
+    "reviewer",
+    "reason",
+    "reviewed_at",
+    "input_sha256"
+  ],
+  "title": "RegistryReview",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ember-tavern:registry-review:v1"
+}

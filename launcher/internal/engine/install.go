@@ -62,6 +62,9 @@ func envPython(folder string) string {
 	return filepath.Join(folder, "bin", "python")
 }
 func (m *Manager) install(t *Task, update bool) (err error) {
+	return m.installRelease(t, update, nil)
+}
+func (m *Manager) installRelease(t *Task, update bool, selected *Release) (err error) {
 	id := t.InstanceID
 	m.mu.Lock()
 	old := *m.instances[id]
@@ -76,7 +79,10 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 		localSource = m.config.BundledSource
 	}
 	var release Release
-	if localSource != "" {
+	if selected != nil {
+		release = *selected
+		localSource = ""
+	} else if localSource != "" {
 		var manifest struct {
 			Version string `json:"app_version"`
 		}
@@ -96,7 +102,7 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 		if commit == "" {
 			commit = "local-development"
 		}
-		release = Release{Version: manifest.Version, Commit: commit, Source: "bundled"}
+		release = Release{Version: manifest.Version, Commit: commit, Source: "bundled", Tag: "desktop-v" + LauncherVersion}
 	} else {
 		release, err = Resolve(old.Channel)
 		if err != nil {
@@ -106,6 +112,14 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	if update && release.Commit == old.Commit && m.config.LocalSource == "" {
 		m.log(t, "已经是当前通道最新版本；未执行重复安装")
 		return nil
+	}
+	downgrade := false
+	if selected != nil {
+		ge, e := versionAtLeast(strings.TrimPrefix(release.Version, "v"), strings.TrimPrefix(old.Version, "v"))
+		if validReleaseTag(release.Tag) && validReleaseTag(old.VersionTag) && strings.HasPrefix(release.Tag, "desktop-") == strings.HasPrefix(old.VersionTag, "desktop-") {
+			ge, e = versionAtLeast(strings.TrimPrefix(strings.TrimPrefix(release.Tag, "desktop-"), "v"), strings.TrimPrefix(strings.TrimPrefix(old.VersionTag, "desktop-"), "v"))
+		}
+		downgrade = e == nil && !ge
 	}
 	base, err := m.basePython(t)
 	if err != nil {
@@ -259,11 +273,19 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	// Test migration against a cloned data directory, before touching the user's real DB.
 	m.progress(t, 84, "预检数据库迁移与新服务")
 	testData := filepath.Join(work, "test-data")
-	if err = copyData(filepath.Join(m.path(id), "data"), testData); err != nil {
+	dataSource := originalData
+	if downgrade && commitPattern.MatchString(release.Commit) {
+		checkpoint := filepath.Join(m.path(id), "version-data", release.Commit, "data")
+		if info, e := os.Stat(checkpoint); e == nil && info.IsDir() {
+			dataSource = checkpoint
+			m.log(t, "回退使用目标版本离开时的数据快照；较新进度保存在版本备份中")
+		}
+	}
+	if err = copyData(dataSource, testData); err != nil {
 		rollback()
 		return err
 	}
-	oldDB := filepath.Join(originalData, "tavern.sqlite3")
+	oldDB := filepath.Join(dataSource, "tavern.sqlite3")
 	if _, e := os.Stat(oldDB); e == nil {
 		snapshotCode := "import sqlite3,sys; src=sqlite3.connect(\"file:\"+sys.argv[1]+\"?mode=ro\",uri=True); dst=sqlite3.connect(sys.argv[2]); src.backup(dst); dst.close(); src.close()"
 		os.Remove(filepath.Join(testData, "tavern.sqlite3"))
@@ -279,6 +301,43 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	if err = m.probe(id, t, testData); err != nil {
 		rollback()
 		return fmt.Errorf("新版本预检失败，已回退代码：%w", err)
+	}
+	// Preserve a compatible data checkpoint for every version we leave.
+	// Only publish the checkpoint after a successful copy / SQLite backup.
+	if selected != nil && commitPattern.MatchString(old.Commit) {
+		checkpoint := filepath.Join(m.path(id), "version-data", old.Commit)
+		stage := filepath.Join(work, "checkpoint")
+		if err = copyData(originalData, filepath.Join(stage, "data")); err != nil {
+			rollback()
+			return err
+		}
+		if _, e := os.Stat(filepath.Join(originalData, "tavern.sqlite3")); e == nil {
+			if err = m.run(t, 3*time.Minute, app, m.childEnv(id), oldRuntime, "-c", "import sqlite3,sys; s=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True); d=sqlite3.connect(sys.argv[2]); s.backup(d); d.close(); s.close()", filepath.Join(originalData, "tavern.sqlite3"), filepath.Join(stage, "data", "tavern.sqlite3")); err != nil {
+				rollback()
+				return err
+			}
+		}
+		if err = atomicJSON(filepath.Join(stage, "version.json"), old); err != nil {
+			rollback()
+			return err
+		}
+		if err = os.MkdirAll(filepath.Dir(checkpoint), 0700); err != nil {
+			rollback()
+			return err
+		}
+		prior := checkpoint + ".previous-" + t.ID
+		if _, e := os.Stat(checkpoint); e == nil {
+			if err = os.Rename(checkpoint, prior); err != nil {
+				rollback()
+				return err
+			}
+		}
+		if err = os.Rename(stage, checkpoint); err != nil {
+			_ = os.Rename(prior, checkpoint)
+			rollback()
+			return err
+		}
+		// Prior checkpoints are intentionally retained; no destructive cleanup.
 	}
 	if err = os.RemoveAll(previousData); err != nil {
 		rollback()
@@ -303,6 +362,18 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 	i := m.instances[id]
 	i.Version = release.Version
 	i.Commit = release.Commit
+	i.VersionTag = release.Tag
+	if selected != nil {
+		i.Channel = release.Source
+		if downgrade {
+			i.IgnoredUpdate = old.Commit
+			if u := m.updates[id]; u != nil && u.Latest != nil {
+				i.IgnoredUpdate = u.Latest.Commit
+			}
+		} else {
+			i.IgnoredUpdate = ""
+		}
+	}
 	i.UpdatedAt = timestamp()
 	if i.InstalledAt == "" {
 		i.InstalledAt = timestamp()
@@ -324,6 +395,14 @@ func (m *Manager) install(t *Task, update bool) (err error) {
 		return err
 	}
 	keepEnv = true
+	m.mu.Lock()
+	if u := m.updates[id]; u != nil && u.Latest != nil {
+		current := m.instances[id]
+		u.Suppressed = current.IgnoredUpdate == u.Latest.Commit
+		ge, e := versionAtLeast(strings.TrimPrefix(u.Latest.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+		u.Available = !u.Suppressed && u.Latest.Commit != current.Commit && (e != nil || ge)
+	}
+	m.mu.Unlock()
 	m.log(t, "版本已就绪；账号、世界、音频与自装插件仍保存在原实例数据目录")
 	return nil
 }
