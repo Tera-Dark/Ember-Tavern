@@ -83,10 +83,12 @@ export class HostController {
   async diagnostics(instanceId:string){const instance=await this.instance(instanceId);const settings=await this.engine.request('/api/instances/'+instanceId+'/settings');return localDiagnostics(instance,settings);}
   async invoke(method:RPCMethod,args:Record<string,any>={}):Promise<any>{
     if(method==='state')return this.state();
+    if(method==='instanceVersions')return this.engine.request('/api/releases');
     if(method==='recoverIndex')return this.engine.request('/api/index-recovery/'+id(args.entryId),'POST',{confirm_stopped:args.confirmStopped===true});
     if(method==='createInstance'){if(typeof args.name!=='string'||args.name.length>48)throw new Error('请填写实例名称');return this.engine.request('/api/instances','POST',{name:args.name,channel:'bundled',port:Number(args.port)||0,lan:args.lan!==false,start:true});}
     const instanceId=id(args.instanceId);const prefix='/api/instances/'+instanceId;
     switch(method){
+      case 'switchInstanceVersion':{if(typeof args.tag!=='string'||! /^(?:desktop-)?v[0-9A-Za-z.+-]{5,70}$/.test(args.tag))throw new Error('无效发行版本');this.tokens.delete(instanceId);return this.engine.request(prefix+'/switch-version','POST',{tag:args.tag});}
       case 'instanceAction':{if(!['install','start','stop','update','check','folder'].includes(args.action))throw new Error('不支持的操作');if(args.action==='stop')this.tokens.delete(instanceId);return this.engine.request(prefix+'/'+args.action,'POST',{});}
       case 'configureInstance':return this.engine.request(prefix,'PUT',{name:args.name,channel:args.channel,port:Number(args.port),lan:!!args.lan});
       case 'diagnostics':return this.diagnostics(instanceId);

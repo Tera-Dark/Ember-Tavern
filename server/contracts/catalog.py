@@ -5,10 +5,12 @@ from .presets import PRESET_MODELS
 from .campaign_state import CampaignState
 from .rules_m3 import Dnd5eSheet, StrategyOrder
 from .registry import RegistryIndex
+from .community import CommunityRelease,RegistrySubmission,RegistryReview
 
 AUTHOR_MODELS = {**CONTENT_MODELS, **PRESET_MODELS}
 CORE_MODELS = {'campaign-state': CampaignState, 'dnd5e-sheet': Dnd5eSheet,
-               'strategy-order': StrategyOrder, 'registry-index': RegistryIndex}
+               'strategy-order': StrategyOrder, 'registry-index': RegistryIndex,
+               'community-release':CommunityRelease,'registry-submission':RegistrySubmission,'registry-review':RegistryReview}
 CONTENT_FORMATS = {kind: model.model_fields['format'].annotation.__args__[0] for kind, model in CONTENT_MODELS.items()}
 
 

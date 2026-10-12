@@ -38,7 +38,7 @@ body:
     id: evidence
     attributes:
       label: 事实依据与期望的目录状态
-      description: 说明复现、官方兼容性证据、许可文本或作者撤下请求。请勿推断未经核实的作者身份。
+      description: 说明复现、官方兼容性证据、许可文本或作者撤下请求。维护者可用 community.py maintenance 按原索引 SHA256 生成精确版本草稿，需附审核理由；保留旧版本与房间锁。请勿推断未经核实的作者身份。
     validations:
       required: true
   - type: checkboxes

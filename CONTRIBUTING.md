@@ -1,6 +1,6 @@
 # 内容作者与模块开发者的贡献入口
 
-项目仓库：https://github.com/Tera-Dark/Ember-Tavern。当前开发源码元数据为宿主／网页 `2.4.0-beta.1`、桌面／部署引擎 `0.2.0-beta.3`、Plugin API `1`；最近公开桌面 Release 仍是旧 `desktop-v0.2.0-beta.1`／宿主 `2.3.0-beta.1`，没有经过核验的新安装包。M4 目录与投稿流程目前仍在建设中，状态见 [M4 进度记录](docs/M4_DELIVERY.md)。仓库正式 LICENSE 仍由拥有者确定；贡献／示例不等于已授予所有素材许可。
+项目仓库：https://github.com/Tera-Dark/Ember-Tavern。当前开发源码元数据为宿主／网页 `2.4.0-beta.1`、桌面／部署引擎 `0.2.0-beta.4`、Plugin API `1`；2026-10-12 核对的最新公开桌面 Release 是 `desktop-v0.2.0-beta.3`／宿主 `2.4.0-beta.1`；本次 beta.4 尚无公开 Release。[本次源码试用](docs/SNAPSHOT_TESTING.md)已获拥有者授权。M4 目录与投稿流程目前仍在建设中，状态见 [M4 进度记录](docs/M4_DELIVERY.md)。仓库正式 LICENSE 仍由拥有者确定；贡献／示例不等于已授予所有素材许可。
 
 ## 先选择正确的一层
 

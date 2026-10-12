@@ -8,6 +8,11 @@ body:
     validations:
       required: true
   - type: textarea
+    id: release-materials
+    attributes:
+      label: 发行与目录投稿材料（如已发行）
+      description: "提供精确版本、作品与 SDK commit、ZIP / SHA256 / release-provenance.json 链接及 community.py prepare 输出。此材料不授予 Python 代码信任；维护者独立核验与审查。"
+  - type: textarea
     id: contracts
     attributes:
       label: requires / uses / provides / hooks / capabilities

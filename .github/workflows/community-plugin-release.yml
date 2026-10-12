@@ -72,17 +72,8 @@ jobs:
           for entry in source.rglob('*'):
               if entry.is_symlink():
                   raise SystemExit(f'symlinks are not allowed: {entry.relative_to(root)}')
-          manifest_path = source / 'plugin.json'
-          if not manifest_path.is_file() or manifest_path.stat().st_size > 64 * 1024:
-              raise SystemExit('a bounded plugin.json is required')
-          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-          if not manifest.get('authors') or not str(manifest.get('license', '')).strip() or str(manifest.get('license', '')).strip().upper() == 'UNLICENSED':
-              raise SystemExit('public plugin releases require author attribution and an explicit license')
-          expected_tag = f"plugin-{manifest['id']}-v{manifest['version']}"
-          if os.environ['RELEASE_TAG'] != expected_tag:
-              raise SystemExit(f"release tag must be exactly {expected_tag}")
           PY
-          python ember-sdk/scripts/creator.py validate "submission/$PLUGIN_PATH"
+          python ember-sdk/scripts/creator.py release-check "submission/$PLUGIN_PATH" --tag "$RELEASE_TAG"
       - name: Build plugin archive and actual SHA-256
         env:
           PLUGIN_PATH: ${{ inputs.plugin_path }}
@@ -91,8 +82,15 @@ jobs:
           python ember-sdk/scripts/plugins.py package "submission/$PLUGIN_PATH" release/plugin.zip
           cd release
           sha256sum plugin.zip > plugin.zip.sha256
+      - name: Bind archive to source and pinned SDK commits
+        env:
+          PLUGIN_PATH: ${{ inputs.plugin_path }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SDK_REF: ${{ inputs.sdk_ref }}
+        run: |
+          python ember-sdk/scripts/community.py provenance "submission/$PLUGIN_PATH" release/plugin.zip release/release-provenance.json --repository "https://github.com/$GITHUB_REPOSITORY" --source-commit "$GITHUB_SHA" --sdk-commit "$SDK_REF" --tag "$RELEASE_TAG"
       - name: Publish immutable release assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
-        run: gh release create "$RELEASE_TAG" release/plugin.zip release/plugin.zip.sha256 --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+        run: gh release create "$RELEASE_TAG" release/plugin.zip release/plugin.zip.sha256 release/release-provenance.json --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes

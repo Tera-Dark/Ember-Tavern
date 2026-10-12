@@ -9,11 +9,12 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
 
-const LauncherVersion = "0.2.0-beta.3"
+const LauncherVersion = "0.2.0-beta.4"
 const Repository = "Tera-Dark/Ember-Tavern"
 const RepositoryURL = "https://github.com/" + Repository
 const PythonVersion = "3.13.15"
@@ -31,6 +32,8 @@ type Instance struct {
 	InstalledAt     string `json:"installed_at,omitempty"`
 	UpdatedAt       string `json:"updated_at,omitempty"`
 	RecoveredFromID string `json:"recovered_from_id,omitempty"`
+	IgnoredUpdate   string `json:"ignored_update,omitempty"`
+	VersionTag      string `json:"version_tag,omitempty"`
 }
 type Task struct {
 	ID         string   `json:"id"`
@@ -46,19 +49,29 @@ type Task struct {
 }
 type View struct {
 	Instance
-	Status   string   `json:"status"`
-	URL      string   `json:"url,omitempty"`
-	PID      int      `json:"pid,omitempty"`
-	DataPath string   `json:"data_path"`
-	LANURLs  []string `json:"lan_urls"`
-	Task     *Task    `json:"task,omitempty"`
-	Error    string   `json:"error,omitempty"`
+	Status   string        `json:"status"`
+	URL      string        `json:"url,omitempty"`
+	PID      int           `json:"pid,omitempty"`
+	DataPath string        `json:"data_path"`
+	LANURLs  []string      `json:"lan_urls"`
+	Task     *Task         `json:"task,omitempty"`
+	Error    string        `json:"error,omitempty"`
+	Update   *UpdateStatus `json:"update,omitempty"`
 }
 type Release struct {
-	Version string `json:"version"`
-	Commit  string `json:"commit"`
-	Source  string `json:"source"`
-	URL     string `json:"url"`
+	Version     string `json:"version"`
+	Commit      string `json:"commit"`
+	Source      string `json:"source"`
+	URL         string `json:"url"`
+	Tag         string `json:"tag,omitempty"`
+	PublishedAt string `json:"published_at,omitempty"`
+}
+type UpdateStatus struct {
+	Latest     *Release `json:"latest,omitempty"`
+	Available  bool     `json:"available"`
+	Suppressed bool     `json:"suppressed"`
+	CheckedAt  string   `json:"checked_at"`
+	Error      string   `json:"error,omitempty"`
 }
 type Config struct {
 	Root             string
@@ -120,6 +133,8 @@ type runtimeProcess struct {
 type Manager struct {
 	mu            sync.Mutex
 	runtimeMu     sync.Mutex
+	remoteMu      sync.Mutex
+	remoteCache   map[string]releaseCache
 	config        Config
 	instances     map[string]*Instance
 	tasks         map[string]*Task
@@ -133,6 +148,7 @@ type Manager struct {
 	quarantined   []indexRecord
 	indexOriginal []byte
 	indexBackup   string
+	updates       map[string]*UpdateStatus
 }
 
 func New(config Config) (*Manager, error) {
@@ -143,7 +159,7 @@ func New(config Config) (*Manager, error) {
 	if err := os.MkdirAll(config.Root, 0700); err != nil {
 		return nil, err
 	}
-	m := &Manager{config: config, instances: map[string]*Instance{}, tasks: map[string]*Task{}, active: map[string]string{}, processes: map[string]*runtimeProcess{}, errors: map[string]string{}}
+	m := &Manager{config: config, instances: map[string]*Instance{}, tasks: map[string]*Task{}, active: map[string]string{}, processes: map[string]*runtimeProcess{}, errors: map[string]string{}, updates: map[string]*UpdateStatus{}}
 	var lockErr error
 	m.lock, lockErr = acquireLock(filepath.Join(config.Root, "launcher.lock"))
 	if lockErr != nil {
@@ -249,6 +265,9 @@ func (m *Manager) Create(name, channel string, port int, lan bool) (View, error)
 func (m *Manager) viewLocked(id string) View {
 	i := m.instances[id]
 	v := View{Instance: *i, Status: "not_installed", DataPath: filepath.Join(m.path(id), "data"), LANURLs: lanURLs(i.Port, i.LAN), Error: m.errors[id]}
+	if u := m.updates[id]; u != nil {
+		v.Update = clone(u)
+	}
 	if i.Commit != "" {
 		v.Status = "ready"
 	}
@@ -365,7 +384,39 @@ func (m *Manager) Install(id string, start bool) (Task, error) {
 	})
 }
 func (m *Manager) Update(id string) (Task, error) {
-	return m.task(id, "update", func(t *Task) error { return m.install(t, true) })
+	return m.task(id, "update", func(t *Task) error {
+		// Development fixtures deliberately keep their local source.
+		if m.config.LocalSource != "" {
+			return m.install(t, true)
+		}
+		r, e := m.Check(id)
+		if e != nil {
+			return e
+		}
+		m.mu.Lock()
+		current := *m.instances[id]
+		m.mu.Unlock()
+		if r.Source != "main" {
+			ge, e := versionAtLeast(strings.TrimPrefix(r.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+			if e == nil && !ge {
+				m.log(t, "当前本体高于公开发行版，保留当前版本")
+				return nil
+			}
+		}
+		return m.installRelease(t, true, &r)
+	})
+}
+func (m *Manager) SwitchVersion(id, tag string) (Task, error) {
+	if !validReleaseTag(tag) {
+		return Task{}, errors.New("请选择有效的已发布版本")
+	}
+	return m.task(id, "switch", func(t *Task) error {
+		r, e := ResolveTag(tag)
+		if e != nil {
+			return e
+		}
+		return m.installRelease(t, true, &r)
+	})
 }
 func (m *Manager) Start(id string) (Task, error) {
 	return m.task(id, "start", func(t *Task) error { return m.start(id, t) })

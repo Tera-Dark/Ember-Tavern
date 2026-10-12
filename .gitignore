@@ -1,4 +1,7 @@
 .env
+.env.*
+!.env.example
+*.private.json
 .venv/
 node_modules/
 __pycache__/
@@ -32,3 +35,4 @@ desktop/.test-data/
 # Generated local release reports (published via CI artifacts, not Git)
 /desktop-smoke.json*
 /desktop-provenance.json
+/desktop-update-ui.json*

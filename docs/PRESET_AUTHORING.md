@@ -1,6 +1,6 @@
 # 玩法预设与剧本作者实战（v1）
 
-适用：当前源码宿主 **2.4.0-beta.1+**、桌面 / 引擎 **0.2.0-beta.3+**、Plugin API 1。本页讲的是**玩法组合**，不是模型采样“预设”，也不是存档。公开桌面 Release 仍为旧版，不能假设它含有此分支所有功能；源码 / 下载边界见 [M2 交付记录](M2_DELIVERY.md) 和 [M3 交付记录](M3_DELIVERY.md)。通用世界书 / 角色 / 主题与插件参考分别见 [CREATOR_GUIDE.md](CREATOR_GUIDE.md)、[PLUGIN_SDK.md](PLUGIN_SDK.md)。
+适用：当前源码宿主 **2.4.0-beta.1+**、桌面 / 引擎 **0.2.0-beta.4**、Plugin API 1。本页讲的是**玩法组合**，不是模型采样“预设”，也不是存档。公开桌面 Release 仍为旧版，不能假设它含有此分支所有功能；源码 / 下载边界见 [M2 交付记录](M2_DELIVERY.md) 和 [M3 交付记录](M3_DELIVERY.md)。通用世界书 / 角色 / 主题与插件参考分别见 [CREATOR_GUIDE.md](CREATOR_GUIDE.md)、[PLUGIN_SDK.md](PLUGIN_SDK.md)。
 
 ## 1. 你能做什么，不会自动做什么
 

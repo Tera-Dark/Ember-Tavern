@@ -386,6 +386,18 @@
       "kind": "strategy-order",
       "schema_path": "registry/strategy-order.schema.json",
       "rule_system": "ember-coop-settlement/v1"
+    },
+    {
+      "kind": "community-release",
+      "schema_path": "registry/community-release.schema.json"
+    },
+    {
+      "kind": "registry-submission",
+      "schema_path": "registry/registry-submission.schema.json"
+    },
+    {
+      "kind": "registry-review",
+      "schema_path": "registry/registry-review.schema.json"
     }
   ]
 }

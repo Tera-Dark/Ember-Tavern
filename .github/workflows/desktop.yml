@@ -78,6 +78,8 @@ jobs:
       - run: npm run prepare:host --prefix desktop
       - run: npm run build --prefix desktop
       - run: npm test --prefix desktop
+      - name: Verify native update helpers with synthetic executables
+        run: node desktop/tests/update-helper-smoke.cjs
       - name: Package installer and portable EXE (unsigned)
         shell: pwsh
         env:
@@ -124,6 +126,19 @@ jobs:
           }
       - name: Bind installed smoke and EXEs to this exact source commit
         run: node desktop/scripts/release-metadata.mjs create
+      - name: Verify update and rollback UI in the installed desktop
+        shell: pwsh
+        env:
+          GEMINI_API_KEY: ''
+          DECISION_API_KEY: ''
+          TTS_API_KEY: ''
+        run: |
+          $installPath=Join-Path $env:RUNNER_TEMP 'ember-installed'
+          $env:EMBER_SMOKE_EXE=(Resolve-Path "$installPath/余烬桌面.exe").Path
+          $env:EMBER_SMOKE_PYTHON=(python -c 'import sys;print(sys.executable)')
+          $env:EMBER_UPDATE_UI_REPORT=(Join-Path $pwd 'desktop-update-ui.json')
+          node desktop/tests/updates-ui-smoke.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -138,6 +153,7 @@ jobs:
             desktop-smoke.log
             backend-test.log
             desktop-package.log
+            desktop-update-ui.json*
           retention-days: 14
   publish:
     needs: [windows, first-table-browser]

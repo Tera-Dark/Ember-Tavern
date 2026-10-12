@@ -1,10 +1,10 @@
 # 余烬酒馆 · 模块化多人跑团
 
-**源码版本元数据：宿主 / 网页 2.4.0-beta.1 · 余烬桌面 / 部署引擎 0.2.0-beta.3 · Plugin API v1**
+**源码版本元数据：宿主 / 网页 2.4.0-beta.1 · 余烬桌面 / 部署引擎 0.2.0-beta.4 · Plugin API v1**
 
-> 这些是当前开发源码标注，不表示已有同版本公开安装器。本仓库最近公开桌面 Release 仍为 `desktop-v0.2.0-beta.1`（对应旧宿主 2.3.0-beta.1）；M3 源码切片与 M4 目录／社区流程第一批增量均未随新 EXE 发布。下载落差和构建来源状态见 [M2 交付记录](docs/M2_DELIVERY.md)、[M3 交付记录](docs/M3_DELIVERY.md) 与 [M4 进度记录](docs/M4_DELIVERY.md)。
+> 2026-10-12 核对：最新公开桌面 Release 为 `desktop-v0.2.0-beta.3`（宿主 2.4.0-beta.1，来源提交 `34c9cff`），公开资产包含 EXE、SHA256 和构建 / 安装报告。本次 beta.4 更新底座与 SDK 0.2.0 尚未公开发行。测试本次源码请看 [源码试用说明](docs/SNAPSHOT_TESTING.md)；阶段历史与当前进度见 [M4 记录](docs/M4_DELIVERY.md)。
 
-项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · 第一次下载请先看 [快速启动指南](QUICKSTART.md)。
+项目仓库：[Tera-Dark/Ember-Tavern](https://github.com/Tera-Dark/Ember-Tavern) · [本次源码试用](docs/SNAPSHOT_TESTING.md) · [快速启动指南](QUICKSTART.md)。
 
 只运行不需要 Node，已包含构建前端。多人同桌需访问**同一个服务器**，不要每人各起一个实例再互发邀请码。
 
@@ -12,19 +12,21 @@
 
 目前可演示／测试：标准创作契约、世界／角色导入导出、个人配色包、主持秘密的服务端投影、有预算的 AI 上下文预览、邀请轮换／成员移除、双账号房间、分配角色、AI 演示主持、检定、属性、世界书、检索、分支回档、方格地图生成、多人拖动预览与提交、台本编辑、本地语音 SDK、社区插件安装／隔离。真实供应商联网与音频听感需要你在服务器配置自己的密钥；**不会让你把密钥发聊天。**
 
-当前源码分支：[M4 社区生态进度](docs/M4_DELIVERY.md) · [M3 玩法竖向样板交付记录](docs/M3_DELIVERY.md) · [M2 状态 / 记忆 / 行动阶段快照](docs/M2_DELIVERY.md) · [M1 玩法预设交付](docs/M1_DELIVERY.md) · [预设／剧本作者教程](docs/PRESET_AUTHORING.md)。源码新增一个标注为实验的 SRD 5.2.1 有限 d20 战斗子集与一个原创合作 SLG-lite 经济样板；它们均不代表完整 5e 或完整 SLG。M4 当前只完成目录契约／离线校验、CI 与社区入口的第一批增量，不代表社区市场或最终验收。自动化只证明已编码合同，不证明 AI 叙事准确、安装包已发布或真人环境已验收。正式许可证仍待定；真人 / 朋友测试严格等 M4 完成后再安排。
+当前源码分支：[M4 社区生态进度](docs/M4_DELIVERY.md) · [M3 玩法竖向样板交付记录](docs/M3_DELIVERY.md) · [M2 状态 / 记忆 / 行动阶段快照](docs/M2_DELIVERY.md) · [M1 玩法预设交付](docs/M1_DELIVERY.md) · [预设／剧本作者教程](docs/PRESET_AUTHORING.md)。源码新增一个标注为实验的 SRD 5.2.1 有限 d20 战斗子集与一个原创合作 SLG-lite 经济样板；它们均不代表完整 5e 或完整 SLG。M4 已有目录契约、独立作者 SDK、投稿 / 核验 / 维护工具与 CI，不代表社区市场或最终验收。自动化只证明已编码合同，不证明 AI 叙事准确、安装包已发布或真人环境已验收。正式许可证仍待定；2026-10-12 仓库拥有者已授权他人下载当前源码试用，反馈不等于 M4 最终验收。
 
-历史阶段：[M0 第一批交付](docs/M0_DELIVERY.md)。公开 beta.1 下载落后于当前源码；不覆盖旧 EXE，也不把源码构建称为公开发行。
+历史阶段：[M0 第一批交付](docs/M0_DELIVERY.md)。公开 beta.3 下载尚无本次 beta.4 更新底座；不覆盖旧 EXE，也不把源码构建称为公开发行。
 
 下一阶段：[开发计划](docs/DEVELOPMENT_PLAN.md) · [长期核心要求](docs/CORE_REQUIREMENTS.md) · [AI 跑团需求调研](docs/AI_RPG_DEMAND_RESEARCH.md) · [文档入口](docs/README.md)。
 
 先读：[整体架构](docs/ARCHITECTURE.md) · [创作指南](docs/CREATOR_GUIDE.md) · [LAN 使用](docs/LAN_DEPLOYMENT.md) · [分阶段路线图](docs/ROADMAP.md)。
 
+新增底座（源码 / 本地开发构建）：GitHub 自动检查、点击更新桌面、历史版本切换、本体版本快照与回退提示抑制。操作与旧安装包迁移边界见 [更新与版本管理](docs/UPDATE_GUIDE.md)。此改动尚未发布新的 GitHub 安装包。
+
 ## 房主桌面（Windows x64）
 
 参考 ComfyUI Desktop 的 **Electron + TypeScript + Vite** 架构，自己的 Vue 3 管理界面：本地实例卡片、自动安装、启停、房间与同伴、插件管理、API / LAN 配置、余烬 / 月下 / 浅色主题。沿用 Go 部署引擎与 Python / React 游戏宿主，不复制 Comfy 的 GPL 实现或品牌。
 
-[下载 Windows 安装器 / 便携 EXE](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1) · [房主桌面指南](docs/DESKTOP_GUIDE.md) · [桌面验收](docs/DESKTOP_TEST_REPORT.md) · [部署引擎维护](launcher/README.md)
+[下载已发布 beta.3 安装器 / 便携 EXE](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.3) · [本次 beta.4 源码测试](docs/SNAPSHOT_TESTING.md) · [房主桌面指南](docs/DESKTOP_GUIDE.md) · [桌面验收](docs/DESKTOP_TEST_REPORT.md) · [部署引擎维护](launcher/README.md)
 
 房主运行 EXE → 创建实例并等「运行中」→ 新建房间 → 为每位同伴创建 **身份＋验证密钥**。同伴只需在同一个可信 LAN 的浏览器打开房主地址入座，**不安装、不注册**。房主在嵌入式冒险桌分配角色、导入世界书、启用 AI 和其他模块。正式网页账号 + 通用邀请码的备用流程仍保留。
 
@@ -50,6 +52,8 @@ python -m uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 1 --ws-max
 **单 worker 是当前架构要求**：SQLite WAL＋进程内 WS／锁。不要直接改 workers 为多进程；需先换共享消息与协调存储。对公网开放前审查 CORS／Origin、HTTPS、费用限额与备份；不是商业 SLA 的生产 VTT。
 
 ## 创作标准
+
+作者工具新增独立 SDK `0.2.0` 的本地构建 / 校验、统一发布前检查与[投稿、发行核验和目录维护](docs/COMMUNITY_REVIEW.md)，入口见 [作者 SDK 指南](docs/AUTHOR_SDK.md)。SDK 与桌面、宿主分别版本化；当前未公开发行，M4 的授权与独立作者验收仍未完成。
 
 | 类型 | 标准 | 权限／边界 |
 | --- | --- | --- |
@@ -199,9 +203,9 @@ web/                    React 宿主、模块中心、通用 iframe 桥接
 static/                 已构建发行前端（直接运行用）
 templates/              worldbook、character、theme、只读UI／后端／骰盘模板
 plugin-packages/         示例发行 ZIP、实际 SHA256
-registry/               十个生成 Schema、本地作品／插件索引；不是在线商店
+registry/               十三个生成 Schema、本地作品／插件索引；不是在线商店
 launcher/               Go + WebView2 桌面启动器、任务与事务更新
-scripts/                creator、registry 校验、plugins、backup、restore
+scripts/                creator、author_sdk、community、registry、plugins、backup、restore
 .github/                CI、Release、Issue／PR 模板
 tests/                  自动测试、双浏览器内核／插件／创作隐私验收
 docs/                   架构／创作／LAN／路线图、SDK、测试报告、历史设计

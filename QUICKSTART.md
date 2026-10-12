@@ -1,12 +1,12 @@
 # 快速启动与部署指南
 
-当前开发分支按 [M2 交付记录](docs/M2_DELIVERY.md)更新；该工作尚未合并到默认分支，因此默认分支的 Code ZIP 和公开 Release 都不包含本轮 M2 改动。预设 / 剧本流程见 [M1 指南](docs/M1_DELIVERY.md)，恢复 / 入座基础见 [M0 指南](docs/M0_DELIVERY.md)。演示可先开桌，一个决策接口可启用真实单模型，Gemini 为高级双模型选项。
+当前源码包含 M2 / M3 玩法与 M4 作者工具、目录审核和更新底座。仓库拥有者已授权下载试用，具体获取方式和反馈项目见 [本次源码试用](docs/SNAPSHOT_TESTING.md)。预设 / 剧本流程见 [M1 指南](docs/M1_DELIVERY.md)，恢复 / 入座基础见 [M0 指南](docs/M0_DELIVERY.md)。演示可先开桌，一个决策接口可启用真实单模型，Gemini 为高级双模型选项。
 
-当前源码元数据为 **宿主 / 网页 2.4.0-beta.1、桌面 / 部署引擎 0.2.0-beta.3**；它不是公开 Release。下方 GitHub 桌面安装链接仍为 **0.2.0-beta.1 / 旧宿主 2.3.0-beta.1**，不包含本轮 M2 工作，且下载文件来源尚未独立复核。不要用它验收 M2。通用轻规则，不是完整 D&D / CoC 或战棋系统。无模型密钥也能体验演示主持、多人房间、地图、移动、台本和回档。
+当前源码元数据为 **宿主 / 网页 2.4.0-beta.1、桌面 / 部署引擎 0.2.0-beta.4、作者 SDK 0.2.0**。下方已公开桌面链接为 **beta.3**，没有本次 beta.4 更新底座；测试本次功能请使用当前源码或对应成功 CI 的测试构建。通用轻规则，不是完整 D&D / CoC 或战棋系统。无模型密钥也能体验演示主持、多人房间、地图、移动、台本和回档。
 
 ## 一键启动（Windows x64）
 
-旧版下载 [余烬桌面 0.2.0-beta.1](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.1)（不含当前源码分支的 M2 功能）中的 `ember-desktop-0.2.0-beta.1-x64-setup.exe`（或 portable）。只有房主安装。EXE 未签名，核对对应 SHA256；首次联网准备独立 Python / 依赖，不是完全离线包。
+已发布下载 [余烬桌面 0.2.0-beta.3](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.3)中的 `ember-desktop-0.2.0-beta.3-x64-setup.exe`（或 portable）。本次更新底座在 beta.4，见[源码试用说明](docs/SNAPSHOT_TESTING.md)。只有房主安装。EXE 未签名，核对对应 SHA256；首次联网准备独立 Python / 依赖，不是完全离线包。
 
 1. 打开「余烬桌面」→ 新建酒馆实例 → 创建并启动，等「运行中」。
 2. 「房间与同伴」→ 创建房间 → 为朋友生成独立的身份与验证密钥。

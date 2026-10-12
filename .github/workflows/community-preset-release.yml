@@ -57,7 +57,6 @@ jobs:
           import sys
           from pathlib import Path
           sys.path.insert(0, str(Path('ember-sdk').resolve()))
-          from server.presets.codec import load_folder
           root = Path('submission').resolve()
           raw = os.environ['PRESET_PATH']
           relative = Path(raw)
@@ -75,18 +74,8 @@ jobs:
           for entry in source.rglob('*'):
               if entry.is_symlink():
                   raise SystemExit(f'symlinks are not allowed: {entry.relative_to(root)}')
-          package = load_folder(source)
-          metadata = package.manifest['metadata']
-          if not metadata['authors'] or not metadata['license'].strip() or metadata['license'].strip().upper() == 'UNLICENSED':
-              raise SystemExit('public preset releases require author attribution and an explicit license')
-          if package.warnings:
-              raise SystemExit('all bundled components need declared authors and licenses: ' + ' | '.join(package.warnings))
-          expected_tag = f"preset-{metadata['id']}-v{metadata['version']}"
-          if os.environ['RELEASE_TAG'] != expected_tag:
-              raise SystemExit(f"release tag must be exactly {expected_tag}")
-          print(f"Validated {metadata['id']}@{metadata['version']} package_hash={package.package_hash}")
           PY
-          python ember-sdk/scripts/creator.py validate "submission/$PRESET_PATH"
+          python ember-sdk/scripts/creator.py release-check "submission/$PRESET_PATH" --tag "$RELEASE_TAG"
       - name: Build data-only archive and hash the exact bytes
         env:
           PRESET_PATH: ${{ inputs.preset_path }}
@@ -95,8 +84,15 @@ jobs:
           python ember-sdk/scripts/creator.py package-preset "submission/$PRESET_PATH" "release/preset.zip"
           cd release
           sha256sum preset.zip > preset.zip.sha256
+      - name: Bind archive to source and pinned SDK commits
+        env:
+          PRESET_PATH: ${{ inputs.preset_path }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SDK_REF: ${{ inputs.sdk_ref }}
+        run: |
+          python ember-sdk/scripts/community.py provenance "submission/$PRESET_PATH" release/preset.zip release/release-provenance.json --repository "https://github.com/$GITHUB_REPOSITORY" --source-commit "$GITHUB_SHA" --sdk-commit "$SDK_REF" --tag "$RELEASE_TAG"
       - name: Publish immutable release assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
-        run: gh release create "$RELEASE_TAG" release/preset.zip release/preset.zip.sha256 --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes
+        run: gh release create "$RELEASE_TAG" release/preset.zip release/preset.zip.sha256 release/release-provenance.json --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes

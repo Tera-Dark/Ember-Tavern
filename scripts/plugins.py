@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Operator-only installer. Nothing fetched from GitHub is silently trusted or executed."""
-import argparse,hashlib,json,shutil,sys,tempfile,zipfile
+import argparse,hashlib,json,re,shutil,sys,tempfile,zipfile
 from pathlib import Path,PurePosixPath
 from urllib.request import HTTPRedirectHandler, build_opener
 from urllib.parse import urlsplit
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 from server.config import ROOT,settings
-from server.plugin_runtime.manager import package_hash,ID_PATTERN
+from server.package_integrity import package_hash
 from server.contracts.plugin import validate_manifest, needs_capability_grant
+
+ID_PATTERN=re.compile(r'^[a-z][a-z0-9-]{2,47}$')
 
 class HTTPSOnlyRedirect(HTTPRedirectHandler):
     def redirect_request(self,req,fp,code,msg,headers,newurl):

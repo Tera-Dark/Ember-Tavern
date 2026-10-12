@@ -1,8 +1,8 @@
 # 维护者发布指南
 
-目标仓库：https://github.com/Tera-Dark/Ember-Tavern。仓库已经存在，不需要再次 git init 或改写 origin。**更新于 2026-10-03：**当前源码元数据是宿主 / 网页 `2.4.0-beta.1`、桌面 / 部署引擎 `0.2.0-beta.3`；M2 / M3 均是当前开发源码，未随新 Release 发行。最新公开桌面 Release 仍为 `desktop-v0.2.0-beta.1` / 宿主 `2.3.0-beta.1`。Release dispatch 返回 403，Windows artifact 下载返回 EOF，因此没有新 EXE / SHA / smoke provenance 或 Release；详见 [M2 交付记录](M2_DELIVERY.md) 和 [M3 交付记录](M3_DELIVERY.md)。
+目标仓库：https://github.com/Tera-Dark/Ember-Tavern。**2026-10-12 核对：**当前宿主 / 网页 `2.4.0-beta.1`、桌面 / 引擎 `0.2.0-beta.4`、作者 SDK `0.2.0`。最新公开桌面为 `desktop-v0.2.0-beta.3`，来源提交 `34c9cff`，公开资产记录含 EXE / SHA256 / 原生安装报告。历史 dispatch 403 / Artifact EOF 记录留在阶段报告，不代表当前仓库连接状态。本次源码提交与 beta.4 / SDK 公开发行分别处理；不会覆盖既有资产。
 
-Arena 已连接 GitHub 时直接使用 git／gh，不提供密码、PAT、OAuth token 或验证码到聊天／源码／远程 URL。连接失败请在 Arena 重新连接。自己电脑首次使用 gh，可在本机走 `gh auth login` 的官方流程，不分享凭据。
+拥有者已授权当前源码提交、GitHub 仓库更新与外部下载试用，见 [源码试用说明](SNAPSHOT_TESTING.md)。使用已配置的 git / gh 凭据，不把密码、PAT、OAuth token 或验证码放进聊天、源码或远程 URL。
 
 ## 1. 合并前
 
@@ -10,7 +10,7 @@ Arena 已连接 GitHub 时直接使用 git／gh，不提供密码、PAT、OAuth 
 2. 审阅当前分支 diff，确认 .env、data、backups、creations、cache、浏览器运行 artifacts 和私人邀请／token 不在 Git／发行包；不硬编码供应商密钥。
 3. 以当前 [M2](M2_DELIVERY.md) / [M3](M3_DELIVERY.md) 交付记录和 CI 工作流为准运行 Schema、pytest、前端构建及发布所需检查；[TEST_REPORT.md](TEST_REPORT.md) 是 2026-09-30 的旧快照，不是当前验收规范。M3 当前已验证 schema、179 项后端测试、前端构建和 Python 编译，具体命令及边界见 M3 记录。付费 key 必须为空、使用隔离 DATA_DIR，不对真实团本实例跑 QA。
 4. 对隐私／规则／迁移变更审阅数据兼容性；对新资源审阅公开投影／能力／版本／冲突；回档不应恢复旧邀请和已退出成员。
-5. 将工作推送到**当前工作分支**并提 PR，检查真实 Actions／review。Arena 会话有固定工作分支，不在会话里换分支或直推 main；保留未覆盖验证边界。
+5. 将工作推送到独立工作分支并提 PR，检查真实 Actions／review；通过后合并 main，供测试者取得同一源码。保留未覆盖验证边界，不用 force push 或覆盖已有发行替代正常提交。
 
 ```bash
 git status --short

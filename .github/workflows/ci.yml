@@ -27,8 +27,16 @@ jobs:
         run: |
           python scripts/creator.py schemas --check
           python scripts/registry.py
+          python scripts/author_sdk.py build artifacts/ember-author-sdk.zip
+          python scripts/author_sdk.py verify artifacts/ember-author-sdk.zip
           python -m pytest -q
           python -m compileall -q server plugins scripts templates
+      - name: Author SDK development artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ember-author-sdk-python-${{ matrix.python }}
+          path: artifacts/ember-author-sdk.zip*
+          retention-days: 14
       - name: Reproducible release frontend
         run: |
           npm ci --prefix web
