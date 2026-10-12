@@ -7,7 +7,7 @@ export async function creatorDirectory(value:string){
  if(typeof value!=='string'||!isAbsolute(value)||value.length>4096||value.startsWith('\\\\'))throw new Error('请选择本机作品目录');
  let path=resolve(value);for(;;){const info=await lstat(path);if(!info.isDirectory()||info.isSymbolicLink())throw new Error('作品目录及父目录不能是链接或特殊文件');const parent=dirname(path);if(parent===path)break;path=parent;}return resolve(value);
 }
-export function creatorOutside(path:string,bases:string[]){for(const base of bases){const part=relative(resolve(base),resolve(path));if(!part||part!=='..'&&!part.startsWith('..'+sep)&&!isAbsolute(part))throw new Error('草稿与发行输出请放在酒馆、运行环境和桌面资源之外的独立目录');}}
+export function creatorOutside(path:string,bases:string[]){const contains=(a:string,b:string)=>{const part=relative(resolve(a),resolve(b));return !part||part!=='..'&&!part.startsWith('..'+sep)&&!isAbsolute(part);};for(const base of bases)if(contains(base,path)||contains(path,base))throw new Error('草稿与发行输出请放在酒馆、运行环境和桌面资源之外的独立目录，不能互相包含');}
 export class CreatorProjects {
  private projects:CreatorProject[]=[];private stamp:string|null=null;private tail:Promise<void>=Promise.resolve();error='';
  constructor(readonly root:string){}

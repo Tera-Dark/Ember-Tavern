@@ -10,6 +10,6 @@ test('future and externally changed project files are preserved rather than over
  const store=new CreatorProjects(root);await store.load();await store.register(join(root,'one'),'worldbook','One');const file=join(root,'creator-projects.private.json'),future='{"format":"future/v9","private":"preserve"}';await writeFile(file,future);await assert.rejects(store.register(join(root,'two'),'theme','Two'));assert.equal(await readFile(file,'utf8'),future);assert((await new CreatorProjects(root).load()).readOnly);
 }));
 test('native directory guards reject linked ancestors and managed or bundled output paths',()=>isolated(async root=>{
- const source=join(root,'source');await mkdir(source);assert.equal(await creatorDirectory(source),source);assert.throws(()=>creatorOutside(join(source,'draft'),[source]));assert.throws(()=>creatorOutside(source,[source]));creatorOutside(join(root,'other'),[source]);
+ const source=join(root,'source');await mkdir(source);assert.equal(await creatorDirectory(source),source);assert.throws(()=>creatorOutside(join(source,'draft'),[source]));assert.throws(()=>creatorOutside(source,[source]));assert.throws(()=>creatorOutside(root,[source]));creatorOutside(join(root,'other'),[source]);
  const link=join(root,'link');try{await symlink(source,link,process.platform==='win32'?'junction':'dir');}catch(e){if(e.code==='EPERM')return;throw e;}await assert.rejects(creatorDirectory(link));
 }));

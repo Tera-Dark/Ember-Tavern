@@ -70,3 +70,5 @@
 731b07b 的 Core 与 PR Launcher 通过；PR Desktop 38265274876 和 push Launcher 38265270452 实际失败，均指向 `TestDownloadCancellationClosesStreamAndDiscardsPartialFile`：取消使远端结束，读操作可能同时返回最后字节与 EOF，旧下载函数未在 EOF / 发布前核对 context，返回成功。没有把这两次失败隐藏为已通过。
 
 下载循环、进度回调后、关闭与文件发布前现在再次检查 context。取消会清理部分文件，保留已有目标；新增确定性的“最后字节 + EOF 同时返回，回调取消”用例。两类取消用例在本机重复 50 次通过，Go 普通全套通过；以修正提交的实际 CI 为准，旧 head 的某次成功不替代修正后的完整验收。
+
+取消修正提交 635798e 的本机完整 Go 子进程回归通过（177.134s）；PR Core / Launcher / Desktop 检查已成功，push Desktop 38266299042 仍须读终态。创作路径又补齐了双向包含检查：目录既不能位于酒馆 / 源码 / 运行资源内，也不能将这些目录包含为子目录，防止把整个管理目录作为作品扫描。对应目录保护用例通过。
