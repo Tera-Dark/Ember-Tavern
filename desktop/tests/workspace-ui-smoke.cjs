@@ -16,6 +16,7 @@ async function fixture(){
  window.emberDesktop={kind:'native',invoke:async(method,args={})=>{
   const qa=window.__qa;qa.calls.push({method,args});
   if(method==='state')return structuredClone(qa.state);
+  if(method==='creatorProjects')return {projects:[],readOnly:false};
   if(method==='workspaceLocation')return {root:qa.state.root,defaultRoot:qa.state.root,custom:false,minimumDesktop:'0.2.0-beta.4'};
   if(method==='installPreflight')return {root:qa.state.root,port:8183,availableBytes:10*1024**3,pythonVersion:'fixture-only',pythonBytes:null,checks:[{id:'directory',status:'passed',detail:'Synthetic directory check; no local files touched'}]};
   if(method==='desktopPreferences')return qa.prefs;

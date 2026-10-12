@@ -342,6 +342,27 @@ func (a *API) Handler() http.Handler {
 		}
 		answer(w, 202, task)
 	})
+	mux.HandleFunc("POST /api/instances/{id}/creator", func(w http.ResponseWriter, r *http.Request) {
+		var request engine.CreatorRequest
+		if e := decode(r, &request); e != nil {
+			failure(w, e)
+			return
+		}
+		task, e := a.Manager.Creator(r.PathValue("id"), request)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
+	})
+	mux.HandleFunc("GET /api/creator-results/{id}", func(w http.ResponseWriter, r *http.Request) {
+		result, e := a.Manager.CreatorResult(r.PathValue("id"))
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, result)
+	})
 	mux.HandleFunc("PUT /api/instances/{id}/runtime-settings", func(w http.ResponseWriter, r *http.Request) {
 		var values map[string]string
 		if e := decode(r, &values); e != nil {

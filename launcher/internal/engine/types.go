@@ -35,6 +35,7 @@ type Instance struct {
 	VersionTag      string `json:"version_tag,omitempty"`
 }
 type Task struct {
+	creatorResult    json.RawMessage
 	ResultInstanceID string   `json:"result_instance_id,omitempty"`
 	ID               string   `json:"id"`
 	InstanceID       string   `json:"instance_id"`
@@ -302,7 +303,9 @@ func (m *Manager) viewLocked(id string) View {
 		v.URL = localURL(i.Port)
 	}
 	if key := m.active[id]; key != "" {
-		v.Status = "busy"
+		if m.tasks[key].Kind != "creator" || m.processes[id] == nil {
+			v.Status = "busy"
+		}
 		v.Task = clone(m.tasks[key])
 	}
 	return v
@@ -379,7 +382,9 @@ func (m *Manager) taskWithOptions(id, kind string, options taskOptions, fn func(
 	t.StartAfter = options.StartAfter
 	m.tasks[t.ID] = t
 	m.active[id] = t.ID
-	delete(m.errors, id)
+	if kind != "creator" {
+		delete(m.errors, id)
+	}
 	m.persistTaskHistoryLocked()
 	snapshot := clone(*t)
 	m.taskWG.Add(1)
@@ -409,7 +414,9 @@ func (m *Manager) taskWithOptions(id, kind string, options taskOptions, fn func(
 				t.ErrorCode = "timeout"
 			}
 			t.Error = m.redact(id, err.Error())
-			m.errors[id] = t.Error
+			if kind != "creator" {
+				m.errors[id] = t.Error
+			}
 			t.Stage = "未完成，可查看日志重试"
 		} else {
 			t.Status = "success"

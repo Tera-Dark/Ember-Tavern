@@ -1,6 +1,6 @@
 import type {State,Instance,Diagnostic} from '../types';
 const statuses=new Set(['running','ready','not_installed','busy','error']);
-const kinds=new Set(['install','start','stop','update','switch','plugin-install','backup','restore']);
+const kinds=new Set(['install','start','stop','update','switch','plugin-install','creator','backup','restore']);
 const phases=new Set(['preparing','resolving','runtime','source','dependencies','validating','committing','cancelling','cancelled','failed','completed','interrupted']);
 const errors=new Set(['cancelled','timeout','interrupted','operation_failed']);
 const version=(value:unknown)=>typeof value==='string'&&/^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$/.test(value)?value:'unknown';
