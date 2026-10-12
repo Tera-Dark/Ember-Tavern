@@ -3,11 +3,13 @@ import {computed,onUnmounted,ref,watch} from 'vue';
 import {BookOpen,Check,Copy,KeyRound,Play,RefreshCw,Users,ShieldCheck} from 'lucide-vue-next';
 import {invoke} from '../bridge';
 import PresetChooser from './PresetChooser.vue';
+import ConnectionShare from './ConnectionShare.vue';
 import type {Instance,Room,Starter,Invite} from '../../types';
 const props=defineProps<{instance:Instance;native:boolean}>();
-const emit=defineEmits<{open:[roomId:string];error:[message:string];message:[message:string]}>();
+const emit=defineEmits<{open:[roomId:string];selected:[room:Room];error:[message:string];message:[message:string]}>();
 const starters=ref<Starter[]>([]);const rooms=ref<Room[]>([]);const current=ref<Room|null>(null);const invites=ref<Invite[]>([]);
 const selectedStarter=ref<'harbor'|'frontier'>('harbor');const title=ref('我们的第一夜');const identity=ref('');const issued=ref<Invite|null>(null);
+const selectedAddress=ref('');
 const busy=ref(false);const fetching=ref(false);const error=ref('');let disposed=false;let generation=0;
 const selected=computed(()=>starters.value.find(item=>item.id===selectedStarter.value));
 const currentStarter=computed(()=>starters.value.find(item=>item.world_title===current.value?.state?.world?.title));
@@ -56,10 +58,11 @@ async function fromPreset(room:Room){
   generation++;fetching.value=false;const epoch=generation;
   issued.value=null;remember(room.id);current.value=room;invites.value=[];
   rooms.value=[room,...rooms.value.filter(item=>item.id!==room.id)];
+  emit('selected',room);
   const guestList=await invoke<Invite[]>('guestInvites',{instanceId:props.instance.id,roomId:room.id});
   if(!disposed&&epoch===generation)invites.value=guestList;
 }
-async function continueRoom(roomId:string){await work(async()=>{generation++;fetching.value=false;issued.value=null;await reloadRoom(roomId);remember(roomId);});}
+async function continueRoom(roomId:string){await work(async()=>{generation++;fetching.value=false;issued.value=null;await reloadRoom(roomId);remember(roomId);if(current.value)emit('selected',current.value);});}
 async function issue(){if(!current.value)return;await work(async()=>{
   const reply=await invoke<{invite:Invite;room:Room}>('issueGuest',{instanceId:props.instance.id,roomId:current.value!.id,identity:identity.value.trim()});
   issued.value=reply.invite;identity.value='';await reloadRoom(current.value!.id);
@@ -88,10 +91,9 @@ onUnmounted(()=>{disposed=true;generation++;clearInterval(timer);issued.value=nu
       </section>
       <section v-if="current" class="panel"><div class="panel-title"><div><span class="eyebrow">YOUR SAVED ADVENTURE</span><h2>{{current.title}}</h2><p class="help-text">{{current.state?.world?.title}} · 第 {{current.state?.turn||0}} 轮 · 已保存到此实例</p></div><span class="badge">{{current.ai_mode==='demo'?'演示 · 无模型费用':'已有房间的真实模型模式 · 可能收费'}}</span></div>
         <h3><KeyRound :size="18"/>同伴只需要浏览器</h3><p class="help-text">入口地址、身份、验证密钥分开传递；密钥不放 URL。你也可以不邀请同伴，直接单人试用。</p>
-        <div v-if="links.length" class="address-list"><div v-for="url in links" :key="url"><code>{{url}}</code><button @click="copy(url)"><Copy :size="15"/>复制入口</button></div></div>
-        <p v-else class="warning">{{instance.lan?'没有发现 LAN 地址，请运行本机自检。':'当前仅本机，邀请同伴前需停止实例并开启 LAN。'}} 不要给朋友 localhost 或 0.0.0.0。</p>
+        <ConnectionShare :instance="instance" @selected="selectedAddress=$event" @message="emit('message',$event)"/>
         <form class="inline-form" @submit.prevent="issue"><input v-model="identity" aria-label="向导同伴身份" maxlength="24" required placeholder="每位同伴一个身份，例如小林"/><button class="secondary" :disabled="busy"><KeyRound :size="16"/>生成这位同伴的密钥</button></form>
-        <div v-if="issued?.verification_key" class="one-time-key"><div class="panel-title"><b>{{issued.identity}} · 密钥仅此一次显示</b><button class="text-button" @click="issued=null">隐藏密钥</button></div><input :value="issued.verification_key" aria-label="向导一次性显示的密钥" readonly @focus="($event.target as HTMLInputElement).select()"/><button class="secondary" :disabled="!links.length" @click="copy('浏览器地址：'+links[0]+'\n身份：'+issued.identity+'\n验证密钥：'+issued.verification_key)"><Copy :size="15"/>私下复制入座信息</button><p class="help-text">关闭向导后不再回显。丢失可重新生成，旧密钥立即失效；密钥不会存入浏览器本地存储。</p></div>
+        <div v-if="issued?.verification_key" class="one-time-key"><div class="panel-title"><b>{{issued.identity}} · 密钥仅此一次显示</b><button class="text-button" @click="issued=null">隐藏密钥</button></div><input :value="issued.verification_key" aria-label="向导一次性显示的密钥" readonly @focus="($event.target as HTMLInputElement).select()"/><button class="secondary" :disabled="!selectedAddress" @click="copy('浏览器地址：'+selectedAddress+'\n身份：'+issued.identity+'\n验证密钥：'+issued.verification_key)"><Copy :size="15"/>私下复制入座信息</button><p class="help-text">关闭向导后不再回显。丢失可重新生成，旧密钥立即失效；密钥不会存入浏览器本地存储。</p></div>
         <div class="guest-row" v-for="invite in invites" :key="invite.id"><Users :size="17"/><div><b>{{invite.identity}}</b><small>{{!invite.enabled?'已撤销':invite.user_id?'已验证入座':'等待同伴输入身份和密钥'}}</small></div></div>
         <hr/><h3>分配角色</h3><p class="help-text">同伴验证入座后会出现在列表。每人操控一位角色；改分配不会重置角色状态。稍后也可在冒险桌的角色档案修改。</p>
         <div v-for="character in characters" :key="character.id" class="character-assignment"><div><b>{{character.name}}</b><small>{{character.archetype}}</small></div><select :value="character.assigned_to||''" :aria-label="'分配角色 '+character.name" :disabled="busy" @change="assign(character.id,$event)"><option value="">未分配</option><option v-for="member in members" :key="member.id" :value="member.id">{{member.display_name}}{{member.role==='host'?'（房主）':''}}</option></select></div>

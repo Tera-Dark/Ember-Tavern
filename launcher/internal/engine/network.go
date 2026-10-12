@@ -225,10 +225,16 @@ func (m *Manager) resolveCached(channel string) (Release, error) {
 	return r, e
 }
 func Download(url, path, expected string, max int64, progress func(int64, int64)) error {
+	return DownloadContext(context.Background(), url, path, expected, max, progress)
+}
+func DownloadContext(ctx context.Context, url, path, expected string, max int64, progress func(int64, int64)) error {
 	if !strings.HasPrefix(url, "https://") {
 		return errors.New("下载只允许 HTTPS")
 	}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, e := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if e != nil {
+		return e
+	}
 	req.Header.Set("User-Agent", "Ember-Launcher/"+LauncherVersion)
 	response, e := HTTPClient.Do(req)
 	if e != nil {

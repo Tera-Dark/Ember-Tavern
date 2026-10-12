@@ -109,7 +109,7 @@ jobs:
         run: |
           $installPath=Join-Path $env:RUNNER_TEMP 'ember-installed'
           $installer=(Get-ChildItem desktop/dist/*-setup.exe | Select-Object -First 1).FullName
-          $install=Start-Process -FilePath $installer -ArgumentList "/S /D=$installPath" -Wait -PassThru
+          $install=Start-Process -FilePath $installer -ArgumentList "/S /D=$installPath" -WindowStyle Hidden -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "NSIS install failed: $($install.ExitCode)" }
           $env:EMBER_SMOKE_EXE=(Resolve-Path "$installPath/余烬桌面.exe").Path
           $env:EMBER_SMOKE_PYTHON=(python -c 'import sys;print(sys.executable)')
@@ -223,6 +223,10 @@ jobs:
       - run: npm ci --prefix web && npm run build --prefix web
       - run: npm run build --prefix desktop && npm test --prefix desktop
       - run: python -m playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium
+        working-directory: desktop
+      - name: Renderer experience and keyboard acceptance (synthetic IPC)
+        run: node desktop/tests/workspace-ui-smoke.cjs
       - name: Prepare isolated real host and private engine
         run: |
           mkdir -p desktop/resources/bin
@@ -245,6 +249,7 @@ jobs:
           path: |
             artifacts/desktop-m0-evidence/
             artifacts/desktop-m1-evidence/
+            artifacts/desktop-experience/renderer/
             artifacts-desktop-preview.log
           retention-days: 7
 

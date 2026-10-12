@@ -11,6 +11,8 @@
 - [M0 第一批交付 / 新手开桌 / 恢复与发布](M0_DELIVERY.md)：2026-10-02 阶段快照，宿主 2.3.0-beta.2、桌面 / 引擎 0.2.0-beta.2；是开发记录，不代表该版本已公开下载。
 - 版本对照：当前宿主 / 网页 2.4.0-beta.1、桌面 / 引擎 0.2.0-beta.4、SDK 0.2.0；最新公开桌面为 beta.3 / 宿主 2.4.0-beta.1。本次更新底座与 SDK 尚未公开发行。拥有者已授权外部试用，见 [源码试用](SNAPSHOT_TESTING.md)。
 
+- [桌面完整体验计划](DESKTOP_EXPERIENCE_PLAN.md) · [状态矩阵](DESKTOP_EXPERIENCE_STATE_MATRIX.md) · [执行记录](DESKTOP_EXPERIENCE_PROGRESS.md)：完整 A–F 仍在实施，区分本地代码验证与真实安装包 / 外部反馈。
+
 ## 当前计划与长期约束
 
 - [下一阶段开发计划](DEVELOPMENT_PLAN.md)：2026-10-12 状态入口；区分源码、公开下载、M2 自动验收、M3/M4 与真人测试门槛。

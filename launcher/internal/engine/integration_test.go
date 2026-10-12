@@ -45,6 +45,69 @@ func waitTask(t *testing.T, m *Manager, task Task, success bool) {
 	}
 	t.Fatal("integration task timed out")
 }
+
+func TestCancelPreparationKeepsOriginalRunningVersion(t *testing.T) {
+	source := fixtureApp(t)
+	m := integrationManager(t, source)
+	row, e := m.Create("cancel integration", "main", 0, false)
+	if e != nil {
+		t.Fatal(e)
+	}
+	initial, e := m.Install(row.ID, true)
+	if e != nil {
+		t.Fatal(e)
+	}
+	waitTask(t, m, initial, true)
+	before, _ := m.Get(row.ID)
+	marker := filepath.Join(m.path(row.ID), "data", "keep.txt")
+	if e = os.WriteFile(marker, []byte("original progress"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	appPath := filepath.Join(source, "server", "app.py")
+	original, e := os.ReadFile(appPath)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = os.WriteFile(appPath, append([]byte("import time\ntime.sleep(30)\n"), original...), 0600); e != nil {
+		t.Fatal(e)
+	}
+	update, e := m.Update(row.ID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	deadline := time.Now().Add(60 * time.Second)
+	entered := false
+	for time.Now().Before(deadline) {
+		for _, task := range m.Tasks() {
+			if task.ID == update.ID && task.Phase == "validating" {
+				entered = true
+				break
+			}
+		}
+		if entered {
+			break
+		}
+		time.Sleep(30 * time.Millisecond)
+	}
+	if !entered {
+		t.Fatal("candidate did not reach cancellable validation")
+	}
+	if e = m.CancelTask(update.ID); e != nil {
+		t.Fatal(e)
+	}
+	waitTask(t, m, update, false)
+	current, _ := m.Get(row.ID)
+	if current.Status != "running" || current.Commit != before.Commit || current.PID != before.PID {
+		t.Fatal("cancellation disturbed original service")
+	}
+	content, _ := os.ReadFile(marker)
+	if string(content) != "original progress" {
+		t.Fatal("original data changed")
+	}
+	if _, e = os.Stat(filepath.Join(m.path(row.ID), "work-"+update.ID)); !os.IsNotExist(e) {
+		t.Fatal("temporary candidate retained")
+	}
+}
 func fixtureApp(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()

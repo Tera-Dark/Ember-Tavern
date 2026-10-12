@@ -36,16 +36,26 @@ type Instance struct {
 	VersionTag      string `json:"version_tag,omitempty"`
 }
 type Task struct {
-	ID         string   `json:"id"`
-	InstanceID string   `json:"instance_id"`
-	Kind       string   `json:"kind"`
-	Status     string   `json:"status"`
-	Stage      string   `json:"stage"`
-	Percent    int      `json:"percent"`
-	Error      string   `json:"error,omitempty"`
-	Logs       []string `json:"logs"`
-	StartedAt  string   `json:"started_at"`
-	FinishedAt string   `json:"finished_at,omitempty"`
+	ID              string   `json:"id"`
+	InstanceID      string   `json:"instance_id"`
+	Kind            string   `json:"kind"`
+	Status          string   `json:"status"`
+	Stage           string   `json:"stage"`
+	Percent         int      `json:"percent"`
+	Error           string   `json:"error,omitempty"`
+	Logs            []string `json:"logs"`
+	StartedAt       string   `json:"started_at"`
+	FinishedAt      string   `json:"finished_at,omitempty"`
+	Phase           string   `json:"phase"`
+	Cancellable     bool     `json:"cancellable"`
+	CancelRequested bool     `json:"cancel_requested,omitempty"`
+	ErrorCode       string   `json:"error_code,omitempty"`
+	Retryable       bool     `json:"retryable"`
+	TargetTag       string   `json:"target_tag,omitempty"`
+	StartAfter      bool     `json:"start_after,omitempty"`
+	ctx             context.Context
+	cancel          context.CancelFunc
+	committing      bool
 }
 type View struct {
 	Instance
@@ -127,28 +137,34 @@ func checkName(name string) error {
 type runtimeProcess struct {
 	PID     int
 	done    chan struct{}
+	bound   chan struct{}
 	stop    func() error
 	started time.Time
 }
 type Manager struct {
-	mu            sync.Mutex
-	runtimeMu     sync.Mutex
-	remoteMu      sync.Mutex
-	remoteCache   map[string]releaseCache
-	config        Config
-	instances     map[string]*Instance
-	tasks         map[string]*Task
-	active        map[string]string
-	processes     map[string]*runtimeProcess
-	errors        map[string]string
-	closing       bool
-	lock          *os.File
-	ctx           context.Context
-	cancel        context.CancelFunc
-	quarantined   []indexRecord
-	indexOriginal []byte
-	indexBackup   string
-	updates       map[string]*UpdateStatus
+	mu              sync.Mutex
+	taskWG          sync.WaitGroup
+	closed          chan struct{}
+	runtimeMu       sync.Mutex
+	settingsMu      sync.RWMutex
+	runtimeSettings map[string]map[string]string
+	remoteMu        sync.Mutex
+	remoteCache     map[string]releaseCache
+	config          Config
+	instances       map[string]*Instance
+	tasks           map[string]*Task
+	active          map[string]string
+	processes       map[string]*runtimeProcess
+	errors          map[string]string
+	closing         bool
+	lock            *os.File
+	ctx             context.Context
+	cancel          context.CancelFunc
+	quarantined     []indexRecord
+	indexOriginal   []byte
+	indexBackup     string
+	updates         map[string]*UpdateStatus
+	historyError    string
 }
 
 func New(config Config) (*Manager, error) {
@@ -159,7 +175,7 @@ func New(config Config) (*Manager, error) {
 	if err := os.MkdirAll(config.Root, 0700); err != nil {
 		return nil, err
 	}
-	m := &Manager{config: config, instances: map[string]*Instance{}, tasks: map[string]*Task{}, active: map[string]string{}, processes: map[string]*runtimeProcess{}, errors: map[string]string{}, updates: map[string]*UpdateStatus{}}
+	m := &Manager{config: config, closed: make(chan struct{}), instances: map[string]*Instance{}, tasks: map[string]*Task{}, active: map[string]string{}, processes: map[string]*runtimeProcess{}, errors: map[string]string{}, updates: map[string]*UpdateStatus{}}
 	var lockErr error
 	m.lock, lockErr = acquireLock(filepath.Join(config.Root, "launcher.lock"))
 	if lockErr != nil {
@@ -182,6 +198,7 @@ func New(config Config) (*Manager, error) {
 		}
 	}
 	// Interrupted updates are rolled back before any process can start.
+	m.loadTaskHistory()
 	ready = true
 	return m, nil
 }
@@ -313,11 +330,30 @@ func (m *Manager) Tasks() []Task {
 	defer m.mu.Unlock()
 	rows := []Task{}
 	for _, t := range m.tasks {
-		rows = append(rows, clone(*t))
+		row := clone(*t)
+		row.Retryable = retryable(row)
+		rows = append(rows, row)
 	}
+	sort.Slice(rows, func(i, j int) bool {
+		a, _ := time.Parse(time.RFC3339Nano, rows[i].StartedAt)
+		b, _ := time.Parse(time.RFC3339Nano, rows[j].StartedAt)
+		if a.Equal(b) {
+			return rows[i].ID < rows[j].ID
+		}
+		return a.Before(b)
+	})
 	return rows
 }
 func (m *Manager) task(id, kind string, fn func(*Task) error) (Task, error) {
+	return m.taskWithOptions(id, kind, taskOptions{}, fn)
+}
+
+type taskOptions struct {
+	TargetTag  string
+	StartAfter bool
+}
+
+func (m *Manager) taskWithOptions(id, kind string, options taskOptions, fn func(*Task) error) (Task, error) {
 	m.mu.Lock()
 	if m.instances[id] == nil {
 		m.mu.Unlock()
@@ -331,36 +367,80 @@ func (m *Manager) task(id, kind string, fn func(*Task) error) (Task, error) {
 		m.mu.Unlock()
 		return Task{}, errors.New("启动器正在退出")
 	}
-	t := &Task{ID: ident(), InstanceID: id, Kind: kind, Status: "running", Stage: "准备任务", Logs: []string{}, StartedAt: timestamp()}
+	ctx, cancel := context.WithCancel(m.ctx)
+	t := &Task{ID: ident(), InstanceID: id, Kind: kind, Status: "running", Stage: "准备任务", Phase: "preparing", Cancellable: kind == "install" || kind == "update" || kind == "switch", Logs: []string{}, StartedAt: timestamp(), ctx: ctx, cancel: cancel}
+	t.StartedAt = time.Now().UTC().Format(time.RFC3339Nano)
+	t.TargetTag = options.TargetTag
+	t.StartAfter = options.StartAfter
 	m.tasks[t.ID] = t
 	m.active[id] = t.ID
 	delete(m.errors, id)
+	m.persistTaskHistoryLocked()
 	snapshot := clone(*t)
+	m.taskWG.Add(1)
 	m.mu.Unlock()
 	go func() {
+		defer m.taskWG.Done()
 		err := fn(t)
 		m.mu.Lock()
 		defer m.mu.Unlock()
+		if !t.committing && t.CancelRequested {
+			err = context.Canceled
+		}
+		t.cancel()
+		t.Cancellable = false
 		t.FinishedAt = timestamp()
 		delete(m.active, id)
-		if err != nil {
+		if errors.Is(err, context.Canceled) && t.CancelRequested {
+			t.Status = "cancelled"
+			t.Phase = "cancelled"
+			t.ErrorCode = "cancelled"
+			t.Stage = "已取消准备；原服务与数据保留，可重新开始"
+		} else if err != nil {
 			t.Status = "failed"
+			t.Phase = "failed"
+			t.ErrorCode = "operation_failed"
+			if errors.Is(err, context.DeadlineExceeded) {
+				t.ErrorCode = "timeout"
+			}
 			t.Error = m.redact(id, err.Error())
 			m.errors[id] = t.Error
 			t.Stage = "未完成，可查看日志重试"
 		} else {
 			t.Status = "success"
+			t.Phase = "completed"
 			t.Percent = 100
 			t.Stage = "已完成"
 		}
 		_ = atomicJSON(filepath.Join(m.path(id), "last-task.json"), t)
+		m.persistTaskHistoryLocked()
 	}()
 	return snapshot, nil
 }
 func (m *Manager) progress(t *Task, p int, stage string) {
 	m.mu.Lock()
+	if t.CancelRequested && !t.committing {
+		m.mu.Unlock()
+		return
+	}
 	t.Percent = p
 	t.Stage = stage
+	if t.Kind == "install" || t.Kind == "update" || t.Kind == "switch" {
+		switch {
+		case p < 12:
+			t.Phase = "resolving"
+		case p < 30:
+			t.Phase = "runtime"
+		case p < 45:
+			t.Phase = "source"
+		case p < 71:
+			t.Phase = "dependencies"
+		case p < 75:
+			t.Phase = "validating"
+		default:
+			t.Phase = "committing"
+		}
+	}
 	m.mu.Unlock()
 }
 func (m *Manager) log(t *Task, line string) {
@@ -373,7 +453,7 @@ func (m *Manager) log(t *Task, line string) {
 	}
 }
 func (m *Manager) Install(id string, start bool) (Task, error) {
-	return m.task(id, "install", func(t *Task) error {
+	return m.taskWithOptions(id, "install", taskOptions{StartAfter: start}, func(t *Task) error {
 		if e := m.install(t, false); e != nil {
 			return e
 		}
@@ -410,7 +490,7 @@ func (m *Manager) SwitchVersion(id, tag string) (Task, error) {
 	if !validReleaseTag(tag) {
 		return Task{}, errors.New("请选择有效的已发布版本")
 	}
-	return m.task(id, "switch", func(t *Task) error {
+	return m.taskWithOptions(id, "switch", taskOptions{TargetTag: tag}, func(t *Task) error {
 		r, e := ResolveTag(tag)
 		if e != nil {
 			return e
@@ -457,7 +537,11 @@ func (m *Manager) Configure(id, name, channel string, port int, lan bool) error 
 func (m *Manager) Close() {
 	m.mu.Lock()
 	if m.closing {
+		closed := m.closed
 		m.mu.Unlock()
+		if closed != nil {
+			<-closed
+		}
 		return
 	}
 	m.closing = true
@@ -472,8 +556,23 @@ func (m *Manager) Close() {
 	for _, id := range ids {
 		_ = m.stop(id)
 	}
+	// Keep the root lock until cancelled preparation / rollback / history
+	// writes finish, so a newly opened desktop cannot race those operations.
+	m.taskWG.Wait()
+	m.mu.Lock()
+	ids = nil
+	for id := range m.processes {
+		ids = append(ids, id)
+	}
+	m.mu.Unlock()
+	for _, id := range ids {
+		_ = m.stop(id)
+	}
 	if m.lock != nil {
 		_ = m.lock.Close()
+	}
+	if m.closed != nil {
+		close(m.closed)
 	}
 }
 func validID(id string) bool {
