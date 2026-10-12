@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -166,6 +167,44 @@ func TestDownloadCancellationClosesStreamAndDiscardsPartialFile(t *testing.T) {
 	}
 	if _, e = os.Stat(path + ".part"); !os.IsNotExist(e) {
 		t.Fatal("left partial download")
+	}
+}
+
+type cancelledFinalChunk struct{ sent bool }
+
+func (r *cancelledFinalChunk) Read(p []byte) (int, error) {
+	if r.sent {
+		return 0, io.EOF
+	}
+	r.sent = true
+	return copy(p, []byte("chunk")), io.EOF
+}
+
+type cancelledFinalTransport struct{}
+
+func (cancelledFinalTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return &http.Response{StatusCode: 200, ContentLength: 5, Body: io.NopCloser(&cancelledFinalChunk{})}, nil
+}
+func TestDownloadCancellationOnFinalBytesKeepsExistingDestination(t *testing.T) {
+	original := HTTPClient
+	HTTPClient = &http.Client{Transport: cancelledFinalTransport{}}
+	defer func() { HTTPClient = original }()
+	path := filepath.Join(t.TempDir(), "existing.zip")
+	if e := os.WriteFile(path, []byte("original verified file"), 0600); e != nil {
+		t.Fatal(e)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	e := DownloadContext(ctx, "https://download.invalid/test", path, "", 1024, func(_, _ int64) { cancel() })
+	if !errors.Is(e, context.Canceled) {
+		t.Fatal("final EOF published cancelled bytes", e)
+	}
+	data, e := os.ReadFile(path)
+	if e != nil || string(data) != "original verified file" {
+		t.Fatal("cancelled download replaced original", e)
+	}
+	if _, e = os.Stat(path + ".part"); !os.IsNotExist(e) {
+		t.Fatal("partial file retained")
 	}
 }
 func TestTaskHistoryRestoresFailureAndPreservesFutureOriginal(t *testing.T) {

@@ -270,6 +270,10 @@ func DownloadContext(ctx context.Context, url, path, expected string, max int64,
 	buf := make([]byte, 64*1024)
 	var size int64
 	for {
+		if e = ctx.Err(); e != nil {
+			f.Close()
+			return e
+		}
 		n, err := response.Body.Read(buf)
 		if n > 0 {
 			size += int64(n)
@@ -285,6 +289,12 @@ func DownloadContext(ctx context.Context, url, path, expected string, max int64,
 			if progress != nil {
 				progress(size, response.ContentLength)
 			}
+			// Read may return final bytes and EOF together. Cancellation can
+			// also make a remote stream end normally; EOF is not consent to commit.
+			if e = ctx.Err(); e != nil {
+				f.Close()
+				return e
+			}
 		}
 		if err == io.EOF {
 			break
@@ -297,8 +307,14 @@ func DownloadContext(ctx context.Context, url, path, expected string, max int64,
 	if e = f.Close(); e != nil {
 		return e
 	}
+	if e = ctx.Err(); e != nil {
+		return e
+	}
 	if expected != "" && hex.EncodeToString(hash.Sum(nil)) != expected {
 		return errors.New("下载校验失败，文件没有被执行")
+	}
+	if e = ctx.Err(); e != nil {
+		return e
 	}
 	return os.Rename(temp, path)
 }
