@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 )
@@ -36,26 +35,27 @@ type Instance struct {
 	VersionTag      string `json:"version_tag,omitempty"`
 }
 type Task struct {
-	ID              string   `json:"id"`
-	InstanceID      string   `json:"instance_id"`
-	Kind            string   `json:"kind"`
-	Status          string   `json:"status"`
-	Stage           string   `json:"stage"`
-	Percent         int      `json:"percent"`
-	Error           string   `json:"error,omitempty"`
-	Logs            []string `json:"logs"`
-	StartedAt       string   `json:"started_at"`
-	FinishedAt      string   `json:"finished_at,omitempty"`
-	Phase           string   `json:"phase"`
-	Cancellable     bool     `json:"cancellable"`
-	CancelRequested bool     `json:"cancel_requested,omitempty"`
-	ErrorCode       string   `json:"error_code,omitempty"`
-	Retryable       bool     `json:"retryable"`
-	TargetTag       string   `json:"target_tag,omitempty"`
-	StartAfter      bool     `json:"start_after,omitempty"`
-	ctx             context.Context
-	cancel          context.CancelFunc
-	committing      bool
+	ResultInstanceID string   `json:"result_instance_id,omitempty"`
+	ID               string   `json:"id"`
+	InstanceID       string   `json:"instance_id"`
+	Kind             string   `json:"kind"`
+	Status           string   `json:"status"`
+	Stage            string   `json:"stage"`
+	Percent          int      `json:"percent"`
+	Error            string   `json:"error,omitempty"`
+	Logs             []string `json:"logs"`
+	StartedAt        string   `json:"started_at"`
+	FinishedAt       string   `json:"finished_at,omitempty"`
+	Phase            string   `json:"phase"`
+	Cancellable      bool     `json:"cancellable"`
+	CancelRequested  bool     `json:"cancel_requested,omitempty"`
+	ErrorCode        string   `json:"error_code,omitempty"`
+	Retryable        bool     `json:"retryable"`
+	TargetTag        string   `json:"target_tag,omitempty"`
+	StartAfter       bool     `json:"start_after,omitempty"`
+	ctx              context.Context
+	cancel           context.CancelFunc
+	committing       bool
 }
 type View struct {
 	Instance
@@ -223,6 +223,13 @@ func (m *Manager) saveLocked() error {
 	return atomicJSON(filepath.Join(m.config.Root, "launcher.json"), state{Schema: 1, Instances: rows, Quarantined: m.quarantined, IndexBackup: m.indexBackup})
 }
 func (m *Manager) Create(name, channel string, port int, lan bool) (View, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.createLocked(name, channel, port, lan)
+}
+
+// Caller holds mu, allowing restore to register its destination and task atomically.
+func (m *Manager) createLocked(name, channel string, port int, lan bool) (View, error) {
 	if channel == "bundled" && m.config.BundledSource == "" {
 		return View{}, errors.New("未提供随桌面打包的本体")
 	}
@@ -232,8 +239,6 @@ func (m *Manager) Create(name, channel string, port int, lan bool) (View, error)
 	if channel != "release" && channel != "main" && channel != "bundled" {
 		return View{}, errors.New("版本通道只支持 bundled / release / main")
 	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	if m.closing {
 		return View{}, errors.New("启动器正在退出")
 	}
@@ -477,7 +482,7 @@ func (m *Manager) Update(id string) (Task, error) {
 		current := *m.instances[id]
 		m.mu.Unlock()
 		if r.Source != "main" {
-			ge, e := versionAtLeast(strings.TrimPrefix(r.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+			ge, e := releaseAtLeastCurrent(r, current)
 			if e == nil && !ge {
 				m.log(t, "当前本体高于公开发行版，保留当前版本")
 				return nil

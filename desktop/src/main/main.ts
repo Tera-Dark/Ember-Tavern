@@ -7,10 +7,13 @@ import {mkdirSync} from 'node:fs';
 import {EngineClient,HostController,allowedExternal,trustedFrame,id} from './core';
 import {importPreset} from './preset-import';
 import {exportPreset} from './preset-export';
-import {DesktopUpdates,launchInstall} from './updates';
+import {exportDiagnostics} from './diagnostic-export';
+import {installPreflight} from './install-preflight';
+import {DesktopUpdates,launchInstall,compareVersions} from './updates';
 import {PreferencesStore,fitWindow} from './preferences';
 import {ConnectionVault} from './connections';
-import type {RPCMethod,BuildInfo} from '../types';
+import {WorkspaceLocationStore,WORKSPACE_MIN_DESKTOP} from './workspace-location';
+import type {RPCMethod,BuildInfo,SnapshotReport} from '../types';
 
 let window:BrowserWindow;let engine:EngineClient;let controller:HostController;let rendererURL='';let closing=false;
 let updates:DesktopUpdates;
@@ -20,6 +23,7 @@ const games=new Map<number,{instanceId:string;origin:string}>();
 const gameRooms=new Map<number,string>();
 let preferences:PreferencesStore;let tray:Tray|undefined;let closePending=false;let boundsTimer:ReturnType<typeof setTimeout>;
 let connections:ConnectionVault;let connectionRestoreError='';let runtimeTail:Promise<void>=Promise.resolve();
+let workspaceSwitching=false;
 function serializedRuntime<T>(action:()=>Promise<T>):Promise<T>{const task=runtimeTail.then(action);runtimeTail=task.then(()=>{},()=>{});return task;}
 async function waitEngineTask(taskId:string){const deadline=Date.now()+45000;while(Date.now()<deadline){const current=await controller.state(),task=current.tasks.find(t=>t.id===taskId);if(task?.status==='failed')throw new Error(task.error||'停止服务失败');if(task?.status==='success')return;await new Promise(resolve=>setTimeout(resolve,300));}throw new Error('停止服务尚未完成，请在任务中心确认后重试');}
 if(process.env.EMBER_DESKTOP_TEST_MODE==='1'&&process.env.EMBER_DESKTOP_TEST_ROOT){const profile=join(process.env.EMBER_DESKTOP_TEST_ROOT,'electron-profile');mkdirSync(profile,{recursive:true});app.setPath('userData',profile);}
@@ -44,13 +48,16 @@ async function openGame(instanceId:string,roomId:string){
 app.whenReady().then(async()=>{
   Menu.setApplicationMenu(null);
   const resources=app.isPackaged?process.resourcesPath:join(app.getAppPath(),'resources');
-  const root=process.env.EMBER_DESKTOP_TEST_ROOT||(process.platform==='win32'?join(process.env.LOCALAPPDATA||app.getPath('userData'),'EmberTavern'):join(app.getPath('userData'),'instances'));
+  const defaultRoot=process.env.EMBER_DESKTOP_TEST_ROOT||(process.platform==='win32'?join(process.env.LOCALAPPDATA||app.getPath('userData'),'EmberTavern'):join(app.getPath('userData'),'instances'));
+  const locations=new WorkspaceLocationStore(app.getPath('userData'),defaultRoot);
+  const root=await locations.load();
   preferences=new PreferencesStore(root);await preferences.load();
   const build:BuildInfo=JSON.parse(await readFile(join(resources,'host','desktop-bundle.json'),'utf8'));
   if(build.format!=='ember.desktop-build/v1'||!/^([a-f0-9]{40})$/.test(build.commit)||build.desktop_version!==app.getVersion()||typeof build.source_dirty!=='boolean')throw new Error('打包来源清单缺失或与桌面版本不符；请保留实例数据并使用完整安装包。');
   const commit=build.commit;
   engine=new EngineClient({exe:join(resources,'bin',process.platform==='win32'?'ember-engine.exe':'ember-engine'),root,host:join(resources,'host'),commit,build,testPython:process.env.EMBER_DESKTOP_TEST_MODE==='1'?process.env.EMBER_DESKTOP_TEST_PYTHON:undefined});
   try{await engine.start();}catch(error){if(process.env.EMBER_DESKTOP_TEST_MODE==='1')console.error('ENGINE_START_FAILED',String(error));else dialog.showErrorBox('余烬桌面无法启动',String(error));app.quit();return;}
+  await locations.mark(root);
   const secretStorage={encode:(value:string)=>{if(!safeStorage.isEncryptionAvailable()||(process.platform==='linux'&&safeStorage.getSelectedStorageBackend()==='basic_text'))throw new Error('系统凭据加密不可用；不会明文保存凭据');return safeStorage.encryptString(value).toString('base64');},decode:(value:string)=>safeStorage.decryptString(Buffer.from(value,'base64'))};
   controller=new HostController(engine,secretStorage);
   connections=new ConnectionVault(root,secretStorage);await connections.load();
@@ -90,9 +97,27 @@ app.whenReady().then(async()=>{
     if(!args||typeof args!=='object'||Array.isArray(args)||JSON.stringify(args).length>40000)throw new Error('请求格式错误');
     try{
       if(method==='state')return {...await controller.state(),desktop_updates:updates.snapshot(),connection_error:connections.error||connectionRestoreError||undefined};
+      if(workspaceSwitching&&method!=='window')throw new Error('正在切换工作区，请等待桌面重新打开');
+      if(method==='workspaceLocation')return locations.snapshot(root);
+      if(method==='installPreflight')return installPreflight(engine,locations,args.port);
       if(method==='desktopPreferences')return preferences.snapshot();
       if(method==='saveDesktopPreferences'){if(!['ask','tray','quit'].includes(args.closeBehavior)||!['dashboard','last'].includes(args.openBehavior))throw new Error('桌面偏好无效');await preferences.update({closeBehavior:args.closeBehavior,openBehavior:args.openBehavior});return preferences.snapshot();}
       if(desktopInstalling&&method!=='window')throw new Error('正在切换桌面版本，请等待重新启动');
+      if(method==='chooseWorkspaceLocation')return serializedRuntime(async()=>{
+        if(workspaceSwitching)throw new Error('工作区已经在切换，请等待桌面重新打开');
+        if(!['choose','default'].includes(args.action))throw new Error('请选择工作区操作');
+        let target=defaultRoot;
+        if(args.action==='choose'){const selected=await dialog.showOpenDialog(window,{title:'选择整个余烬工作区',properties:['openDirectory','createDirectory'],defaultPath:root});if(selected.canceled||!selected.filePaths[0])return {cancelled:true};target=selected.filePaths[0];}
+        const inspection=await locations.inspect(target,root);if(inspection.root===root)return {unchanged:true};
+        const current=await controller.state();if(current.tasks.some(t=>t.status==='running'))throw new Error('请等待所有酒馆任务完成后再切换工作区');
+        const running=current.instances.filter(i=>i.status==='running').map(i=>i.name);
+        const reply=await dialog.showMessageBox(window,{type:'warning',title:'切换整个桌面工作区',message:inspection.existing?'重新打开已有余烬工作区？':'在此目录创建新的余烬工作区？',detail:'目标：'+inspection.root+'\n可用空间：'+(inspection.availableBytes===null?'未能取得':(inspection.availableBytes/1024**3).toFixed(1)+' GiB')+'\n'+(running.length?'将停止：'+running.join('、')+'。同伴会暂时断线。\n':'')+'桌面会重新打开。原工作区全部保留，可随时重新选择；不会移动或合并存档与环境。\n连接凭据仍需原 Windows 用户。早于 '+WORKSPACE_MIN_DESKTOP+' 的桌面只读取默认目录；使用自定义工作区时请先切回默认目录再降级。',buttons:['取消','切换并重新打开'],defaultId:0,cancelId:0});
+        if(reply.response!==1)return {cancelled:true};
+        const latest=await controller.state();if(latest.tasks.some(t=>t.status==='running'))throw new Error('确认期间有任务开始，请等待结束后重试');
+        await locations.inspect(inspection.root,root);workspaceSwitching=true;
+        try{await engine.stop();await locations.save(inspection.root);}catch(error){workspaceSwitching=false;await engine.start();await restoreConnections();throw error;}
+        app.relaunch();app.quit();return {restarting:true};
+      });
       if(method==='connections')return connections.snapshot();
       if(method==='saveConnectionProfile')return connections.save(args);
       if(method==='removeConnectionProfile')return connections.remove(args.profileId);
@@ -116,6 +141,7 @@ app.whenReady().then(async()=>{
       if(method==='desktopUpdateCheck')return updates.check();
       if(method==='desktopUpdateInstall'){
         if(typeof args.tag!=='string')throw new Error('请选择发行版本');
+        if(locations.snapshot(root).custom&&compareVersions(args.tag.replace(/^desktop-v/,''),WORKSPACE_MIN_DESKTOP)<0)throw new Error('此旧桌面无法识别自定义工作区。请在应用设置切回默认工作区后再降级；当前数据保留。');
         if(['downloading','ready','installing'].includes(updates.snapshot().phase))throw new Error('已有版本切换任务');
         const current=await controller.state();if(current.tasks.some(item=>item.status==='running'))throw new Error('请等待实例安装／更新任务完成，再切换桌面版本');
         void (async()=>{
@@ -140,6 +166,24 @@ app.whenReady().then(async()=>{
       if(method==='window'){if(args.action==='minimize')window.minimize();else if(args.action==='maximize'){if(window.isMaximized())window.unmaximize();else window.maximize();}else if(args.action==='close')window.close();else throw new Error('不支持的窗口操作');return {};}
       if(method==='clipboard'){if(typeof args.text!=='string'||args.text.length>5000)throw new Error('文字过长');clipboard.writeText(args.text);return {copied:true};}
       if(method==='external'){if(!allowedExternal(args.url))throw new Error('只打开可信 GitHub 文档');await shell.openExternal(args.url);return {};}
+      if(method==='restoreSnapshot')return serializedRuntime(async()=>{
+        const instanceId=id(args.instanceId),snapshotId=id(args.snapshotId);if(typeof args.name!=='string'||!args.name.trim()||args.name.length>48)throw new Error('请输入新酒馆名称');
+        const instance=await controller.instance(instanceId);if(instance.status==='running'||instance.status==='busy')throw new Error('停止源酒馆并等待任务结束后再恢复');
+        const report:SnapshotReport=await engine.request('/api/instances/'+instanceId+'/snapshots'),snapshot=report.entries.find(row=>row.id===snapshotId);
+        if(report.revision!==args.revision||!snapshot||snapshot.kind!=='backup'||snapshot.warning||snapshot.in_use)throw new Error('备份已改变或需要检查，请刷新后选择');
+        const reply=await dialog.showMessageBox(window,{type:'warning',title:'恢复为新的酒馆',message:'从完整备份创建“'+args.name.trim()+'”？',detail:'备份：'+snapshot.name+'\n源酒馆的当前进度、账号和原备份全部保留。新酒馆使用源酒馆当前本体，先校验与预检，再保持停止等待审阅。\n恢复会清除旧会话、玩家成员 / 分配、邀请开放与社区模块授权；房主使用源酒馆当前身份。房间内容与版本锁保留，同伴需重新邀请与分配。API 档案不自动复制。',buttons:['取消','确认恢复到新酒馆'],defaultId:0,cancelId:0});
+        if(reply.response!==1)return {cancelled:true};return engine.request('/api/instances/'+instanceId+'/snapshot-restore','POST',{snapshot_id:snapshotId,revision:report.revision,name:args.name.trim()});
+      });
+      if(method==='cleanupSnapshots'){
+        const instanceId=id(args.instanceId);if(!Array.isArray(args.snapshotIds)||args.snapshotIds.length<1||args.snapshotIds.length>20||new Set(args.snapshotIds).size!==args.snapshotIds.length)throw new Error('请选择 1–20 项历史快照');
+        const ids=args.snapshotIds.map(id),report:SnapshotReport=await engine.request('/api/instances/'+instanceId+'/snapshots');
+        if(report.read_only||report.revision!==args.revision)throw new Error('快照列表或保护状态已改变，请刷新后选择');
+        const selected=ids.map(key=>report.entries.find(row=>row.id===key));if(selected.some(row=>!row||!row.can_delete))throw new Error('所选快照受保护、使用中或需要检查');
+        const reply=await dialog.showMessageBox(window,{type:'warning',title:'永久清理历史快照',message:'删除 '+selected.length+' 项明确选择的历史快照？',detail:selected.map(row=>row!.name+' · '+row!.bytes+' 字节').join('\n')+'\n此操作不可撤销。当前游戏数据、最新备份与各版本当前快照保留。',buttons:['取消','确认永久清理'],defaultId:0,cancelId:0});
+        if(reply.response!==1)return {cancelled:true};
+        return serializedRuntime(()=>engine.request('/api/instances/'+instanceId+'/snapshot-delete','POST',{ids,revision:report.revision,confirm_delete:true}));
+      }
+      if(method==='exportDiagnostics')return exportDiagnostics(window,controller,id(args.instanceId));
       if(method==='exportPreset')return exportPreset(window,controller,id(args.instanceId),args.packageHash);
       if(method==='importPreset')return await importPreset(window,controller,id(args.instanceId));
       if(method==='installPlugin'){

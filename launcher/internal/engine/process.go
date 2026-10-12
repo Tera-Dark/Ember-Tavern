@@ -113,7 +113,9 @@ func (m *Manager) childEnv(id string) []string {
 	return result
 }
 func availablePort(port int) error {
-	listener, e := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))
+	// LAN instances bind 0.0.0.0. A loopback-only probe can miss another
+	// application's wildcard bind (including a Windows socket not yet listening).
+	listener, e := listenPort(port)
 	if e != nil {
 		return fmt.Errorf("端口 %d 已被占用；在实例设置换一个端口", port)
 	}

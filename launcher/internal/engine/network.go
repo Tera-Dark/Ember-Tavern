@@ -185,7 +185,7 @@ func (m *Manager) Check(id string) (Release, error) {
 		current := m.instances[id]
 		newer := r.Commit != current.Commit
 		if channel != "main" {
-			ge, err := versionAtLeast(strings.TrimPrefix(r.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+			ge, err := releaseAtLeastCurrent(r, *current)
 			if err == nil {
 				newer = ge && newer
 			}
@@ -195,6 +195,16 @@ func (m *Manager) Check(id string) (Release, error) {
 	}
 	m.updates[id] = u
 	return r, e
+}
+
+// Desktop releases may carry the same host version while changing the launcher
+// or source. Compare their release tags before treating an older source as an
+// automatic update; explicit switch-version still permits a downgrade.
+func releaseAtLeastCurrent(release Release, current Instance) (bool, error) {
+	if validReleaseTag(release.Tag) && validReleaseTag(current.VersionTag) && strings.HasPrefix(release.Tag, "desktop-") == strings.HasPrefix(current.VersionTag, "desktop-") {
+		return versionAtLeast(strings.TrimPrefix(strings.TrimPrefix(release.Tag, "desktop-"), "v"), strings.TrimPrefix(strings.TrimPrefix(current.VersionTag, "desktop-"), "v"))
+	}
+	return versionAtLeast(strings.TrimPrefix(release.Version, "v"), strings.TrimPrefix(current.Version, "v"))
 }
 
 type releaseCache struct {

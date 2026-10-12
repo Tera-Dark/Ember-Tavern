@@ -402,7 +402,7 @@ func (m *Manager) installRelease(t *Task, update bool, selected *Release) (err e
 	if u := m.updates[id]; u != nil && u.Latest != nil {
 		current := m.instances[id]
 		u.Suppressed = current.IgnoredUpdate == u.Latest.Commit
-		ge, e := versionAtLeast(strings.TrimPrefix(u.Latest.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+		ge, e := releaseAtLeastCurrent(*u.Latest, *current)
 		u.Available = !u.Suppressed && u.Latest.Commit != current.Commit && (e != nil || ge)
 	}
 	m.mu.Unlock()

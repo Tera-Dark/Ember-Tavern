@@ -59,3 +59,18 @@ test('TTS verification rejects a successful JSON response masquerading as audio'
  assert.equal((await vault.test(p.id,'generate',true,async()=>new Response('{}',{headers:{'content-type':'application/json'}}))).status,'failed');
  const result=await vault.test(p.id,'generate',true,async()=>new Response(new Uint8Array([73,68,51,4]),{headers:{'content-type':'audio/mpeg'}}));assert.equal(result.status,'passed');
 }));
+
+test('knowledge profiles retain encrypted Gemini revisions without rewriting legacy settings',()=>isolated(async root=>{
+ const vault=new ConnectionVault(root,storage);const knowledge={...profile,name:'QA knowledge',kind:'knowledge',baseURL:'https://generativelanguage.googleapis.com/v1beta',model:'fixture-gemini'};
+ const p=(await vault.save(knowledge)).profiles[0];let runtime;await vault.bind(instance,'knowledge',p.id,async values=>runtime=values);assert.deepEqual(runtime,{GEMINI_API_KEY:profile.key,GEMINI_MODEL:'fixture-gemini'});
+ await vault.save({...p,keyAction:'keep',model:'new-knowledge'});const reopened=new ConnectionVault(root,storage);assert.equal((await reopened.load()).readOnly,false);await reopened.restore(async(_,values)=>assert.equal(values.GEMINI_MODEL,'fixture-gemini'));
+ await assert.rejects(vault.save({...knowledge,baseURL:'https://provider.invalid/v1'}),/官方接口/);await assert.rejects(vault.save({...knowledge,model:'models/fixture'}),/模型 ID/);
+ assert(!(await readFile(join(root,'connections.private.json'),'utf8')).includes(profile.key));
+}));
+test('Gemini list and explicitly approved generation use separate official requests and never return provider text',()=>isolated(async root=>{
+ const vault=new ConnectionVault(root,storage),p=(await vault.save({...profile,kind:'knowledge',baseURL:'https://generativelanguage.googleapis.com/v1beta',model:'fixture-gemini'})).profiles[0];const calls=[];
+ const transport=async(url,options)=>{calls.push({url,options});return Response.json(options.method==='GET'?{models:[{name:'models/fixture-gemini',supportedGenerationMethods:['generateContent']},{name:'models/embed-fixture',supportedGenerationMethods:['embedContent']}]}:{candidates:[{content:{parts:[{text:profile.key}]}}]});};
+ const list=await vault.test(p.id,'models',false,transport);assert.deepEqual(list.models,['fixture-gemini']);assert.equal(calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models');assert.equal(calls[0].options.headers['x-goog-api-key'],profile.key);assert.equal(calls[0].options.headers.Authorization,undefined);assert.equal(calls[0].options.body,undefined);
+ await assert.rejects(vault.test(p.id,'generate',false,transport));assert.equal(calls.length,1);const generated=await vault.test(p.id,'generate',true,transport);assert.equal(generated.status,'passed');assert(!JSON.stringify(generated).includes(profile.key));assert(calls[1].url.endsWith('/models/fixture-gemini:generateContent'));assert.equal(JSON.parse(calls[1].options.body).generationConfig.maxOutputTokens,16);
+ assert.equal((await vault.test(p.id,'generate',true,async()=>Response.json({candidates:[{content:{parts:[{thought:true,text:'private reasoning'}]}}]}))).status,'failed');
+}));

@@ -8,7 +8,8 @@ interface PrivateProfile {id:string;revision:number;name:string;kind:ConnectionK
 interface Binding {profileId:string;revision:number;values:Record<string,string>}
 interface Vault {format:'ember.connections/v1';profiles:PrivateProfile[];bindings:Record<string,Partial<Record<ConnectionKind,Binding>>>}
 const empty=():Vault=>({format:'ember.connections/v1',profiles:[],bindings:{}});
-const kinds=['decision','tts'] as const;
+const kinds=['decision','tts','knowledge'] as const;
+export const KNOWLEDGE_URL='https://generativelanguage.googleapis.com/v1beta';
 const identity=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{32}$/.test(v);
 function field(v:unknown,max:number,label:string,blank=false):string {
  if(typeof v!=='string'||v.length>max||/[\x00-\x1f\x7f]/.test(v)||!blank&&!v.trim())throw new Error(label+'无效');
@@ -23,10 +24,12 @@ export function connectionURL(value:unknown):string {
 function validateProfile(v:any):PrivateProfile {
  if(!v||!identity(v.id)||!Number.isInteger(v.revision)||v.revision<1||v.revision>1000000||!kinds.includes(v.kind)||typeof v.jsonMode!=='boolean')throw new Error('连接档案格式无效');
  const result={id:v.id,revision:v.revision,name:field(v.name,60,'档案名称'),kind:v.kind as ConnectionKind,baseURL:connectionURL(v.baseURL),model:field(v.model,160,'模型名称'),voice:field(v.voice,160,'声音 ID',true),jsonMode:v.jsonMode,key:field(v.key,2048,'密钥',true)};
+ if(result.kind==='knowledge'&&(result.baseURL!==KNOWLEDGE_URL||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$/.test(result.model)||result.jsonMode))throw new Error('知识顾问使用 Gemini 官方接口和模型 ID；不支持自定义地址或 JSON 模式');
  if(result.key&&[result.name,result.baseURL,result.model,result.voice].some(s=>s.includes(result.key)))throw new Error('密钥只能填写在密钥栏');
  return result;
 }
 function runtime(profile:PrivateProfile):Record<string,string> {
+ if(profile.kind==='knowledge')return {GEMINI_API_KEY:profile.key,GEMINI_MODEL:profile.model};
  return profile.kind==='decision'?{DECISION_API_KEY:profile.key,DECISION_BASE_URL:profile.baseURL,DECISION_MODEL:profile.model,DECISION_JSON_MODE:String(profile.jsonMode)}:{TTS_API_KEY:profile.key,TTS_BASE_URL:profile.baseURL,TTS_MODEL:profile.model,TTS_VOICE:profile.voice||'alloy'};
 }
 function parseVault(v:any):Vault {
@@ -39,10 +42,10 @@ function parseVault(v:any):Vault {
   for(const [kind,binding] of Object.entries(entry)){
    const b=binding as Binding;
    if(!kinds.includes(kind as ConnectionKind)||!b||!identity(b.profileId)||!profiles.some((p:PrivateProfile)=>p.id===b.profileId&&p.kind===kind)||!Number.isInteger(b.revision)||b.revision<1||b.revision>1000000||!b.values||typeof b.values!=='object'||Array.isArray(b.values))throw new Error('档案关联无效');
-   const prefix=kind==='decision'?'DECISION_':'TTS_';const expected=kind==='decision'?['API_KEY','BASE_URL','MODEL','JSON_MODE']:['API_KEY','BASE_URL','MODEL','VOICE'];
+   const prefix=kind==='decision'?'DECISION_':kind==='knowledge'?'GEMINI_':'TTS_';const expected=kind==='decision'?['API_KEY','BASE_URL','MODEL','JSON_MODE']:kind==='knowledge'?['API_KEY','MODEL']:['API_KEY','BASE_URL','MODEL','VOICE'];
    if(Object.keys(b.values).length!==expected.length||expected.some(key=>!Object.hasOwn(b.values,prefix+key)))throw new Error('运行配置格式无效');
    if(b.revision>profiles.find((p:PrivateProfile)=>p.id===b.profileId)!.revision||kind==='decision'&&!['true','false'].includes(b.values.DECISION_JSON_MODE))throw new Error('运行配置修订或 JSON 模式无效');
-   const p=validateProfile({id:b.profileId,revision:b.revision,name:'应用快照',kind,baseURL:b.values[prefix+'BASE_URL'],model:b.values[prefix+'MODEL'],key:b.values[prefix+'API_KEY'],voice:kind==='tts'?b.values.TTS_VOICE:'',jsonMode:kind==='decision'?b.values.DECISION_JSON_MODE==='true':false});
+   const p=validateProfile({id:b.profileId,revision:b.revision,name:'应用快照',kind,baseURL:kind==='knowledge'?KNOWLEDGE_URL:b.values[prefix+'BASE_URL'],model:b.values[prefix+'MODEL'],key:b.values[prefix+'API_KEY'],voice:kind==='tts'?b.values.TTS_VOICE:'',jsonMode:kind==='decision'?b.values.DECISION_JSON_MODE==='true':false});
    next[kind as ConnectionKind]={profileId:b.profileId,revision:b.revision,values:runtime(p)};
   }
   bindings[instanceId]=next;
@@ -87,16 +90,19 @@ export class ConnectionVault {
   const profile=structuredClone(this.profile(profileId));if(!profile.key)throw new Error('请先保存密钥');
   const result:ConnectionTest={mode,status:'failed',checkedAt:new Date().toISOString(),detail:''};
   try{
-   const route=mode==='models'?'/models':profile.kind==='decision'?'/chat/completions':'/audio/speech';
-   const body=mode==='models'?undefined:profile.kind==='decision'?{model:profile.model,messages:[{role:'user',content:'只回复 OK，不生成故事。'}],max_tokens:16}:{model:profile.model,input:'你好。',voice:profile.voice||'alloy',response_format:'mp3'};
-   const response=await transport(profile.baseURL+route,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+profile.key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(25000),redirect:'error'});
+   const route=mode==='models'?'/models':profile.kind==='knowledge'?'/models/'+encodeURIComponent(profile.model)+':generateContent':profile.kind==='decision'?'/chat/completions':'/audio/speech';
+   const body=mode==='models'?undefined:profile.kind==='knowledge'?{contents:[{role:'user',parts:[{text:'只回复 OK，不生成故事。'}]}],generationConfig:{maxOutputTokens:16}}:profile.kind==='decision'?{model:profile.model,messages:[{role:'user',content:'只回复 OK，不生成故事。'}],max_tokens:16}:{model:profile.model,input:'你好。',voice:profile.voice||'alloy',response_format:'mp3'};
+   const response=await transport(profile.baseURL+route,{method:body?'POST':'GET',headers:profile.kind==='knowledge'?{'x-goog-api-key':profile.key,'Content-Type':'application/json'}:{Authorization:'Bearer '+profile.key,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(25000),redirect:'error'});
    if(!response.ok){await response.body?.cancel();result.detail=response.status===404||response.status===405?'接口不支持此检测；可手填模型，不代表生成不可用。':'接口拒绝检测（HTTP '+response.status+'）；请检查地址、权限和余额。';}
    else{
     const bytes=await boundedBody(response,mode==='generate'&&profile.kind==='tts'?1024*1024:128*1024);
     if(mode==='models'){
-     const value=JSON.parse(Buffer.from(bytes).toString('utf8'));if(!Array.isArray(value.data))throw new Error('invalid list');
-     const models=value.data.slice(0,200).map((v:any)=>v?.id).filter((v:any)=>typeof v==='string'&&v.length>0&&v.length<=160&&!/[\x00-\x1f\x7f]/.test(v)&&!v.includes(profile.key));
+     const value=JSON.parse(Buffer.from(bytes).toString('utf8'));const rows=profile.kind==='knowledge'?value.models:value.data;if(!Array.isArray(rows))throw new Error('invalid list');
+     const models=rows.slice(0,200).filter((v:any)=>profile.kind!=='knowledge'||Array.isArray(v?.supportedGenerationMethods)&&v.supportedGenerationMethods.includes('generateContent')).map((v:any)=>profile.kind==='knowledge'?v?.name?.replace(/^models\//,''):v?.id).filter((v:any)=>typeof v==='string'&&v.length>0&&v.length<=160&&!/[\x00-\x1f\x7f]/.test(v)&&!v.includes(profile.key));
      result.models=[...new Set(models)] as string[];result.detail='模型列表已获取；尚未证明实际生成可用。';result.status='passed';
+    }else if(profile.kind==='knowledge'){
+     const value=JSON.parse(Buffer.from(bytes).toString('utf8'));const parts=value.candidates?.[0]?.content?.parts;if(!Array.isArray(parts)||!parts.some((p:any)=>!p.thought&&typeof p.text==='string'&&p.text.trim()))throw new Error('no knowledge output');
+     result.detail='一次知识顾问文本测试成功；未读取任何房间，也未改变房间模型模式。';result.status='passed';
     }else if(profile.kind==='decision'){
      const value=JSON.parse(Buffer.from(bytes).toString('utf8'));if(typeof value.choices?.[0]?.message?.content!=='string'||!value.choices[0].message.content.trim())throw new Error('no output');
      result.detail='一次文本生成测试成功；不代表房间规则与结构化输出均已验证。';result.status='passed';

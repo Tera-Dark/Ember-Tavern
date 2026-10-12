@@ -82,8 +82,8 @@ func (m *Manager) SetRuntimeSettings(id string, changes map[string]string) error
 	}
 	values := map[string]string{}
 	for k := range changes {
-		if !strings.HasPrefix(k, "DECISION_") && !strings.HasPrefix(k, "TTS_") {
-			return errors.New("连接档案仅允许决策和声音配置")
+		if !strings.HasPrefix(k, "DECISION_") && !strings.HasPrefix(k, "TTS_") && !strings.HasPrefix(k, "GEMINI_") {
+			return errors.New("连接档案仅允许决策、声音和知识顾问配置")
 		}
 	}
 	if e := applySettings(values, changes); e != nil {

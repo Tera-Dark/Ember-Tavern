@@ -51,7 +51,7 @@ func (m *Manager) loadTaskHistory() {
 	}
 	next := map[string]*Task{}
 	for _, row := range history.Tasks {
-		if !validID(row.ID) || !validID(row.InstanceID) || next[row.ID] != nil || len(row.Kind) > 32 || len(row.Stage) > 1024 || len(row.Error) > 2048 || len(row.Phase) > 32 || len(row.ErrorCode) > 48 || len(row.Logs) > 20 || row.Percent < 0 || row.Percent > 100 || row.TargetTag != "" && !validReleaseTag(row.TargetTag) {
+		if !validID(row.ID) || row.ResultInstanceID != "" && !validID(row.ResultInstanceID) || !validID(row.InstanceID) || next[row.ID] != nil || len(row.Kind) > 32 || len(row.Stage) > 1024 || len(row.Error) > 2048 || len(row.Phase) > 32 || len(row.ErrorCode) > 48 || len(row.Logs) > 20 || row.Percent < 0 || row.Percent > 100 || row.TargetTag != "" && !validReleaseTag(row.TargetTag) {
 			bad()
 			return
 		}
