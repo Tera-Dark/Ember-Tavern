@@ -2,7 +2,7 @@
 
 ## 当前源码状态（2026-10-12）
 
-2026-10-12 增量：桌面 / 部署引擎源码 `0.2.0-beta.4`，[更新与版本管理](UPDATE_GUIDE.md)、[独立作者 SDK 0.2.0](AUTHOR_SDK.md) 和[投稿 / 核验 / 目录维护](COMMUNITY_REVIEW.md) 已有本地实现 / 验证；[M4 最新进度](M4_DELIVERY.md) 仍为未完成。后端最终 261 项回归通过，尚未发布对应公开包。下列 2026-10-03 版本对照保留为历史快照。
+2026-10-12 增量：桌面 / 部署引擎源码 `0.2.0-beta.4`，[更新与版本管理](UPDATE_GUIDE.md)、[独立作者 SDK 0.2.0](AUTHOR_SDK.md) 和[投稿 / 核验 / 目录维护](COMMUNITY_REVIEW.md) 已有本地实现 / 验证；[M4 最新进度](M4_DELIVERY.md) 仍为未完成。最初源码试用阶段的后端 261 项回归通过；桌面体验及作者工具的后续结果见 [桌面执行记录](DESKTOP_EXPERIENCE_PROGRESS.md)，尚未发布对应公开包。下列 2026-10-03 版本对照保留为历史快照。
 
 - [M2 状态 / 记忆 / 多人行动](M2_DELIVERY.md)：源码切片、自动化回归和未关闭边界。
 - [M3 玩法竖向样板](M3_DELIVERY.md)：SRD 5.2.1 有限战斗与原创合作 SLG-lite；专项／完整后端测试、Schema、构建结果和许可／发布边界。不是完整 5e / SLG、已发布二进制或真人验收。
@@ -10,6 +10,8 @@
 - [M1 数据玩法组合与剧本交付](M1_DELIVERY.md) · [世界／剧本／预设作者实战](PRESET_AUTHORING.md) · [格式设计决策](PRESET_FORMAT_RFC.md)
 - [M0 第一批交付 / 新手开桌 / 恢复与发布](M0_DELIVERY.md)：2026-10-02 阶段快照，宿主 2.3.0-beta.2、桌面 / 引擎 0.2.0-beta.2；是开发记录，不代表该版本已公开下载。
 - 版本对照：当前宿主 / 网页 2.4.0-beta.1、桌面 / 引擎 0.2.0-beta.4、SDK 0.2.0；最新公开桌面为 beta.3 / 宿主 2.4.0-beta.1。本次更新底座与 SDK 尚未公开发行。拥有者已授权外部试用，见 [源码试用](SNAPSHOT_TESTING.md)。
+
+- [桌面完整体验计划](DESKTOP_EXPERIENCE_PLAN.md) · [状态矩阵](DESKTOP_EXPERIENCE_STATE_MATRIX.md) · [执行记录](DESKTOP_EXPERIENCE_PROGRESS.md)：完整 A–F 仍在实施，区分本地代码验证与真实安装包 / 外部反馈。
 
 ## 当前计划与长期约束
 

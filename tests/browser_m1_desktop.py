@@ -23,12 +23,13 @@ async def main():
             state=await desktop.evaluate("() => window.emberDesktop.invoke('state')")
             active=next((item for item in state['instances'] if item['commit'] and not item.get('recovered_from_id')),None)
             if active:
-                await desktop.locator('.instance-card').filter(has=desktop.get_by_role('heading',name=active['name'],exact=True)).click()
+                await desktop.locator('.instance-card').filter(has=desktop.get_by_role('heading',name=active['name'],exact=True)).locator('.card-name').click()
                 if active['status']!='running':await desktop.get_by_role('button',name='启动实例',exact=True).click()
             else:
                 await desktop.get_by_role('button',name='新建酒馆实例',exact=False).click();dialog=desktop.get_by_role('dialog')
-                await dialog.get_by_label('实例名称',exact=True).fill('M1 预设实验室');await dialog.get_by_label('游戏端口',exact=True).fill('18180');await dialog.get_by_role('button',name='创建、安装并启动',exact=True).click()
+                await dialog.get_by_label('酒馆名称',exact=True).fill('M1 预设实验室');await dialog.get_by_role('button',name='高级设置 · 端口自动选择',exact=True).click();await dialog.get_by_label('游戏端口（留空自动选择）',exact=True).fill('18180');await dialog.get_by_role('button',name='继续',exact=True).click();await dialog.get_by_role('button',name='创建、安装并启动',exact=True).click()
             await expect(desktop.locator('.instance-heading .status')).to_contain_text('运行中',timeout=180000)
+            await desktop.get_by_role('button',name='开桌向导',exact=True).click()
             state=await desktop.evaluate("() => window.emberDesktop.invoke('state')")
             active=next(item for item in state['instances'] if item['commit'] and not item.get('recovered_from_id'))
             i=active['id'];base='http://127.0.0.1:'+str(active['port']);intents=[]

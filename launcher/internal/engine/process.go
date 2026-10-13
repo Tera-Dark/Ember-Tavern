@@ -35,9 +35,11 @@ func command(ctx context.Context, dir string, env []string, name string, args ..
 	return cmd
 }
 func (m *Manager) run(t *Task, timeout time.Duration, dir string, env []string, name string, args ...string) error {
-	ctx, cancel := context.WithTimeout(m.ctx, timeout)
+	ctx, cancel := context.WithTimeout(m.taskContext(t), timeout)
 	defer cancel()
 	cmd := command(ctx, dir, env, name, args...)
+	cmd.Cancel = func() error { return stopProcess(cmd) }
+	cmd.WaitDelay = 3 * time.Second
 	writer := &lineWriter{fn: func(s string) { m.log(t, s) }}
 	cmd.Stdout = writer
 	cmd.Stderr = writer
@@ -47,7 +49,7 @@ func (m *Manager) run(t *Task, timeout time.Duration, dir string, env []string, 
 	e := cmd.Wait()
 	writer.Flush()
 	if ctx.Err() != nil {
-		return errors.New("任务超时；数据未删除，可重试")
+		return fmt.Errorf("准备任务取消或超时；原数据保留，可重试: %w", ctx.Err())
 	}
 	return e
 }
@@ -92,7 +94,7 @@ func (m *Manager) childEnv(id string) []string {
 	values := map[string]string{}
 	for _, item := range os.Environ() {
 		k, v, ok := strings.Cut(item, "=")
-		if ok && !blocked[strings.ToUpper(k)] {
+		if ok && !blocked[strings.ToUpper(k)] && !strings.HasPrefix(strings.ToUpper(k), "UVICORN_") {
 			values[k] = v
 		}
 	}
@@ -111,7 +113,9 @@ func (m *Manager) childEnv(id string) []string {
 	return result
 }
 func availablePort(port int) error {
-	listener, e := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(port))
+	// LAN instances bind 0.0.0.0. A loopback-only probe can miss another
+	// application's wildcard bind (including a Windows socket not yet listening).
+	listener, e := listenPort(port)
 	if e != nil {
 		return fmt.Errorf("端口 %d 已被占用；在实例设置换一个端口", port)
 	}
@@ -135,6 +139,11 @@ func waitHealth(port int, done <-chan struct{}, deadline time.Duration) error {
 			_ = json.NewDecoder(r.Body).Decode(&h)
 			r.Body.Close()
 			if r.StatusCode == 200 && h.OK && h.Product == "余烬酒馆" {
+				select {
+				case <-done:
+					return errors.New("自有服务提前退出，不能接受其他进程的健康响应")
+				default:
+				}
 				return nil
 			}
 		}
@@ -142,19 +151,42 @@ func waitHealth(port int, done <-chan struct{}, deadline time.Duration) error {
 	}
 	return errors.New("服务健康检查超时，未确认启动成功")
 }
+func waitRuntimeHealth(port int, p *runtimeProcess, deadline time.Duration) error {
+	started := time.Now()
+	timer := time.NewTimer(deadline)
+	defer timer.Stop()
+	// The fixed Uvicorn command reports successful bind on its own stdout.
+	// Do not let another instance's public health endpoint bless an unbound
+	// candidate (including legacy hosts which have no private probe contract).
+	select {
+	case <-p.done:
+		return errors.New("自有服务未能监听端口，请查看启动日志")
+	case <-timer.C:
+		return errors.New("自有服务监听端口超时")
+	case <-p.bound:
+	}
+	return waitHealth(port, p.done, deadline-time.Since(started))
+}
 func (m *Manager) spawn(id string, t *Task, port int, bind string, env []string) (*runtimeProcess, error) {
 	python := m.installedPython(id)
 	if python == "" {
 		return nil, errors.New("实例尚未安装，请点安装并启动")
 	}
-	cmd := command(context.Background(), filepath.Join(m.path(id), "app"), env, python, "-m", "uvicorn", "server.app:app", "--host", bind, "--port", strconv.Itoa(port), "--workers", "1", "--ws-max-size", "65536")
-	writer := &lineWriter{fn: func(s string) { m.log(t, s) }}
+	cmd := command(context.Background(), filepath.Join(m.path(id), "app"), env, python, "-m", "uvicorn", "server.app:app", "--host", bind, "--port", strconv.Itoa(port), "--workers", "1", "--ws-max-size", "65536", "--log-level", "info", "--no-use-colors")
+	bound := make(chan struct{})
+	var boundOnce sync.Once
+	writer := &lineWriter{fn: func(s string) {
+		if strings.Contains(s, "Uvicorn running on http://") {
+			boundOnce.Do(func() { close(bound) })
+		}
+		m.log(t, s)
+	}}
 	cmd.Stdout = writer
 	cmd.Stderr = writer
 	if e := cmd.Start(); e != nil {
 		return nil, e
 	}
-	p := &runtimeProcess{PID: cmd.Process.Pid, done: make(chan struct{}), started: time.Now()}
+	p := &runtimeProcess{PID: cmd.Process.Pid, done: make(chan struct{}), bound: bound, started: time.Now()}
 	p.stop = func() error { return stopProcess(cmd) }
 	go func() {
 		e := cmd.Wait()
@@ -176,6 +208,10 @@ func (m *Manager) spawn(id string, t *Task, port int, bind string, env []string)
 }
 func (m *Manager) start(id string, t *Task) error {
 	m.mu.Lock()
+	if m.closing {
+		m.mu.Unlock()
+		return errors.New("启动器正在退出，保留数据并停止启动")
+	}
 	i := m.instances[id]
 	if m.processes[id] != nil {
 		m.mu.Unlock()
@@ -197,7 +233,7 @@ func (m *Manager) start(id string, t *Task) error {
 	if e != nil {
 		return e
 	}
-	if e = waitHealth(port, p.done, 45*time.Second); e != nil {
+	if e = waitRuntimeHealth(port, p, 45*time.Second); e != nil {
 		_ = p.stop()
 		return e
 	}
@@ -261,7 +297,7 @@ func (m *Manager) probe(id string, t *Task, data string) error {
 		case <-time.After(5 * time.Second):
 		}
 	}()
-	return waitHealth(port, p.done, 40*time.Second)
+	return waitRuntimeHealth(port, p, 40*time.Second)
 }
 func (m *Manager) Logs(id string) []string {
 	m.mu.Lock()

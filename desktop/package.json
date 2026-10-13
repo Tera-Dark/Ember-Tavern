@@ -15,18 +15,19 @@
     "prepare:host": "node scripts/prepare-host.mjs"
   },
   "dependencies": {
-    "vue": "3.5.43",
-    "lucide-vue-next": "1.0.0"
+    "lucide-vue-next": "1.0.0",
+    "qrcode-generator": "2.0.4",
+    "vue": "3.5.43"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.19.15",
+    "@vitejs/plugin-vue": "5.2.4",
     "electron": "44.5.1",
     "electron-builder": "26.15.3",
     "typescript": "5.9.3",
     "vite": "6.4.3",
-    "@vitejs/plugin-vue": "5.2.4",
-    "vue-tsc": "3.2.6",
-    "@types/node": "22.19.15",
-    "@playwright/test": "1.63.0"
+    "vue-tsc": "3.2.6"
   },
   "build": {
     "appId": "org.embertavern.desktop",
@@ -46,6 +47,10 @@
       {
         "from": "resources/host",
         "to": "host"
+      },
+      {
+        "from": "resources/assets",
+        "to": "assets"
       }
     ],
     "win": {

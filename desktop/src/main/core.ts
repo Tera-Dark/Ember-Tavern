@@ -83,6 +83,7 @@ export class HostController {
   async diagnostics(instanceId:string){const instance=await this.instance(instanceId);const settings=await this.engine.request('/api/instances/'+instanceId+'/settings');return localDiagnostics(instance,settings);}
   async invoke(method:RPCMethod,args:Record<string,any>={}):Promise<any>{
     if(method==='state')return this.state();
+    if(method==='cancelTask'||method==='retryTask')return this.engine.request('/api/tasks/'+id(args.taskId)+(method==='cancelTask'?'/cancel':'/retry'),'POST',{});
     if(method==='instanceVersions')return this.engine.request('/api/releases');
     if(method==='recoverIndex')return this.engine.request('/api/index-recovery/'+id(args.entryId),'POST',{confirm_stopped:args.confirmStopped===true});
     if(method==='createInstance'){if(typeof args.name!=='string'||args.name.length>48)throw new Error('请填写实例名称');return this.engine.request('/api/instances','POST',{name:args.name,channel:'bundled',port:Number(args.port)||0,lan:args.lan!==false,start:true});}
@@ -96,6 +97,9 @@ export class HostController {
       case 'createPresetRoom':{if(typeof args.title!=='string'||!args.title.trim()||[...args.title].length>60)throw new Error('房间名称需要 1–60 个字符');if(typeof args.requestKey!=='string'||!/^[a-zA-Z0-9_-]{8,80}$/.test(args.requestKey))throw new Error('开桌需要稳定请求标识');return this.game(instanceId,'/rooms/from-preset','POST',{title:args.title.trim(),package_hash:packageHash(args.packageHash),ai_mode:'demo',host_plays:args.hostPlays!==false,request_key:args.requestKey});}
       case 'starterWorlds':return this.game(instanceId,'/starters');
       case 'assignCharacter':{const room=await this.game(instanceId,'/rooms/'+id(args.roomId));return this.game(instanceId,'/rooms/'+args.roomId+'/characters/'+id(args.characterId)+'/assign','POST',{user_id:args.userId===null?null:id(args.userId),expected_revision:room.revision,request_key:randomBytes(16).toString('hex')});}
+      case 'snapshots':return this.engine.request(prefix+'/snapshots');
+      case 'snapshotPolicy':return this.engine.request(prefix+'/snapshot-policy','PUT',{revision:args.revision,keep_latest:args.keepLatest,protected:args.protected});
+      case 'backupSnapshot':return this.engine.request(prefix+'/snapshot-backup','POST',{});
       case 'settings':return this.engine.request(prefix+'/settings');
       case 'saveSettings':return this.engine.request(prefix+'/settings','PUT',args.values);
       case 'rooms':return this.game(instanceId,'/rooms');

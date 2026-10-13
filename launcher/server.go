@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -63,7 +64,7 @@ func (a *API) Handler() http.Handler {
 		go a.Shutdown()
 	})
 	mux.HandleFunc("GET /api/state", func(w http.ResponseWriter, r *http.Request) {
-		answer(w, 200, map[string]any{"launcher_version": engine.LauncherVersion, "repository": engine.RepositoryURL, "root": a.Manager.Root(), "platform": platformName(), "preview": a.Preview, "instances": a.Manager.List(), "tasks": a.Manager.Tasks(), "index_recovery": a.Manager.IndexRecovery(), "bundled_commit": a.Manager.BundledCommit()})
+		answer(w, 200, map[string]any{"launcher_version": engine.LauncherVersion, "repository": engine.RepositoryURL, "root": a.Manager.Root(), "platform": platformName(), "preview": a.Preview, "instances": a.Manager.List(), "tasks": a.Manager.Tasks(), "task_history_error": a.Manager.TaskHistoryError(), "index_recovery": a.Manager.IndexRecovery(), "bundled_commit": a.Manager.BundledCommit()})
 	})
 	mux.HandleFunc("POST /api/index-recovery/{entry}", func(w http.ResponseWriter, r *http.Request) {
 		var v struct {
@@ -107,6 +108,19 @@ func (a *API) Handler() http.Handler {
 			return
 		}
 		answer(w, 201, row)
+	})
+	mux.HandleFunc("GET /api/install-plan", func(w http.ResponseWriter, r *http.Request) {
+		port, e := strconv.Atoi(r.URL.Query().Get("port"))
+		if e != nil {
+			failure(w, errors.New("端口需为整数"))
+			return
+		}
+		plan, e := a.Manager.InstallationPlan(port)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, plan)
 	})
 	mux.HandleFunc("PUT /api/instances/{id}", func(w http.ResponseWriter, r *http.Request) {
 		var v struct {
@@ -210,6 +224,21 @@ func (a *API) Handler() http.Handler {
 		}
 		answer(w, 200, rows)
 	})
+	mux.HandleFunc("POST /api/tasks/{id}/cancel", func(w http.ResponseWriter, r *http.Request) {
+		if e := a.Manager.CancelTask(r.PathValue("id")); e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, map[string]bool{"cancel_requested": true})
+	})
+	mux.HandleFunc("POST /api/tasks/{id}/retry", func(w http.ResponseWriter, r *http.Request) {
+		task, e := a.Manager.RetryTask(r.PathValue("id"))
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
+	})
 	mux.HandleFunc("GET /api/instances/{id}/settings", func(w http.ResponseWriter, r *http.Request) {
 		result, e := a.Manager.Settings(r.PathValue("id"))
 		if e != nil {
@@ -217,6 +246,71 @@ func (a *API) Handler() http.Handler {
 			return
 		}
 		answer(w, 200, result)
+	})
+	mux.HandleFunc("GET /api/instances/{id}/snapshots", func(w http.ResponseWriter, r *http.Request) {
+		value, e := a.Manager.Snapshots(r.PathValue("id"))
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, value)
+	})
+	mux.HandleFunc("POST /api/instances/{id}/snapshot-restore", func(w http.ResponseWriter, r *http.Request) {
+		var value struct {
+			ID       string `json:"snapshot_id"`
+			Revision string `json:"revision"`
+			Name     string `json:"name"`
+		}
+		if e := decode(r, &value); e != nil {
+			failure(w, e)
+			return
+		}
+		task, e := a.Manager.RestoreSnapshot(r.PathValue("id"), value.ID, value.Revision, value.Name)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
+	})
+	mux.HandleFunc("PUT /api/instances/{id}/snapshot-policy", func(w http.ResponseWriter, r *http.Request) {
+		var value struct {
+			Revision   string          `json:"revision"`
+			KeepLatest int             `json:"keep_latest"`
+			Protected  map[string]bool `json:"protected"`
+		}
+		if e := decode(r, &value); e != nil {
+			failure(w, e)
+			return
+		}
+		if e := a.Manager.SetSnapshotPolicy(r.PathValue("id"), value.Revision, value.KeepLatest, value.Protected); e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, map[string]bool{"saved": true})
+	})
+	mux.HandleFunc("POST /api/instances/{id}/snapshot-delete", func(w http.ResponseWriter, r *http.Request) {
+		var value struct {
+			Revision string   `json:"revision"`
+			IDs      []string `json:"ids"`
+			Confirm  bool     `json:"confirm_delete"`
+		}
+		if e := decode(r, &value); e != nil {
+			failure(w, e)
+			return
+		}
+		if e := a.Manager.DeleteSnapshots(r.PathValue("id"), value.Revision, value.IDs, value.Confirm); e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, map[string]bool{"deleted": true})
+	})
+	mux.HandleFunc("POST /api/instances/{id}/snapshot-backup", func(w http.ResponseWriter, r *http.Request) {
+		task, e := a.Manager.Backup(r.PathValue("id"))
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
 	})
 	mux.HandleFunc("PUT /api/instances/{id}/settings", func(w http.ResponseWriter, r *http.Request) {
 		var v map[string]string
@@ -247,6 +341,52 @@ func (a *API) Handler() http.Handler {
 			return
 		}
 		answer(w, 202, task)
+	})
+	mux.HandleFunc("POST /api/instances/{id}/module-versions", func(w http.ResponseWriter, r *http.Request) {
+		var request engine.ModuleRequest
+		if e := decode(r, &request); e != nil {
+			failure(w, e)
+			return
+		}
+		task, e := a.Manager.ModuleVersions(r.PathValue("id"), request)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
+	})
+	mux.HandleFunc("POST /api/instances/{id}/creator", func(w http.ResponseWriter, r *http.Request) {
+		var request engine.CreatorRequest
+		if e := decode(r, &request); e != nil {
+			failure(w, e)
+			return
+		}
+		task, e := a.Manager.Creator(r.PathValue("id"), request)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
+	})
+	mux.HandleFunc("GET /api/creator-results/{id}", func(w http.ResponseWriter, r *http.Request) {
+		result, e := a.Manager.CreatorResult(r.PathValue("id"))
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, result)
+	})
+	mux.HandleFunc("PUT /api/instances/{id}/runtime-settings", func(w http.ResponseWriter, r *http.Request) {
+		var values map[string]string
+		if e := decode(r, &values); e != nil {
+			failure(w, e)
+			return
+		}
+		if e := a.Manager.SetRuntimeSettings(r.PathValue("id"), values); e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 200, map[string]bool{"applied": true})
 	})
 	mux.HandleFunc("GET /api/instances/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
 		if _, e := a.Manager.Get(r.PathValue("id")); e != nil {

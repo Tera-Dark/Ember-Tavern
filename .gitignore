@@ -30,9 +30,11 @@ desktop/dist/
 desktop/.vite/
 desktop/resources/bin/
 desktop/resources/host/
+desktop/resources/assets/
 desktop/.test-data/
 
 # Generated local release reports (published via CI artifacts, not Git)
 /desktop-smoke.json*
 /desktop-provenance.json
 /desktop-update-ui.json*
+/desktop-automatic-runtime.json*

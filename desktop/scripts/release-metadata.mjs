@@ -13,7 +13,7 @@ function namesFor(versions){return [
   ['ember-desktop-'+versions.desktop_version+'-x64-setup.exe','installer'],
   ['ember-desktop-'+versions.desktop_version+'-x64-portable.exe','portable'],
 ];}
-export async function createProvenance(dist,smokePath,versions,commit,builtAt=new Date().toISOString()){
+export async function createProvenance(dist,smokePath,versions,commit,builtAt=new Date().toISOString(),automaticSmokePath){
   if(!/^[a-f0-9]{40}$/.test(commit))throw new Error('An exact commit is required.');
   const smoke=JSON.parse(await readFile(smokePath,'utf8'));checkSmoke(smoke,versions,commit);
   const artifacts=[];
@@ -25,11 +25,16 @@ export async function createProvenance(dist,smokePath,versions,commit,builtAt=ne
     artifacts.push({name:sumName,role:'checksum',...await fileDigest(join(dist,sumName))});
   }
   artifacts.push({name:'desktop-smoke.json',role:'installed-windows-smoke',...await fileDigest(smokePath)});
+  if(automaticSmokePath){
+    const automatic=JSON.parse(await readFile(automaticSmokePath,'utf8'));checkSmoke(automatic,versions,commit);
+    if(automatic.python_runtime_mode!=='downloaded-isolated'||automatic.locked_dependencies_isolated!==true)throw new Error('Automatic Python / dependency isolation was not verified.');
+    artifacts.push({name:'desktop-automatic-runtime.json',role:'installed-automatic-runtime-smoke',...await fileDigest(automaticSmokePath)});
+  }
   return {format:'ember.desktop-release/v1',repository:'Tera-Dark/Ember-Tavern',commit,...versions,built_at:builtAt,code_signed:false,artifacts};
 }
-export async function verifyProvenance(dist,smokePath,path,versions,commit){
+export async function verifyProvenance(dist,smokePath,path,versions,commit,automaticSmokePath){
   const actual=JSON.parse(await readFile(path,'utf8'));
-  const expected=await createProvenance(dist,smokePath,versions,commit,actual.built_at);
+  const expected=await createProvenance(dist,smokePath,versions,commit,actual.built_at,automaticSmokePath);
   if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error('Provenance / binary / smoke mismatch; publication refused.');
   return actual;
 }
@@ -40,11 +45,11 @@ async function main(){
   const commit=requestedCommit||execFileSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).trim();
   if(command==='create'){
     const dist=join(repo,'desktop/dist'),smoke=join(repo,'desktop-smoke.json');
-    const proof=await createProvenance(dist,smoke,versions,commit);
+    const proof=await createProvenance(dist,smoke,versions,commit,undefined,join(repo,'desktop-automatic-runtime.json'));
     await writeFile(join(repo,'desktop-provenance.json'),JSON.stringify(proof,null,2)+'\n');console.log('Verified release provenance:',proof.tag,commit);return;
   }
   if(command==='verify'&&folder){
-    const base=resolve(folder);await verifyProvenance(join(base,'desktop/dist'),join(base,'desktop-smoke.json'),join(base,'desktop-provenance.json'),versions,commit);console.log('Release artifact provenance verified:',versions.tag,commit);return;
+    const base=resolve(folder);await verifyProvenance(join(base,'desktop/dist'),join(base,'desktop-smoke.json'),join(base,'desktop-provenance.json'),versions,commit,join(base,'desktop-automatic-runtime.json'));console.log('Release artifact provenance verified:',versions.tag,commit);return;
   }
   throw new Error('Usage: release-metadata.mjs versions | create [unused] [commit] | verify <artifact-directory> <commit>');
 }

@@ -29,7 +29,7 @@ func (m *Manager) basePython(t *Task) (string, error) {
 	}
 	m.progress(t, 12, "下载隔离的 Python 运行环境")
 	archive := filepath.Join(m.config.Root, "downloads", "python-"+PythonVersion+"-amd64.zip")
-	if e := Download(PythonURL, archive, PythonSHA256, 70<<20, func(got, total int64) {
+	if e := DownloadContext(m.taskContext(t), PythonURL, archive, PythonSHA256, 70<<20, func(got, total int64) {
 		if total > 0 {
 			m.progress(t, 12+int(got*10/total), "下载 Python 运行环境")
 		}
@@ -136,7 +136,7 @@ func (m *Manager) installRelease(t *Task, update bool, selected *Release) (err e
 		err = copyTree(localSource, candidate)
 	} else {
 		archive := filepath.Join(work, "source.zip")
-		err = Download(release.URL, archive, "", 120<<20, func(got, total int64) {
+		err = DownloadContext(m.taskContext(t), release.URL, archive, "", 120<<20, func(got, total int64) {
 			if total > 0 {
 				m.progress(t, 30+int(got*12/total), "下载项目源码")
 			}
@@ -195,6 +195,9 @@ func (m *Manager) installRelease(t *Task, update bool, selected *Release) (err e
 		return err
 	}
 	// Database and instance configuration are outside app/, never included in source replacement.
+	if err = m.beginCommit(t); err != nil {
+		return err
+	}
 	if wasRunning {
 		m.progress(t, 75, "停止当前服务，准备原地更新")
 		if err = m.stop(id); err != nil {
@@ -399,7 +402,7 @@ func (m *Manager) installRelease(t *Task, update bool, selected *Release) (err e
 	if u := m.updates[id]; u != nil && u.Latest != nil {
 		current := m.instances[id]
 		u.Suppressed = current.IgnoredUpdate == u.Latest.Commit
-		ge, e := versionAtLeast(strings.TrimPrefix(u.Latest.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+		ge, e := releaseAtLeastCurrent(*u.Latest, *current)
 		u.Available = !u.Suppressed && u.Latest.Commit != current.Commit && (e != nil || ge)
 	}
 	m.mu.Unlock()

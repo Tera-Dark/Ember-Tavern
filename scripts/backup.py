@@ -10,7 +10,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 from server.config import settings
 
 def database_backup(output):
-    source=sqlite3.connect(f'file:{settings.db_path}?mode=ro',uri=True);target=sqlite3.connect(output)
+    source=sqlite3.connect(settings.db_path.resolve().as_uri()+'?mode=ro',uri=True);target=sqlite3.connect(output)
     try:
         source.backup(target)
         if target.execute('PRAGMA integrity_check').fetchone()[0]!='ok':raise ValueError('Database integrity check failed')

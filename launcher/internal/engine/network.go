@@ -185,7 +185,7 @@ func (m *Manager) Check(id string) (Release, error) {
 		current := m.instances[id]
 		newer := r.Commit != current.Commit
 		if channel != "main" {
-			ge, err := versionAtLeast(strings.TrimPrefix(r.Version, "v"), strings.TrimPrefix(current.Version, "v"))
+			ge, err := releaseAtLeastCurrent(r, *current)
 			if err == nil {
 				newer = ge && newer
 			}
@@ -195,6 +195,16 @@ func (m *Manager) Check(id string) (Release, error) {
 	}
 	m.updates[id] = u
 	return r, e
+}
+
+// Desktop releases may carry the same host version while changing the launcher
+// or source. Compare their release tags before treating an older source as an
+// automatic update; explicit switch-version still permits a downgrade.
+func releaseAtLeastCurrent(release Release, current Instance) (bool, error) {
+	if validReleaseTag(release.Tag) && validReleaseTag(current.VersionTag) && strings.HasPrefix(release.Tag, "desktop-") == strings.HasPrefix(current.VersionTag, "desktop-") {
+		return versionAtLeast(strings.TrimPrefix(strings.TrimPrefix(release.Tag, "desktop-"), "v"), strings.TrimPrefix(strings.TrimPrefix(current.VersionTag, "desktop-"), "v"))
+	}
+	return versionAtLeast(strings.TrimPrefix(release.Version, "v"), strings.TrimPrefix(current.Version, "v"))
 }
 
 type releaseCache struct {
@@ -225,10 +235,16 @@ func (m *Manager) resolveCached(channel string) (Release, error) {
 	return r, e
 }
 func Download(url, path, expected string, max int64, progress func(int64, int64)) error {
+	return DownloadContext(context.Background(), url, path, expected, max, progress)
+}
+func DownloadContext(ctx context.Context, url, path, expected string, max int64, progress func(int64, int64)) error {
 	if !strings.HasPrefix(url, "https://") {
 		return errors.New("下载只允许 HTTPS")
 	}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, e := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if e != nil {
+		return e
+	}
 	req.Header.Set("User-Agent", "Ember-Launcher/"+LauncherVersion)
 	response, e := HTTPClient.Do(req)
 	if e != nil {
@@ -254,6 +270,10 @@ func Download(url, path, expected string, max int64, progress func(int64, int64)
 	buf := make([]byte, 64*1024)
 	var size int64
 	for {
+		if e = ctx.Err(); e != nil {
+			f.Close()
+			return e
+		}
 		n, err := response.Body.Read(buf)
 		if n > 0 {
 			size += int64(n)
@@ -269,6 +289,12 @@ func Download(url, path, expected string, max int64, progress func(int64, int64)
 			if progress != nil {
 				progress(size, response.ContentLength)
 			}
+			// Read may return final bytes and EOF together. Cancellation can
+			// also make a remote stream end normally; EOF is not consent to commit.
+			if e = ctx.Err(); e != nil {
+				f.Close()
+				return e
+			}
 		}
 		if err == io.EOF {
 			break
@@ -281,8 +307,14 @@ func Download(url, path, expected string, max int64, progress func(int64, int64)
 	if e = f.Close(); e != nil {
 		return e
 	}
+	if e = ctx.Err(); e != nil {
+		return e
+	}
 	if expected != "" && hex.EncodeToString(hash.Sum(nil)) != expected {
 		return errors.New("下载校验失败，文件没有被执行")
+	}
+	if e = ctx.Err(); e != nil {
+		return e
 	}
 	return os.Rename(temp, path)
 }

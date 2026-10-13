@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import {computed,onMounted,ref} from 'vue';
-import {Download,RefreshCw,ArrowLeft,History,TriangleAlert,Check} from 'lucide-vue-next';
+import {computed,onMounted,onUnmounted,ref,nextTick} from 'vue';
+import {Download,RefreshCw,ArrowLeft,History,TriangleAlert,Check,X} from 'lucide-vue-next';
+import SnapshotManager from './SnapshotManager.vue';
 import {invoke} from '../bridge';
+import {useDesktop} from '../useDesktop';
+import {trapModalFocus} from '../modalFocus';
 import type {DesktopUpdateState,Instance} from '../../types';
+const d=useDesktop(),confirmation=ref<{kind:'desktop'|'host';tag?:string}|null>(null),impactDialog=ref<HTMLElement|null>(null);let releaseFocus:(()=>void)|undefined;
+const affected=computed(()=>confirmation.value?.kind==='desktop'?d.state.value.instances.filter(i=>i.status==='running'):props.instance?.status==='running'?[props.instance]:[]);
 const props=defineProps<{updates?:DesktopUpdateState;instance?:Instance}>();
 const emit=defineEmits<{close:[];refresh:[]}>();
+const previewing=ref(false);
 const loading=ref(false),error=ref(''),message=ref('');
 const selectedDesktop=ref(''),selectedHost=ref('');
 const hosts=ref<{tag:string;version:string;published_at:string}[]>([]);
-const working=computed(()=>loading.value||['checking','downloading','ready','installing'].includes(props.updates?.phase||'')||props.instance?.status==='busy');
+const working=computed(()=>previewing.value||loading.value||['checking','downloading','ready','installing'].includes(props.updates?.phase||'')||props.instance?.status==='busy');
 const selectedRelease=computed(()=>props.updates?.releases.find(x=>x.tag===selectedDesktop.value));
 async function check(){
  loading.value=true;error.value='';
@@ -18,12 +24,12 @@ async function check(){
   if(props.instance)await invoke('instanceAction',{instanceId:props.instance.id,action:'check'});
  }catch(e:any){error.value=e.message;}finally{loading.value=false;emit('refresh');}
 }
-async function desktop(tag:string){
+async function applyDesktop(tag:string){
  loading.value=true;error.value='';message.value='';
  try{await invoke('desktopUpdateInstall',{tag});message.value='正在下载并校验安装包。完成后会停止实例、安装并重新打开桌面。';}
  catch(e:any){error.value=e.message;}finally{loading.value=false;emit('refresh');}
 }
-async function host(tag?:string){
+async function applyHost(tag?:string){
  if(!props.instance)return;
  loading.value=true;error.value='';message.value='';
  try{
@@ -32,6 +38,12 @@ async function host(tag?:string){
   message.value='版本任务已开始，可在实例卡片查看进度。运行中的实例会自动停止并恢复启动。';
  }catch(e:any){error.value=e.message;}finally{loading.value=false;emit('refresh');}
 }
+async function preview(kind:'desktop'|'host',tag?:string){if(previewing.value||confirmation.value)return;previewing.value=true;try{await d.refresh();confirmation.value={kind,tag};await nextTick();if(impactDialog.value)releaseFocus=trapModalFocus(impactDialog.value,closePreview);}finally{previewing.value=false;}}
+function closePreview(){if(loading.value)return;releaseFocus?.();releaseFocus=undefined;confirmation.value=null;}
+function desktop(tag:string){void preview('desktop',tag);}
+function host(tag?:string){void preview('host',tag);}
+async function confirmApply(){const action=confirmation.value;if(!action)return;releaseFocus?.();releaseFocus=undefined;confirmation.value=null;if(action.kind==='desktop')await applyDesktop(action.tag!);else await applyHost(action.tag);}
+onUnmounted(()=>releaseFocus?.());
 onMounted(check);
 </script>
 
@@ -60,10 +72,12 @@ onMounted(check);
    <div v-if="instance.update?.available" class="notice"><p>发现新版 {{instance.update.latest?.version}}（{{instance.update.latest?.tag}}）</p><button class="primary" :disabled="working||!instance.commit" @click="host()">更新本体</button></div>
    <p v-if="instance.update?.suppressed" class="help-text">已回退并消除当前新版的提示，可随时手动切换。</p>
    <p v-if="instance.update?.error" class="warning">{{instance.update.error}}</p>
-   <div class="form"><label>切换游戏本体<select v-model="selectedHost" :disabled="working"><option value="">选择已发布版本</option><option v-for="release in hosts" :key="release.tag" :value="release.tag">{{release.tag}}</option></select></label><button class="secondary" :disabled="working||!selectedHost||!instance.commit" @click="host(selectedHost)">应用所选本体版本</button></div>
+   <div class="form"><label>切换游戏本体<select aria-label="切换游戏本体" v-model="selectedHost" :disabled="working"><option value="">选择已发布版本</option><option v-for="release in hosts" :key="release.tag" :value="release.tag">{{release.tag}}</option></select></label><button class="secondary" :disabled="working||!selectedHost||!instance.commit" @click="host(selectedHost)">应用所选本体版本</button></div>
    <p class="help-text">每次切换先备份并预检。回退优先恢复该版本离开时的数据快照，较新进度保留在版本备份中；没有兼容快照且旧版无法读取现有数据时，切换会失败并保留原版本。实例目录中的 version-data 保存这些快照。</p>
   </section>
+  <SnapshotManager v-if="instance" :key="instance.id" :instance="instance"/>
  </main>
+ <Teleport to="body"><div v-if="confirmation" class="overlay"><section ref="impactDialog" class="dialog" role="dialog" aria-modal="true" aria-label="版本切换影响预览"><button class="dialog-close" aria-label="关闭版本影响预览" :disabled="loading" @click="closePreview"><X :size="20"/></button><span class="eyebrow">REVIEW THE CHANGE</span><h2>{{confirmation.kind==='desktop'?'切换余烬桌面':'切换游戏本体'}}</h2><p>目标：{{confirmation.tag||instance?.update?.latest?.tag||'GitHub 最新本体'}}</p><p v-if="affected.length" class="warning">以下 {{affected.length}} 间运行中的酒馆会暂时断线：</p><ul v-if="affected.length" class="impact-list"><li v-for="i in affected" :key="i.id">{{i.name}} · 当前 {{i.version}}</li></ul><p v-else class="help-text">当前没有运行中的受影响酒馆，已有进度与配置仍保留。</p><template v-if="confirmation.kind==='desktop'"><p class="help-text">先下载并校验安装包，再停止管理服务并切换桌面。实例本体、规则与房间内容锁保持原状；支持恢复标记的版本会重新启动原运行实例，早期版需人工启动。</p><p class="help-text">建议先确认完整备份。旧版可能不支持加密连接档案，会保留原文件并使用旧格式配置；不要把切换桌面当成切换房间模型。</p></template><template v-else><p class="help-text">准备新环境后先备份、预检，再切换本体与兼容数据；运行实例会停服后恢复。回退优先使用目标版本离开时的快照，较新进度保留在版本备份中。</p><p class="help-text">不能读取数据时保留原版本。世界书 hash、规则版本与插件 pins 不会因为选择发行版本而偷偷重写。</p></template><p class="help-text">请先告知同伴。实际应用前会重新检查任务和版本状态。</p><div class="row"><button class="secondary" @click="closePreview">取消</button><button class="primary" :disabled="working" @click="confirmApply">确认开始版本切换</button></div></section></div></Teleport>
 </template>
 
 <style scoped>

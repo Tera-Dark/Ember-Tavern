@@ -24,6 +24,12 @@ func (m *Manager) recover(id string) error {
 	if e != nil {
 		return e
 	}
+	var marker struct {
+		Format string `json:"format"`
+	}
+	if json.Unmarshal(b, &marker) == nil && marker.Format == "ember.module-barrier/v1" {
+		return m.RecoverModules(id)
+	}
 	var j updateJournal
 	if e = json.Unmarshal(b, &j); e != nil {
 		return errors.New("更新恢复记录损坏，请保留数据并联系维护者")

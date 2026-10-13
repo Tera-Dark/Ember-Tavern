@@ -22,6 +22,8 @@
 
 新增底座（源码 / 本地开发构建）：GitHub 自动检查、点击更新桌面、历史版本切换、本体版本快照与回退提示抑制。操作与旧安装包迁移边界见 [更新与版本管理](docs/UPDATE_GUIDE.md)。此改动尚未发布新的 GitHub 安装包。
 
+桌面体验正在按 [完整计划](docs/DESKTOP_EXPERIENCE_PLAN.md) 推进，已实现首页直达冒险、窗口 / 托盘、加密连接档案、内容库和可取消任务；本地证据与未完成项见 [执行记录](docs/DESKTOP_EXPERIENCE_PROGRESS.md)。这些源码增量尚未发布新的公开安装包。
+
 ## 房主桌面（Windows x64）
 
 参考 ComfyUI Desktop 的 **Electron + TypeScript + Vite** 架构，自己的 Vue 3 管理界面：本地实例卡片、自动安装、启停、房间与同伴、插件管理、API / LAN 配置、余烬 / 月下 / 浅色主题。沿用 Go 部署引擎与 Python / React 游戏宿主，不复制 Comfy 的 GPL 实现或品牌。
@@ -102,6 +104,8 @@ python scripts/plugins.py install plugin-packages/scene-notes-1.0.0.zip --sha256
 ```
 
 Python 插件是受信任服务器代码，不是沙箱。非公共只读 UI（read:gm 也算）需要 `--grant-capabilities`；后台需要 `--trust-backend`。整个包哈希变化会失去授权；拒绝覆盖内置、现有安装、路径穿越、symlink 和超限包。远程安装须 HTTPS＋可信 SHA256；没有浏览器点击任意 GitHub 自动执行的功能。
+
+桌面 beta.4 源码新增独立的模块版本事务入口：停服后审阅新 ZIP、完整备份、明确重新授信、副本迁移与模块数据回退。原安装入口仍拒绝覆盖；精确房间 pins 保留，不兼容升级被阻止。操作与恢复边界见 [桌面指南](docs/DESKTOP_GUIDE.md)。
 
 SDK：[docs/PLUGIN_SDK.md](docs/PLUGIN_SDK.md) · 发布：[docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md)
 

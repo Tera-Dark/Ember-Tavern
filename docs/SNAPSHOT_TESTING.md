@@ -1,4 +1,4 @@
-# 本次源码试用（2026-10-12）
+# 本次源码试用（2026-10-13 更新）
 
 仓库拥有者已授权把当前源码更新到 GitHub，供他人下载试用。M4 保持进行中，试用反馈不等于正式生态验收通过。源码版本：宿主 / 网页 `2.4.0-beta.1`，桌面 / 引擎 `0.2.0-beta.4`，作者 SDK `0.2.0`。
 
@@ -19,6 +19,8 @@ Copy-Item .env.example .env
 
 最新已公开桌面 Release 是 [beta.3](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.3)，它没有本次 beta.4 的更新底座。检查桌面版本页与点击更新需要从本次提交构建 beta.4；普通 CI 的 Windows 构建产物可在对应 Actions 的 `ember-desktop-windows-x64` Artifact 中取得，须先查看该次检查是否全部成功。Artifact 是测试构建，不是新公开 Release。早期安装包不会因 main 更新而自动获得新版桌面功能。
 
+拥有者决定先交付源码，由朋友后续实机测试。桌面安装、物理缩放 / 多屏、旧实例和同伴网络的可选检查及反馈格式见 [朋友试用清单](DESKTOP_DEVICE_ACCEPTANCE.md)；未测项不视作已验收。
+
 ## 建议检查
 
 1. 游戏：开桌、同伴入座、分配角色、同步行动、地图移动、关闭 / 重启和剧情回档；核对玩家只能读取自己的公开视图。
@@ -30,6 +32,6 @@ Copy-Item .env.example .env
 
 ## 提交前验证
 
-本机后端 261 项、桌面 32 项测试通过；Go 测试 / vet、Schema / 目录校验、网页与桌面构建、原生更新辅助程序及模拟发行的原生界面测试通过。网页重建没有改变 `static/`。实际 GitHub CI 结果以当前提交的 Actions 为准。
+最初源码试用提交的后端 261 项、桌面 32 项测试通过；Go 测试 / vet、Schema / 目录校验、网页与桌面构建、原生更新辅助程序及模拟发行的原生界面测试通过。网页重建没有改变 `static/`。桌面完整体验增量的最新测试数量、精确源码提交和验收缺口见 [执行记录](DESKTOP_EXPERIENCE_PROGRESS.md)，实际 GitHub CI 结果以当前提交的 Actions 为准。
 
 网页依赖审计与桌面运行依赖审计均为零；桌面打包工具链仍有 8 项中等告警，来自尚无兼容修复版的 [sprintf-js 及依赖链](https://github.com/advisories/GHSA-hp3w-g68c-fv3c)。已更新可兼容修复的 source-map-js / http-cache-semantics，没有强制降级打包工具来掩盖告警。
