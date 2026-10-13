@@ -1,4 +1,4 @@
-# 本次源码试用（2026-10-12）
+# 本次源码试用（2026-10-13 更新）
 
 仓库拥有者已授权把当前源码更新到 GitHub，供他人下载试用。M4 保持进行中，试用反馈不等于正式生态验收通过。源码版本：宿主 / 网页 `2.4.0-beta.1`，桌面 / 引擎 `0.2.0-beta.4`，作者 SDK `0.2.0`。
 
@@ -18,6 +18,8 @@ Copy-Item .env.example .env
 仅在新目录、尚无 `.env` 时执行复制。macOS / Linux 启动命令见 [快速启动](../QUICKSTART.md)。附带 `static/`，运行游戏无需 Node。房主打开 `http://localhost:8000`；同伴用浏览器访问同一服务器的 LAN 地址。首次使用演示模式和临时测试账号，无需模型密钥。
 
 最新已公开桌面 Release 是 [beta.3](https://github.com/Tera-Dark/Ember-Tavern/releases/tag/desktop-v0.2.0-beta.3)，它没有本次 beta.4 的更新底座。检查桌面版本页与点击更新需要从本次提交构建 beta.4；普通 CI 的 Windows 构建产物可在对应 Actions 的 `ember-desktop-windows-x64` Artifact 中取得，须先查看该次检查是否全部成功。Artifact 是测试构建，不是新公开 Release。早期安装包不会因 main 更新而自动获得新版桌面功能。
+
+拥有者决定先交付源码，由朋友后续实机测试。桌面安装、物理缩放 / 多屏、旧实例和同伴网络的可选检查及反馈格式见 [朋友试用清单](DESKTOP_DEVICE_ACCEPTANCE.md)；未测项不视作已验收。
 
 ## 建议检查
 
