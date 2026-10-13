@@ -68,7 +68,15 @@ async function fixture(){
   await page.getByRole('button',{name:'首页',exact:true}).click();await page.getByRole('textbox',{name:'搜索实例',exact:true}).fill('does not exist');await expect(page.getByRole('heading',{name:'没有找到匹配的酒馆',exact:true})).toBeVisible();await page.getByRole('button',{name:'清除筛选',exact:true}).click();report.checks.push('search empty result and reset');
   for(const [width,height,scale] of [[1366,768,1],[1093,614,1.25],[911,512,1.5],[960,540,2]]){
    await page.setViewportSize({width,height});await page.waitForTimeout(80);if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error('Horizontal clipping at '+scale);await page.screenshot({path:join(output,'home-scale-'+scale+'.png'),fullPage:true});report.captures.push('home-scale-'+scale+'.png');
+   for(const section of ['任务中心','内容库','应用设置','更新与版本']){
+    await page.getByRole('button',{name:section,exact:section!=='任务中心'}).first().click();
+    await expect(page.getByRole('heading',{name:section,exact:true})).toBeVisible();
+    if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw new Error(section+' horizontal clipping at '+scale);
+   }
+   await page.getByRole('button',{name:'应用设置',exact:true}).click();await page.getByRole('button',{name:'添加连接',exact:true}).click();const compactEditor=page.getByRole('dialog',{name:'连接档案编辑'});
+   await compactEditor.getByLabel('档案名称',{exact:true}).fill('视口 QA');await compactEditor.getByLabel('API 基础地址',{exact:true}).fill('https://provider.invalid/v1');await compactEditor.getByLabel('模型标识',{exact:true}).fill('viewport-fixture');await compactEditor.getByLabel('新 API Key',{exact:true}).fill('qa-synthetic-viewport-key');
+   const saveButton=compactEditor.getByRole('button',{name:'加密保存档案',exact:true});await saveButton.focus();const box=await saveButton.boundingBox();if(!box||box.x<0||box.y<0||box.x+box.width>width+1||box.y+box.height>height+1)throw new Error('Keyboard cannot reach dialog action at '+scale);await expect(saveButton).toBeFocused();await page.keyboard.press('Tab');if(!await compactEditor.evaluate(el=>el.contains(document.activeElement)))throw new Error('Tab escaped the dialog at '+scale);await page.screenshot({path:join(output,'connection-dialog-scale-'+scale+'.png')});report.captures.push('connection-dialog-scale-'+scale+'.png');await page.keyboard.press('Escape');await expect(compactEditor).not.toBeVisible();await expect(page.getByRole('button',{name:'添加连接',exact:true})).toBeFocused();await page.getByRole('button',{name:'首页',exact:true}).click();
   }
-  if(errors.length)throw new Error(errors.join('\n'));report.checks.push('logical viewports for 100/125/150/200 percent; no page errors');report.status='passed';console.log(JSON.stringify(report));
+  if(errors.length)throw new Error(errors.join('\n'));report.checks.push('home, tasks, content, settings and versions fit logical 100/125/150/200 percent viewports; dialog keyboard actions and focus remain reachable; no page errors');report.status='passed';console.log(JSON.stringify(report));
  }catch(e){report.status='failed';report.error=String(e);throw e;}finally{if(browser)await browser.close();await new Promise(r=>server.close(r));await writeFile(join(output,'report.json'),JSON.stringify(report,null,2));}
 })().catch(e=>{console.error(e);process.exitCode=1;});
