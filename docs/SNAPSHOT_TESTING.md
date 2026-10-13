@@ -30,6 +30,6 @@ Copy-Item .env.example .env
 
 ## 提交前验证
 
-本机后端 261 项、桌面 32 项测试通过；Go 测试 / vet、Schema / 目录校验、网页与桌面构建、原生更新辅助程序及模拟发行的原生界面测试通过。网页重建没有改变 `static/`。实际 GitHub CI 结果以当前提交的 Actions 为准。
+最初源码试用提交的后端 261 项、桌面 32 项测试通过；Go 测试 / vet、Schema / 目录校验、网页与桌面构建、原生更新辅助程序及模拟发行的原生界面测试通过。网页重建没有改变 `static/`。桌面完整体验增量的最新测试数量、精确源码提交和验收缺口见 [执行记录](DESKTOP_EXPERIENCE_PROGRESS.md)，实际 GitHub CI 结果以当前提交的 Actions 为准。
 
 网页依赖审计与桌面运行依赖审计均为零；桌面打包工具链仍有 8 项中等告警，来自尚无兼容修复版的 [sprintf-js 及依赖链](https://github.com/advisories/GHSA-hp3w-g68c-fv3c)。已更新可兼容修复的 source-map-js / http-cache-semantics，没有强制降级打包工具来掩盖告警。

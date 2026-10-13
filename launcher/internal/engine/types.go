@@ -197,6 +197,9 @@ func New(config Config) (*Manager, error) {
 		if e := m.recover(id); e != nil {
 			return nil, e
 		}
+		if e := m.RecoverModules(id); e != nil {
+			return nil, e
+		}
 	}
 	// Interrupted updates are rolled back before any process can start.
 	m.loadTaskHistory()
@@ -303,7 +306,7 @@ func (m *Manager) viewLocked(id string) View {
 		v.URL = localURL(i.Port)
 	}
 	if key := m.active[id]; key != "" {
-		if m.tasks[key].Kind != "creator" || m.processes[id] == nil {
+		if m.tasks[key].Kind != "creator" && m.tasks[key].Kind != "plugin-inspect" || m.processes[id] == nil {
 			v.Status = "busy"
 		}
 		v.Task = clone(m.tasks[key])
@@ -382,7 +385,7 @@ func (m *Manager) taskWithOptions(id, kind string, options taskOptions, fn func(
 	t.StartAfter = options.StartAfter
 	m.tasks[t.ID] = t
 	m.active[id] = t.ID
-	if kind != "creator" {
+	if kind != "creator" && kind != "plugin-inspect" {
 		delete(m.errors, id)
 	}
 	m.persistTaskHistoryLocked()
@@ -414,7 +417,7 @@ func (m *Manager) taskWithOptions(id, kind string, options taskOptions, fn func(
 				t.ErrorCode = "timeout"
 			}
 			t.Error = m.redact(id, err.Error())
-			if kind != "creator" {
+			if kind != "creator" && kind != "plugin-inspect" {
 				m.errors[id] = t.Error
 			}
 			t.Stage = "未完成，可查看日志重试"

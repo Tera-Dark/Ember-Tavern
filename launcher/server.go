@@ -342,6 +342,19 @@ func (a *API) Handler() http.Handler {
 		}
 		answer(w, 202, task)
 	})
+	mux.HandleFunc("POST /api/instances/{id}/module-versions", func(w http.ResponseWriter, r *http.Request) {
+		var request engine.ModuleRequest
+		if e := decode(r, &request); e != nil {
+			failure(w, e)
+			return
+		}
+		task, e := a.Manager.ModuleVersions(r.PathValue("id"), request)
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		answer(w, 202, task)
+	})
 	mux.HandleFunc("POST /api/instances/{id}/creator", func(w http.ResponseWriter, r *http.Request) {
 		var request engine.CreatorRequest
 		if e := decode(r, &request); e != nil {

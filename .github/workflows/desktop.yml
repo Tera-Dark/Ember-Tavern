@@ -3,9 +3,9 @@ on:
   push:
     branches: ['**']
     tags: ['desktop-v*']
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/test_*.py', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/test_*.py', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', 'scripts/desktop_creator.py', 'scripts/plugin_versions.py', 'scripts/backup.py', '.github/workflows/desktop.yml']
   pull_request:
-    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/test_*.py', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', '.github/workflows/desktop.yml']
+    paths: ['desktop/**', 'launcher/**', 'server/**', 'web/**', 'static/**', 'launcher-manifest.json', 'requirements-lock.txt', 'requirements-dev.txt', 'tests/test_*.py', 'tests/browser_m0.py', 'tests/browser_m1_desktop.py', 'presets/**', 'templates/**', 'registry/**', 'scripts/creator.py', 'scripts/desktop_creator.py', 'scripts/plugin_versions.py', 'scripts/backup.py', '.github/workflows/desktop.yml']
   workflow_dispatch:
     inputs:
       publish:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write
     env:
@@ -124,6 +124,22 @@ jobs:
             gh api --method POST "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" --input smoke-error.json
             exit $code
           }
+      - name: Installed desktop downloads its own Python and locked dependencies
+        shell: pwsh
+        env:
+          GEMINI_API_KEY: ''
+          DECISION_API_KEY: ''
+          TTS_API_KEY: ''
+        run: |
+          $installPath=Join-Path $env:RUNNER_TEMP 'ember-installed'
+          $env:EMBER_SMOKE_EXE=(Resolve-Path "$installPath/余烬桌面.exe").Path
+          $env:EMBER_SMOKE_APP_DIR=''
+          $env:EMBER_SMOKE_PYTHON=''
+          $env:EMBER_SMOKE_REPORT=(Join-Path $pwd 'desktop-automatic-runtime.json')
+          node desktop/tests/electron-smoke.cjs > desktop-automatic-runtime.log 2>&1
+          $code=$LASTEXITCODE
+          Get-Content desktop-automatic-runtime.log
+          if ($code -ne 0) { exit $code }
       - name: Bind installed smoke and EXEs to this exact source commit
         run: node desktop/scripts/release-metadata.mjs create
       - name: Verify update and rollback UI in the installed desktop
@@ -151,6 +167,8 @@ jobs:
             desktop-smoke.json.*
             desktop-smoke.json.engine.log
             desktop-smoke.log
+            desktop-automatic-runtime.json*
+            desktop-automatic-runtime.log
             backend-test.log
             desktop-package.log
             desktop-update-ui.json*
@@ -190,7 +208,7 @@ jobs:
             echo 'Release exists. Do not silently replace reviewed binaries.'
             exit 1
           fi
-          gh release create "$TAG" --repo "$REPO" --target "$COMMIT" --prerelease --title "余烬桌面 $VERSION · 房主安装器" --notes "Electron + TypeScript + Vite + Vue。来源：$COMMIT。含安装器／便携 EXE、SHA256、此构建的真实安装冒烟与 desktop-provenance.json。房主安装，同伴浏览器身份＋密钥入座。未代码签名；首次环境下载需网络；实际多人、网卡／防火墙和付费供应商仍需实机验证。" package/desktop/dist/*.exe package/desktop/dist/*.sha256 package/desktop-smoke.json package/desktop-provenance.json
+          gh release create "$TAG" --repo "$REPO" --target "$COMMIT" --prerelease --title "余烬桌面 $VERSION · 房主安装器" --notes "Electron + TypeScript + Vite + Vue。来源：$COMMIT。含安装器／便携 EXE、SHA256、此构建的真实安装冒烟与 desktop-provenance.json。房主安装，同伴浏览器身份＋密钥入座。未代码签名；首次环境下载需网络；实际多人、网卡／防火墙和付费供应商仍需实机验证。" package/desktop/dist/*.exe package/desktop/dist/*.sha256 package/desktop-smoke.json package/desktop-automatic-runtime.json package/desktop-provenance.json
       - name: Diagnose release artifact layout
         if: failure()
         env:

@@ -14,6 +14,7 @@ import {PreferencesStore,fitWindow} from './preferences';
 import {ConnectionVault} from './connections';
 import {CreatorProjects} from './creator-projects';
 import {creatorAction} from './creator-actions';
+import {ModuleVersions} from './module-versions';
 import {WorkspaceLocationStore,WORKSPACE_MIN_DESKTOP} from './workspace-location';
 import type {RPCMethod,BuildInfo,SnapshotReport} from '../types';
 
@@ -25,7 +26,7 @@ const games=new Map<number,{instanceId:string;origin:string}>();
 const gameRooms=new Map<number,string>();
 let preferences:PreferencesStore;let tray:Tray|undefined;let closePending=false;let boundsTimer:ReturnType<typeof setTimeout>;
 let connections:ConnectionVault;let connectionRestoreError='';let runtimeTail:Promise<void>=Promise.resolve();
-let workspaceSwitching=false;const creatorPending=new Set<string>();
+let workspaceSwitching=false;const nativePending=new Set<string>();
 function serializedRuntime<T>(action:()=>Promise<T>):Promise<T>{const task=runtimeTail.then(action);runtimeTail=task.then(()=>{},()=>{});return task;}
 async function waitEngineTask(taskId:string){const deadline=Date.now()+45000;while(Date.now()<deadline){const current=await controller.state(),task=current.tasks.find(t=>t.id===taskId);if(task?.status==='failed')throw new Error(task.error||'停止服务失败');if(task?.status==='success')return;await new Promise(resolve=>setTimeout(resolve,300));}throw new Error('停止服务尚未完成，请在任务中心确认后重试');}
 if(process.env.EMBER_DESKTOP_TEST_MODE==='1'&&process.env.EMBER_DESKTOP_TEST_ROOT){const profile=join(process.env.EMBER_DESKTOP_TEST_ROOT,'electron-profile');mkdirSync(profile,{recursive:true});app.setPath('userData',profile);}
@@ -63,7 +64,7 @@ app.whenReady().then(async()=>{
   const secretStorage={encode:(value:string)=>{if(!safeStorage.isEncryptionAvailable()||(process.platform==='linux'&&safeStorage.getSelectedStorageBackend()==='basic_text'))throw new Error('系统凭据加密不可用；不会明文保存凭据');return safeStorage.encryptString(value).toString('base64');},decode:(value:string)=>safeStorage.decryptString(Buffer.from(value,'base64'))};
   controller=new HostController(engine,secretStorage);
   connections=new ConnectionVault(root,secretStorage);await connections.load();
-  const creatorProjects=new CreatorProjects(root);await creatorProjects.load();
+  const creatorProjects=new CreatorProjects(root);await creatorProjects.load();const moduleVersions=new ModuleVersions(controller,serializedRuntime);
   const restoreConnections=()=>connections.restore((instanceId,values)=>engine.request('/api/instances/'+id(instanceId)+'/runtime-settings','PUT',values));
   try{await restoreConnections();}catch{connectionRestoreError='连接档案未能安全载入，自动启动已暂停。请在应用设置检查档案；原配置与数据保留。';}
   updates=new DesktopUpdates({root,version:app.getVersion(),executable:process.execPath,portable:process.env.PORTABLE_EXECUTABLE_FILE,packaged:app.isPackaged});
@@ -77,7 +78,7 @@ app.whenReady().then(async()=>{
   async function requestClose(forceQuit=false){
    if(closePending||closing)return;closePending=true;
    try{
-    const current=await controller.state();const tasks=current.tasks.some(t=>t.status==='running')||creatorPending.size>0;
+    const current=await controller.state();const tasks=current.tasks.some(t=>t.status==='running')||nativePending.size>0;
     if(tasks&&!forceQuit&&tray){window.hide();return;}
     if(tasks){await dialog.showMessageBox(window,{type:'info',title:'酒馆任务仍在进行',message:'环境准备或版本切换尚未完成',detail:'请等待任务结束，或关闭窗口让任务在托盘中继续。原数据和恢复资料会保留。',buttons:['继续等待']});return;}
     const choice=forceQuit?'quit':preferences.value.closeBehavior;
@@ -108,7 +109,7 @@ app.whenReady().then(async()=>{
       if(desktopInstalling&&method!=='window')throw new Error('正在切换桌面版本，请等待重新启动');
       if(method==='chooseWorkspaceLocation')return serializedRuntime(async()=>{
         if(workspaceSwitching)throw new Error('工作区已经在切换，请等待桌面重新打开');
-        if(creatorPending.size)throw new Error('请等待本机创作操作完成后再切换工作区');
+        if(nativePending.size)throw new Error('请等待本机文件或模块操作完成后再切换工作区');
         if(!['choose','default'].includes(args.action))throw new Error('请选择工作区操作');
         let target=defaultRoot;
         if(args.action==='choose'){const selected=await dialog.showOpenDialog(window,{title:'选择整个余烬工作区',properties:['openDirectory','createDirectory'],defaultPath:root});if(selected.canceled||!selected.filePaths[0])return {cancelled:true};target=selected.filePaths[0];}
@@ -117,14 +118,15 @@ app.whenReady().then(async()=>{
         const running=current.instances.filter(i=>i.status==='running').map(i=>i.name);
         const reply=await dialog.showMessageBox(window,{type:'warning',title:'切换整个桌面工作区',message:inspection.existing?'重新打开已有余烬工作区？':'在此目录创建新的余烬工作区？',detail:'目标：'+inspection.root+'\n可用空间：'+(inspection.availableBytes===null?'未能取得':(inspection.availableBytes/1024**3).toFixed(1)+' GiB')+'\n'+(running.length?'将停止：'+running.join('、')+'。同伴会暂时断线。\n':'')+'桌面会重新打开。原工作区全部保留，可随时重新选择；不会移动或合并存档与环境。\n连接凭据仍需原 Windows 用户。早于 '+WORKSPACE_MIN_DESKTOP+' 的桌面只读取默认目录；使用自定义工作区时请先切回默认目录再降级。',buttons:['取消','切换并重新打开'],defaultId:0,cancelId:0});
         if(reply.response!==1)return {cancelled:true};
-        const latest=await controller.state();if(creatorPending.size||latest.tasks.some(t=>t.status==='running'))throw new Error('确认期间有任务或创作操作开始，请等待结束后重试');
+        const latest=await controller.state();if(nativePending.size||latest.tasks.some(t=>t.status==='running'))throw new Error('确认期间有任务或本机文件操作开始，请等待结束后重试');
         await locations.inspect(inspection.root,root);workspaceSwitching=true;
         try{await engine.stop();await locations.save(inspection.root);}catch(error){workspaceSwitching=false;await engine.start();await restoreConnections();throw error;}
         app.relaunch();app.quit();return {restarting:true};
       });
       if(['creatorProjects','creatorOpen','creatorCreate','creatorOperate','creatorFolder','creatorForget'].includes(method)){
-        if(method==='creatorProjects')return creatorProjects.snapshot();const key=args.projectId?'project-'+id(args.projectId):'picker';if(creatorPending.has(key))throw new Error('此作品已有操作，请等待完成');creatorPending.add(key);try{return await creatorAction(window,controller,creatorProjects,method,args,[app.getAppPath(),app.isPackaged?dirname(process.execPath):dirname(app.getAppPath())]);}finally{creatorPending.delete(key);}
+        if(method==='creatorProjects')return creatorProjects.snapshot();const key=args.projectId?'project-'+id(args.projectId):'picker';if(nativePending.has(key))throw new Error('此作品已有操作，请等待完成');nativePending.add(key);try{return await creatorAction(window,controller,creatorProjects,method,args,[app.getAppPath(),app.isPackaged?dirname(process.execPath):dirname(app.getAppPath())]);}finally{nativePending.delete(key);}
       }
+      if(['moduleHistory','modulePreview','moduleUpgrade','moduleRollback'].includes(method)){const key='module-'+id(args.instanceId);if(nativePending.has(key))throw new Error('此酒馆已有模块检查，请等待完成');nativePending.add(key);try{return await moduleVersions.invoke(window,method,args);}finally{nativePending.delete(key);}}
       if(method==='connections')return connections.snapshot();
       if(method==='saveConnectionProfile')return connections.save(args);
       if(method==='removeConnectionProfile')return connections.remove(args.profileId);
@@ -147,7 +149,7 @@ app.whenReady().then(async()=>{
       if((connectionRestoreError||connections.error)&&(method==='retryTask'||method==='createInstance'||method==='switchInstanceVersion'||method==='instanceAction'&&['start','install','update'].includes(args.action)))throw new Error(connectionRestoreError||connections.error);
       if(method==='desktopUpdateCheck')return updates.check();
       if(method==='desktopUpdateInstall'){
-        if(creatorPending.size)throw new Error('请等待本机创作操作完成后再切换桌面版本');
+        if(nativePending.size)throw new Error('请等待本机文件或模块操作完成后再切换桌面版本');
         if(typeof args.tag!=='string')throw new Error('请选择发行版本');
         if(locations.snapshot(root).custom&&compareVersions(args.tag.replace(/^desktop-v/,''),WORKSPACE_MIN_DESKTOP)<0)throw new Error('此旧桌面无法识别自定义工作区。请在应用设置切回默认工作区后再降级；当前数据保留。');
         if(['downloading','ready','installing'].includes(updates.snapshot().phase))throw new Error('已有版本切换任务');
@@ -157,7 +159,7 @@ app.whenReady().then(async()=>{
           try{
             const downloaded=await updates.download(args.tag);
             desktopInstalling=true;
-            const latest=await controller.state();if(creatorPending.size||latest.tasks.some(item=>item.status==='running'))throw new Error('实例或创作正在执行任务，安装包已保留，请完成任务后重试');
+            const latest=await controller.state();if(nativePending.size||latest.tasks.some(item=>item.status==='running'))throw new Error('实例或本机文件操作正在执行任务，安装包已保留，请完成任务后重试');
             await engine.stop();
             stopped=true;
             await updates.markApplying(downloaded.release,latest.instances.filter(item=>item.status==='running').map(item=>item.id));

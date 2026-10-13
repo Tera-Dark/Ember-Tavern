@@ -37,3 +37,4 @@ desktop/.test-data/
 /desktop-smoke.json*
 /desktop-provenance.json
 /desktop-update-ui.json*
+/desktop-automatic-runtime.json*

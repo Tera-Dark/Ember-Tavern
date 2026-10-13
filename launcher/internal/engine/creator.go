@@ -96,14 +96,14 @@ func (m *Manager) CreatorResult(taskID string) (map[string]any, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	t := m.tasks[taskID]
-	if t == nil || t.Kind != "creator" {
+	if t == nil || t.Kind != "creator" && t.Kind != "plugin-inspect" && t.Kind != "plugin-upgrade" && t.Kind != "plugin-rollback" {
 		return nil, errors.New("创作任务不存在")
 	}
 	if t.Status == "running" {
 		return map[string]any{"done": false}, nil
 	}
 	if len(t.creatorResult) == 0 {
-		return map[string]any{"done": true, "error": "检查结果不再可用，请在作者工作区重新操作；原作品保留"}, nil
+		return map[string]any{"done": true, "error": "检查结果不再可用，请回到原操作页面重新检查；原文件与恢复资料保留"}, nil
 	}
 	return map[string]any{"done": true, "result": json.RawMessage(append([]byte(nil), t.creatorResult...))}, nil
 }

@@ -12,11 +12,20 @@ test('release provenance rejects wrong source, failed smoke and replaced binarie
   const smoke=join(root,'desktop-smoke.json'),proofPath=join(root,'desktop-provenance.json');await writeFile(smoke,JSON.stringify(report));
   for(const suffix of ['setup','portable']){const name='ember-desktop-'+versions.desktop_version+'-x64-'+suffix+'.exe';const path=join(root,name);await writeFile(path,'fixture binary, not a real installer');await writeFile(path+'.sha256',(await fileDigest(path)).sha256+'  '+name+'\n');}
   const proof=await createProvenance(root,smoke,versions,commit);await writeFile(proofPath,JSON.stringify(proof));await verifyProvenance(root,smoke,proofPath,versions,commit);
+  const automaticPath=join(root,'desktop-automatic-runtime.json'),automaticProofPath=join(root,'automatic-proof.json');
+  const automatic={...report,python_runtime_mode:'downloaded-isolated',locked_dependencies_isolated:true};await writeFile(automaticPath,JSON.stringify(automatic));
+  const automaticProof=await createProvenance(root,smoke,versions,commit,undefined,automaticPath);await writeFile(automaticProofPath,JSON.stringify(automaticProof));
+  assert(automaticProof.artifacts.some(a=>a.role==='installed-automatic-runtime-smoke'));
+  await verifyProvenance(root,smoke,automaticProofPath,versions,commit,automaticPath);
+  await writeFile(automaticPath,JSON.stringify({...automatic,python_runtime_mode:'system-test'}));
+  await assert.rejects(verifyProvenance(root,smoke,automaticProofPath,versions,commit,automaticPath),/isolation/);
+  await writeFile(automaticPath,JSON.stringify({...automatic,python_runtime_version:'changed'}));
+  await assert.rejects(verifyProvenance(root,smoke,automaticProofPath,versions,commit,automaticPath),/mismatch/);
   assert.throws(()=>checkSmoke({...report,source_commit:'b'.repeat(40)},versions,commit),/source/);assert.throws(()=>checkSmoke({...report,source_dirty:true},versions,commit),/source/);assert.throws(()=>checkSmoke({...report,status:'failed'},versions,commit),/smoke/);
   const changed=join(root,'ember-desktop-'+versions.desktop_version+'-x64-setup.exe');await writeFile(changed,'replacement');
   await assert.rejects(verifyProvenance(root,smoke,proofPath,versions,commit),/Checksum/);
   // Replacing both EXE and checksum is still rejected by the immutable proof.
   await writeFile(changed+'.sha256',(await fileDigest(changed)).sha256+'  '+changed.split(require('node:path').sep).at(-1)+'\n');
   await assert.rejects(verifyProvenance(root,smoke,proofPath,versions,commit),/mismatch/);
- }finally{await rm(root,{recursive:true,force:true});}
+ }finally{const {resolve,sep,basename}=require('node:path');assert(resolve(root).startsWith(resolve(tmpdir())+sep)&&basename(root).startsWith('ember-provenance-'));await rm(root,{recursive:true,force:true});}
 });

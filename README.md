@@ -105,6 +105,8 @@ python scripts/plugins.py install plugin-packages/scene-notes-1.0.0.zip --sha256
 
 Python 插件是受信任服务器代码，不是沙箱。非公共只读 UI（read:gm 也算）需要 `--grant-capabilities`；后台需要 `--trust-backend`。整个包哈希变化会失去授权；拒绝覆盖内置、现有安装、路径穿越、symlink 和超限包。远程安装须 HTTPS＋可信 SHA256；没有浏览器点击任意 GitHub 自动执行的功能。
 
+桌面 beta.4 源码新增独立的模块版本事务入口：停服后审阅新 ZIP、完整备份、明确重新授信、副本迁移与模块数据回退。原安装入口仍拒绝覆盖；精确房间 pins 保留，不兼容升级被阻止。操作与恢复边界见 [桌面指南](docs/DESKTOP_GUIDE.md)。
+
 SDK：[docs/PLUGIN_SDK.md](docs/PLUGIN_SDK.md) · 发布：[docs/GITHUB_PUBLISH.md](docs/GITHUB_PUBLISH.md)
 
 ## 双模型与 TTS 配置

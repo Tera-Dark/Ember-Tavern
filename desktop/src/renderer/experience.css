@@ -27,3 +27,5 @@ body{font-size:14px}.desktop-shell{padding-bottom:34px;min-height:100vh;backgrou
 .storage-path{display:block;overflow-wrap:anywhere;white-space:normal;padding:12px;background:var(--surface);border-radius:10px}
 
 .creator-workspace{margin-top:24px}.creator-metadata{margin:16px 0}.creator-result{padding:14px;border:1px solid var(--border);border-radius:12px;margin-top:16px;overflow-wrap:anywhere}.creator-workspace .storage-path{min-width:0;flex:1}
+
+.module-record{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--border)}.module-record small{display:block;color:var(--muted);margin-top:6px}.module-versions{margin-bottom:18px}
