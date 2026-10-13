@@ -87,7 +87,9 @@ class Manager:
         if con is None:
             with connection() as c: return self.pin_reason(room_id,pid,c)
         row=con.execute('SELECT state_json FROM rooms WHERE id=?',(room_id,)).fetchone()
-        lock=load_state(row['state_json']).get('_preset_lock') if row else None
+        return self.pin_state_reason(load_state(row['state_json']) if row else {},pid)
+    def pin_state_reason(self,state,pid):
+        lock=state.get('_preset_lock')
         if not lock: return ''
         pin=next((pin for pin in lock['plugins'] if pin['id']==pid),None)
         if not pin: return '本预设未锁定此模块；添加新模块需要显式升级，不自动改变旧房间'
@@ -96,10 +98,16 @@ class Manager:
             return '原模块版本 / SHA256 已变化；保留状态并恢复匹配版本，不自动替换'
         return ''
     def enabled(self,room_id,pid,con=None):
+        if con is None:
+            with connection() as c:return self.enabled(room_id,pid,c)
         flags=self.flags(room_id,con)
+        row=con.execute('SELECT state_json FROM rooms WHERE id=?',(room_id,)).fetchone()
+        state=load_state(row['state_json']) if row else {}
+        return self.state_enabled(pid,state,flags)
+    def state_enabled(self,pid,state,flags):
         def ready(current,trail):
             item=self.items.get(current)
-            if current in trail or not item or item['blocked'] or not flags.get(current) or self.pin_reason(room_id,current,con):return False
+            if current in trail or not item or item['blocked'] or not flags.get(current) or self.pin_state_reason(state,current) or self.namespace_reason(state,current):return False
             return all(ready(dep,trail|{current}) for dep in item['manifest'].get('requires',[]))
         return ready(pid,set())
     def need(self,room_id,pid,con=None):
@@ -108,6 +116,13 @@ class Manager:
         return self.items[pid]
     def namespace(self,state,pid):
         return deepcopy(state.get('_plugins',{}).get(pid,{'schema_version':1,'revision':0,'data':{}}))
+    def namespace_reason(self,state,pid):
+        namespace=state.get('_plugins',{}).get(pid)
+        if namespace is None:return ''
+        schema=namespace.get('schema_version')
+        if type(schema) is not int or schema>self.items[pid]['manifest'].get('state_version',1):
+            return '模块数据来自较新版本；原数据保留，请恢复兼容模块后继续'
+        return ''
     def write(self,state,pid,data):
         encoded=json.dumps(data,ensure_ascii=False,allow_nan=False)
         if not isinstance(data,dict) or len(encoded.encode())>262144:raise ValueError('plugin state must be an object <= 256 KiB')
@@ -115,6 +130,8 @@ class Manager:
         state.setdefault('_plugins',{})[pid]={'schema_version':backend.schema_version if backend else 1,'revision':old['revision']+1,'data':json.loads(encoded)}
     def initialize(self,room,state,pid,user=None,con=None):
         item=self.need(room['id'],pid,con)
+        reason=self.namespace_reason(state,pid)
+        if reason:raise HTTPException(422,reason)
         if pid in state.get('_plugins',{}):
             ns=self.namespace(state,pid);backend=item['backend']
             if backend and ns['schema_version']!=backend.schema_version:
@@ -141,10 +158,14 @@ class Manager:
     def public_data(self,room,state,pid,user,con=None):
         item=self.items.get(pid)
         if not item or item['blocked']:return {}
+        namespace=self.namespace(state,pid)
+        # Historical rewinds may restore state written by another module version.
+        # Never pass an unknown schema to an older, potentially less private view.
+        if type(namespace['schema_version']) is not int or namespace['schema_version']!=item['manifest'].get('state_version',1):return {}
         viewer=dict(user,_is_owner=room['owner_id']==user['id'])
         safe=self.viewer_state(state,viewer,item['manifest'])
         ctx=Context(self,pid,room,safe,user,con)
-        data=self.namespace(state,pid)['data']
+        data=namespace['data']
         try:
             projected=item['backend'].public_data(ctx,deepcopy(data)) if item['backend'] else deepcopy(data)
             if not isinstance(projected,dict) or len(json.dumps(projected,ensure_ascii=False,allow_nan=False).encode())>262144:raise ValueError('invalid public projection')
@@ -178,6 +199,7 @@ class Manager:
         for pid,item in self.items.items():
             if name not in item['manifest'].get('provides',[]) or not self.enabled(room['id'],pid,con):continue
             if not item['backend']:return None
+            if self.namespace(state,pid)['schema_version']!=item['manifest'].get('state_version',1):return None
             viewer=dict(user,_is_owner=room['owner_id']==user['id']) if user else None
             safe=self.viewer_state(state,viewer,item['manifest']) if user else state
             ctx=Context(self,pid,room,safe,user,con)
@@ -190,8 +212,8 @@ class Manager:
         return None
     def catalog(self,room,state,con=None):
         flags=self.flags(room['id'],con)
-        return [dict(item['manifest'],enabled=self.enabled(room['id'],pid,con),requested_enabled=flags.get(pid,False),
-                     blocked=item['blocked'] or self.pin_reason(room['id'],pid,con),builtin=item['builtin'],hash=item['hash'],state_revision=self.namespace(state,pid)['revision'],
+        return [dict(item['manifest'],enabled=self.state_enabled(pid,state,flags),requested_enabled=flags.get(pid,False),
+                     blocked=item['blocked'] or self.pin_state_reason(state,pid) or self.namespace_reason(state,pid),builtin=item['builtin'],hash=item['hash'],state_revision=state.get('_plugins',{}).get(pid,{}).get('revision',0),
                      fault=state.get('_plugin_faults',{}).get(pid)) for pid,item in self.items.items()]
     def public_context(self,room,state,user,pid,con=None):
         item=self.need(room['id'],pid,con);m=item['manifest']
@@ -217,10 +239,14 @@ class Manager:
         if pid not in self.items:raise HTTPException(404,'插件未安装')
         if self.items[pid]['blocked']:raise HTTPException(422,self.items[pid]['blocked'])
         flags=self.flags(room_id,con);changed=[]
+        row=con.execute('SELECT state_json FROM rooms WHERE id=?',(room_id,)).fetchone()
+        state=load_state(row['state_json']) if row else {}
         def enable(current,trail):
             if current in trail:raise HTTPException(422,'插件依赖存在环')
             if current not in self.items or self.items[current]['blocked']:raise HTTPException(422,'依赖不可用：'+current)
-            pinned=self.pin_reason(room_id,current,con)
+            incompatible=self.namespace_reason(state,current)
+            if incompatible:raise HTTPException(422,incompatible)
+            pinned=self.pin_state_reason(state,current)
             if pinned:raise HTTPException(422,pinned)
             for dep in self.items[current]['manifest'].get('requires',[]):enable(dep,trail+[current])
             if not flags.get(current):changed.append(current)

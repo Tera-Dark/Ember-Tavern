@@ -263,6 +263,34 @@ def test_state_migration_on_reenable(client,tmp_path):
     assert r['state']['_plugins']['scene-notes']['data']['migrated_from']==1
 
 
+def test_rewind_to_newer_module_state_after_code_downgrade_preserves_data_and_privacy(client,tmp_path):
+    install_notes(tmp_path)
+    _,h,_=account(client,'future_host');_,fh,ft=account(client,'future_player')
+    r=toggle(client,room(client,h),h,'scene-notes')
+    assert client.post('/api/rooms/join',headers=fh,json={'code':r['code']}).status_code==200
+    r=read(client,r,h);target=r['events'][-1]['id']
+    r=action(client,r,h,'scene-notes','append',{'text':'current old-schema note'}).json()['room']
+    private='synthetic-newer-module-private-field'
+    with connection() as con:
+        event=con.execute('SELECT snapshot_json FROM events WHERE id=?',(target,)).fetchone()
+        snapshot=json.loads(event['snapshot_json'])
+        snapshot['_plugins']['scene-notes']={'schema_version':2,'revision':7,'data':{'notes':[],'future_secret':private}}
+        con.execute('UPDATE events SET snapshot_json=? WHERE id=?',(json.dumps(snapshot),target))
+    restored=client.post('/api/rooms/'+r['id']+'/rollback',headers=h,json={**revise(r),'target_event_id':target,'reason':'newer module history'}).json()
+    assert restored['state']['_plugins']['scene-notes']['data']['future_secret']==private
+    player=read(client,restored,fh)
+    assert player['state']['_plugins']['scene-notes']['data']=={}
+    assert private not in json.dumps(player)
+    with client.websocket_connect('/ws/rooms/'+r['id']) as ws:
+        ws.send_json({'type':'auth','token':ft})
+        assert private not in json.dumps(ws.receive_json())
+    assert not next(p for p in player['plugins'] if p['id']=='scene-notes')['enabled']
+    assert action(client,restored,h,'scene-notes','append',{'text':'must not run'}).status_code==403
+    refused=client.post(f"/api/rooms/{r['id']}/extensions/scene-notes/toggle",headers=h,json={**revise(restored),'enabled':True})
+    assert refused.status_code==422
+    assert read(client,restored,h)['state']['_plugins']['scene-notes']['data']['future_secret']==private
+
+
 def test_resource_provider_collision_is_rejected(client,tmp_path):
     from scripts.plugins import install
     bundle=tmp_path/'tokens.zip';m={'id':'alt-tokens','name':'Alt','version':'1.0.0','description':'test','api_version':1,'backend':'backend.py','requires':['scene-map'],'provides':['scene.tokens/v1'],'actions':[],'capabilities':['read:room']}
